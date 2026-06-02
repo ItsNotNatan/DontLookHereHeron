@@ -1,0 +1,441 @@
+/* src/pages/AcompFinan/AcompFinan.css */
+
+:root {
+  --blue-main: #0057A8;
+  --blue-light: #1A7FD4;
+  --blue-pale: #E8F2FC;
+  --accent: #FF6B35;
+  --gray-dark: #1C2B3A;
+  --gray-med: #4A6070;
+  --gray-light: #F0F4F8;
+  --white: #FFFFFF;
+  --success: #22C55E;
+  --warning: #F59E0B;
+}
+
+/* Base Wrapper (Block) */
+.acomp-wrapper {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--gray-light);
+  min-height: 100vh;
+  color: var(--gray-dark);
+}
+
+/* Utilitário de Animação */
+.u-fade-in {
+  animation: acompFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes acompFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header (Block) */
+.acomp-header {
+  background: linear-gradient(135deg, var(--gray-dark) 0%, #2A3E52 100%);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.acomp-header__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.acomp-header__logo-box {
+  background-color: var(--white);
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+}
+
+.acomp-header__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: -0.02em;
+}
+
+.acomp-header__subtitle {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 2px;
+}
+
+.acomp-header__filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 400px;
+}
+
+.acomp-header__btn-filter {
+  background-color: var(--blue-main);
+  color: var(--white);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.acomp-header__btn-filter:hover {
+  background-color: var(--blue-light);
+}
+
+/* Loader (Block) */
+.acomp-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  color: var(--blue-main);
+}
+
+.acomp-loader__text {
+  margin-top: 16px;
+  font-weight: 600;
+}
+
+/* Empty State (Block) */
+.acomp-empty-state {
+  text-align: center;
+  padding: 6rem 2rem;
+  background-color: var(--white);
+  margin: 2rem auto;
+  max-width: 600px;
+  border-radius: 16px;
+  border: 1px dashed var(--gray-med);
+}
+
+.acomp-empty-state__title {
+  color: var(--gray-med);
+  margin-top: 1rem;
+}
+
+/* Tabs (Block) */
+.acomp-tabs {
+  background-color: var(--white);
+  border-bottom: 2px solid var(--blue-pale);
+  padding: 0 32px;
+  display: flex;
+  gap: 4px;
+}
+
+.acomp-tabs__btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-med);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+
+/* Modifier para aba ativa */
+.acomp-tabs__btn--active {
+  font-weight: 700;
+  color: var(--blue-main);
+  border-bottom: 3px solid var(--blue-main);
+}
+
+/* Content Layout (Block) */
+.acomp-content {
+  padding: 28px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Layout Utilities ou Blocks Estruturais */
+.acomp-layout-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.acomp-layout-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* KPI Grid & Cards (Blocks) */
+.acomp-kpi-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.acomp-kpi-card {
+  flex: 1;
+  min-width: 180px;
+  border-radius: 16px;
+  padding: 22px 24px;
+  background-color: var(--white);
+  box-shadow: 0 2px 12px rgba(28,43,58,0.08);
+  border: 1px solid var(--blue-pale);
+}
+
+/* Modifier de destaque para o Card KPI */
+.acomp-kpi-card--highlight {
+  background: linear-gradient(135deg, var(--blue-main) 0%, var(--blue-light) 100%);
+  box-shadow: 0 8px 32px rgba(0,87,168,0.28);
+  border: none;
+}
+
+.acomp-kpi-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.acomp-kpi-card__icon {
+  font-size: 22px;
+}
+
+.acomp-kpi-card__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-med);
+}
+
+/* Mudando a cor do label quando o card tem o modificador de destaque */
+.acomp-kpi-card--highlight .acomp-kpi-card__label {
+  color: rgba(255,255,255,0.75);
+}
+
+.acomp-kpi-card__value {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.acomp-kpi-card__sub {
+  font-size: 12px;
+  color: var(--gray-med);
+  margin-top: 4px;
+}
+
+.acomp-kpi-card--highlight .acomp-kpi-card__sub {
+  color: rgba(255,255,255,0.65);
+}
+
+/* Generic Card & Section Header (Blocks) */
+.acomp-card {
+  background-color: var(--white);
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 12px rgba(28,43,58,0.07);
+  border: 1px solid var(--blue-pale);
+}
+
+.acomp-section-header {
+  margin-bottom: 18px;
+}
+
+.acomp-section-header__title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--gray-dark);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.acomp-section-header__subtitle {
+  font-size: 12px;
+  color: var(--gray-med);
+  margin: 3px 0 0;
+}
+
+/* Tooltips (Block) */
+.acomp-tooltip {
+  background-color: var(--white);
+  border: 1px solid var(--blue-light);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 20px rgba(0,87,168,0.15);
+  font-size: 13px;
+}
+
+.acomp-tooltip__label {
+  font-weight: 700;
+  color: var(--gray-dark);
+  margin-bottom: 4px;
+  margin-top: 0;
+}
+
+.acomp-tooltip__item {
+  margin: 2px 0;
+}
+
+/* Tables (Block) */
+.acomp-table-wrapper {
+  overflow-x: auto;
+}
+
+.acomp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.acomp-table__head-row {
+  background-color: var(--blue-pale);
+}
+
+.acomp-table__header-cell {
+  padding: 10px 14px;
+  font-weight: 700;
+  color: var(--gray-dark);
+  font-size: 12px;
+}
+
+/* Modifiers para alinhamento */
+.acomp-table__header-cell--left { text-align: left; }
+.acomp-table__header-cell--center { text-align: center; }
+.acomp-table__header-cell--right { text-align: right; }
+
+.acomp-table__cell {
+  padding: 9px 14px;
+}
+
+.acomp-table__cell--left { text-align: left; }
+.acomp-table__cell--center { text-align: center; }
+.acomp-table__cell--right { text-align: right; }
+
+/* Modifiers para linhas da tabela */
+.acomp-table__row--even {
+  background-color: var(--white);
+  border-bottom: 1px solid var(--blue-pale);
+}
+
+.acomp-table__row--odd {
+  background-color: var(--gray-light);
+  border-bottom: 1px solid var(--blue-pale);
+}
+
+.acomp-table--no-bg .acomp-table__row--divider {
+  background-color: transparent;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Typography & Utility classes (Prefixados com u- para utilitários) */
+.u-fw-500 { font-weight: 500; }
+.u-fw-600 { font-weight: 600; }
+.u-fw-700 { font-weight: 700; }
+.u-fw-bold { font-weight: bold; }
+.u-fs-small { font-size: 0.85rem; }
+.u-fs-body { font-size: 0.9rem; }
+.u-t-gray-med { color: var(--gray-med); }
+.u-t-gray-dark { color: var(--gray-dark); }
+.u-t-blue-main { color: var(--blue-main); }
+
+/* Components (Blocks Menores) */
+.acomp-badge {
+  background-color: var(--blue-pale);
+  color: var(--blue-main);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.acomp-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+/* Progress Bar (Block) */
+.acomp-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.acomp-progress__track {
+  flex: 1;
+  height: 6px;
+  background-color: var(--blue-pale);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.acomp-progress__fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.acomp-progress__text {
+  font-size: 11px;
+  font-weight: 600;
+  width: 36px;
+}
+
+/* =========================================
+   TABELA DE DADOS DO GRÁFICO (Estilo Excel)
+   ========================================= */
+.chart-data-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 5px;
+  padding: 0 10px;
+}
+
+.chart-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  background-color: var(--white);
+}
+
+.chart-data-table th,
+.chart-data-table td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+  color: var(--gray-dark);
+}
+
+.chart-data-table th {
+  background-color: #f8fafc;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--gray-med);
+}
+
+.chart-data-table__series-cell {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chart-data-table__color-box {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}

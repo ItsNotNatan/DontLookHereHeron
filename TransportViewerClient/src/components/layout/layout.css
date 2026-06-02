@@ -1,0 +1,175 @@
+/* --- CONTAINER PRINCIPAL --- */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f8fafc; /* Cinza bem clarinho de fundo */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* --- CABEÇALHO (HEADER) --- */
+.app-header {
+  background-color: #ffffff;
+  padding: 0 2rem;
+  height: 70px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* --- LOGO --- */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  text-decoration: none;
+}
+
+.logo-container i {
+  color: #2563eb; /* Azul Comau/Logística */
+  font-size: 1.5rem;
+}
+
+.text-primary {
+  color: #2563eb;
+}
+
+.badge-role {
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-size: 0.7rem;
+  padding: 2px 10px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border: 1px solid #dbeafe;
+}
+
+/* --- NAVEGAÇÃO (LINKS DO MEIO) --- */
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  text-decoration: none;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  color: #2563eb;
+  background-color: #f1f5f9;
+}
+
+.nav-item.active {
+  color: #2563eb;
+  background-color: #eff6ff;
+  font-weight: 600;
+}
+
+/* --- ÁREA DE CONTEÚDO --- */
+/* --- ÁREA DE CONTEÚDO --- */
+.app-main {
+  flex: 1;
+  /* Reduzimos um pouco o padding lateral para dar mais espaço */
+  padding: 2rem 1rem; 
+  
+  /* A MÁGICA ESTÁ AQUI: Mudamos de 1400px para 100% ou um valor bem maior */
+  max-width: 100%; /* Pode usar 1800px se quiser um limite máximo muito grande */
+  
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* --- ANIMAÇÃO DE ENTRADA (FADE-IN) --- */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- BOTÕES DE LOGIN / LOGOUT NO CABEÇALHO --- */
+.btn-login-header {
+  background-color: #2563eb;
+  color: white !important;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.btn-login-header:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-logout-header {
+  border: 1px solid #fca5a5;
+  color: #ef4444;
+  background: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-logout-header:hover {
+  background-color: #fef2f2;
+  border-color: #ef4444;
+}
+
+/* --- LOGO (VERSÃO COM IMAGEM + TEXTO) --- */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.logo-img {
+  height: 28px; /* Altura para alinhar com o texto */
+  width: auto;
+  object-fit: contain;
+}
+
+.logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.text-primary {
+  color: #2563eb;
+}
+
+.badge-role {
+  background-color: #eff6ff;
+  color: #1e40af;
+  font-size: 0.7rem;
+  padding: 2px 10px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  border: 1px solid #dbeafe;
+}

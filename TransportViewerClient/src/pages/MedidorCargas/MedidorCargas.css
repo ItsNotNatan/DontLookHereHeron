@@ -1,0 +1,483 @@
+/* src/pages/MedidorCargas/MedidorCargas.css */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+/* 1. O WRAPPER PRINCIPAL (Modo Claro) */
+.medidor-wrapper-3d {
+  /* Variáveis de cor Light Mode */
+  --bg: #f1f5f9;           
+  --panel: #ffffff;        
+  --card: #ffffff;         
+  --card2: #f8fafc;        
+  --border: #e2e8f0;       
+  --border2: #cbd5e1;      
+  --border3: #94a3b8;      
+  --accent: #2563eb;       
+  --accent2: #3b82f6;      
+  --acD: rgba(37, 99, 235, 0.08); 
+  --orange: #ea580c;
+  --green: #16a34a;
+  --red: #ef4444;
+  --yellow: #ca8a04;
+  --text: #0f172a;         
+  --muted: #64748b;        
+  --muted2: #475569;       
+
+  /* ── ESTRUTURA PARA TRAVAR A TELA ── */
+  display: flex; 
+  flex-direction: column; 
+  width: 100%;
+  
+  /* Se você tem um menu global no topo, mantenha o calc descontando o tamanho dele. 
+     Se esta tela for ocupar 100% sem menu nenhum, mude para: height: 100vh; */
+  height: calc(100vh - 70px); 
+  
+  /* O segredo para não ter scroll na página está aqui: */
+  overflow: hidden; 
+  
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+}
+
+.medidor-wrapper-3d * { 
+  box-sizing: border-box; 
+  margin: 0;
+  padding: 0;
+}
+
+.medidor-wrapper-3d header {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.medidor-wrapper-3d .logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.medidor-wrapper-3d .logo em {
+  color: var(--accent);
+  font-style: normal;
+}
+
+.medidor-wrapper-3d .hrtags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.medidor-wrapper-3d .tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid;
+  cursor: pointer;
+}
+
+.medidor-wrapper-3d .tag-b {
+  color: var(--accent);
+  border-color: rgba(37, 99, 235, 0.3);
+  background: var(--acD);
+}
+
+.medidor-wrapper-3d .tag-o {
+  color: var(--orange);
+  border-color: rgba(234, 88, 12, 0.3);
+  background: rgba(234, 88, 12, 0.05);
+}
+
+.medidor-wrapper-3d .layout {
+  display: flex;
+  flex: 1;
+  /* 👇 AJUSTE AQUI: O layout agora ocupa 100% da altura disponível no wrapper */
+  height: calc(100% - 52px);
+}
+
+.medidor-wrapper-3d .sidebar {
+  width: 330px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.03);
+  z-index: 10;
+}
+
+.medidor-wrapper-3d .sb-scroll {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.medidor-wrapper-3d .sb-scroll::-webkit-scrollbar { width: 4px; }
+.medidor-wrapper-3d .sb-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.medidor-wrapper-3d .sec {
+  padding: 15px;
+  border-bottom: 1px solid var(--border);
+}
+
+.medidor-wrapper-3d .stitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.medidor-wrapper-3d .stitle::before {
+  content: '';
+  width: 4px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.medidor-wrapper-3d .urow { display: flex; gap: 6px; }
+
+.medidor-wrapper-3d .ubtn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--card2);
+  color: var(--muted2);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.medidor-wrapper-3d .ubtn.on {
+  background: var(--acD);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.medidor-wrapper-3d .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 0; }
+.medidor-wrapper-3d .field label { font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.medidor-wrapper-3d .field input {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+.medidor-wrapper-3d .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--acD); }
+
+.medidor-wrapper-3d .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.medidor-wrapper-3d .clrs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.medidor-wrapper-3d .clr {
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s;
+}
+.medidor-wrapper-3d .clr:hover { transform: scale(1.15); }
+.medidor-wrapper-3d .clr.on { border-color: var(--text); transform: scale(1.1); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+.medidor-wrapper-3d .btn-add {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.medidor-wrapper-3d .btn-add:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 12px var(--acD); }
+
+.medidor-wrapper-3d .clist { display: flex; flex-direction: column; gap: 6px; }
+.medidor-wrapper-3d .no-c { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 15px 0; }
+
+.medidor-wrapper-3d .ci {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.medidor-wrapper-3d .ci:hover { border-color: var(--border3); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.medidor-wrapper-3d .ci.sel { border-color: var(--accent); background: var(--acD); }
+
+.medidor-wrapper-3d .ci-top { display: flex; align-items: center; gap: 10px; padding: 10px; }
+.medidor-wrapper-3d .ci-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.medidor-wrapper-3d .ci-body { flex: 1; min-width: 0; }
+.medidor-wrapper-3d .ci-name { font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.medidor-wrapper-3d .ci-dim { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.medidor-wrapper-3d .ci-vol { font-size: 0.7rem; color: var(--accent); font-weight: 700; margin-top: 2px; }
+.medidor-wrapper-3d .ci-qty { font-size: 0.75rem; color: var(--orange); font-weight: 800; margin-left: 6px; }
+
+.medidor-wrapper-3d .ci-acts { display: flex; gap: 4px; }
+.medidor-wrapper-3d .ci-act {
+  background: #ffffff;
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  font-weight: 700;
+}
+.medidor-wrapper-3d .ci-act:hover { border-color: var(--accent); color: var(--accent); background: var(--card2); }
+.medidor-wrapper-3d .ci-del:hover { border-color: var(--red) !important; color: var(--red) !important; background: #fef2f2; }
+
+.medidor-wrapper-3d .pp {
+  background: var(--card2);
+  border-top: 1px solid var(--border);
+  padding: 12px;
+  display: none;
+}
+.medidor-wrapper-3d .ci.sel .pp { display: block; }
+.medidor-wrapper-3d .pp-title { font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); font-weight: 800; margin-bottom: 10px; font-family: 'Rajdhani', sans-serif; }
+.medidor-wrapper-3d .pp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.medidor-wrapper-3d .pp-field { display: flex; flex-direction: column; gap: 4px; }
+.medidor-wrapper-3d .pp-field label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; text-align: center; }
+
+.medidor-wrapper-3d .pp-iw { position: relative; display: flex; align-items: center; }
+.medidor-wrapper-3d .pp-iw input {
+  background: #ffffff;
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 6px 22px 6px 8px;
+  outline: none;
+  width: 100%;
+  text-align: right;
+  transition: border-color 0.2s;
+}
+.medidor-wrapper-3d .pp-iw input:focus { border-color: var(--accent); }
+.medidor-wrapper-3d .pp-suf { position: absolute; right: 8px; font-size: 0.65rem; color: var(--muted); font-weight: 700; pointer-events: none; }
+
+.medidor-wrapper-3d .pp-arrows { display: flex; gap: 4px; margin-top: 4px; }
+.medidor-wrapper-3d .pp-arr {
+  flex: 1; background: #ffffff; border: 1px solid var(--border2); color: var(--muted2);
+  cursor: pointer; font-size: 0.8rem; padding: 4px 0; border-radius: 4px; text-align: center; transition: all 0.15s;
+}
+.medidor-wrapper-3d .pp-arr:hover { border-color: var(--accent); color: var(--accent); background: var(--acD); }
+
+.medidor-wrapper-3d .pp-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.medidor-wrapper-3d .pp-btn {
+  padding: 8px; border: 1px solid var(--border2); background: #ffffff; color: var(--muted2);
+  cursor: pointer; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; text-align: center; transition: all 0.15s;
+}
+.medidor-wrapper-3d .pp-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--acD); }
+.medidor-wrapper-3d .pp-btn.ok { border-color: var(--green); color: var(--green); background: #f0fdf4; }
+.medidor-wrapper-3d .pp-btn.ok:hover { background: #dcfce7; }
+
+.medidor-wrapper-3d .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.medidor-wrapper-3d .vc {
+  background: var(--card); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 8px;
+  cursor: pointer; text-align: center; transition: all 0.2s; position: relative;
+}
+.medidor-wrapper-3d .vc:hover { border-color: var(--border3); box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+.medidor-wrapper-3d .vc.on { border-color: var(--accent); background: var(--acD); box-shadow: 0 0 0 1px var(--accent); }
+.medidor-wrapper-3d .vc-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
+.medidor-wrapper-3d .vc-name { font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+.medidor-wrapper-3d .vc-dim { font-size: 0.6rem; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+.medidor-wrapper-3d .fdot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--border2); }
+.medidor-wrapper-3d .fdot.ok { background: var(--green); box-shadow: 0 0 6px rgba(22, 163, 74, 0.4); }
+.medidor-wrapper-3d .fdot.tight { background: var(--yellow); box-shadow: 0 0 6px rgba(202, 138, 4, 0.4); }
+.medidor-wrapper-3d .fdot.over { background: var(--red); box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+
+.medidor-wrapper-3d .main-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; width: 100%; height: 100%; }
+
+.medidor-wrapper-3d .topbar {
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.95); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02); z-index: 5;
+}
+.medidor-wrapper-3d .veh-lbl { font-family: 'Rajdhani', sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; color: var(--text); }
+.medidor-wrapper-3d .veh-sub { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+.medidor-wrapper-3d .chip { font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; border: 1px solid; }
+.medidor-wrapper-3d .chip-ok { color: var(--green); border-color: rgba(22, 163, 74, 0.3); background: #f0fdf4; }
+.medidor-wrapper-3d .chip-tight { color: var(--yellow); border-color: rgba(202, 138, 4, 0.3); background: #fefce8; }
+.medidor-wrapper-3d .chip-over { color: var(--red); border-color: rgba(239, 68, 68, 0.3); background: #fef2f2; }
+.medidor-wrapper-3d .chip-idle { color: var(--muted); border-color: var(--border2); background: var(--card2); }
+
+.medidor-wrapper-3d #cwrap { flex: 1; position: relative; overflow: hidden; width: 100%; height: 100%; min-height: 400px; }
+.medidor-wrapper-3d #c { display: block; width: 100%; height: 100%; outline: none; }
+
+.medidor-wrapper-3d .hint { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; pointer-events: none; }
+.medidor-wrapper-3d .hint h3 { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; color: var(--muted2); font-weight: 800; letter-spacing: 2px; }
+.medidor-wrapper-3d .hint p { font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+
+.medidor-wrapper-3d .modebar {
+  position: absolute; top: 15px; left: 50%; transform: translateX(-50%); display: flex;
+  background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border2); border-radius: 8px; overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.medidor-wrapper-3d .mbtn {
+  padding: 8px 16px; border: none; background: none; color: var(--muted2); font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+}
+.medidor-wrapper-3d .mbtn.on { background: var(--acD); color: var(--accent); }
+.medidor-wrapper-3d .msep { width: 1px; background: var(--border); margin: 6px 0; }
+
+.medidor-wrapper-3d .cambtns { position: absolute; bottom: 56px; right: 15px; display: flex; flex-direction: column; gap: 6px; }
+.medidor-wrapper-3d .cbtn {
+  width: 36px; height: 36px; border-radius: 8px; background: rgba(255, 255, 255, 0.95); border: 1px solid var(--border2);
+  color: var(--muted2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;
+  transition: all 0.15s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.medidor-wrapper-3d .cbtn:hover { border-color: var(--accent); color: var(--accent); }
+
+.medidor-wrapper-3d .info {
+  position: absolute; top: 15px; left: 15px; background: rgba(255, 255, 255, 0.9); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 12px 16px; font-size: 0.7rem; color: var(--muted2); line-height: 2; pointer-events: none;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.medidor-wrapper-3d .info b { color: var(--text); font-weight: 700; }
+
+.medidor-wrapper-3d .selbar {
+  position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--accent); border-radius: 8px; padding: 10px 20px; font-size: 0.8rem; color: var(--text);
+  white-space: nowrap; display: none; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(37,99,235,0.15);
+}
+.medidor-wrapper-3d .selbar b { color: var(--accent); }
+
+.medidor-wrapper-3d .sc { display: flex; gap: 12px; font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 700; }
+.medidor-wrapper-3d .sx { color: var(--red); }
+.medidor-wrapper-3d .sy { color: var(--green); }
+.medidor-wrapper-3d .sz { color: var(--accent); }
+
+.medidor-wrapper-3d .sn { color: var(--text); font-size: 0.75rem; border-right: 1px solid var(--border2); padding-right: 15px; font-weight: 700; }
+
+.medidor-wrapper-3d .statsbar {
+  height: 55px; display: flex; align-items: stretch; background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.02);
+}
+.medidor-wrapper-3d .stat { flex: 1; padding: 5px 15px; border-right: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; }
+.medidor-wrapper-3d .stat:last-child { border-right: none; }
+
+.medidor-wrapper-3d .sl { font-size: 0.6rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.medidor-wrapper-3d .sv { font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; font-weight: 800; margin-top: 2px; }
+
+.medidor-wrapper-3d .occ { flex: 2; padding: 5px 15px; display: flex; flex-direction: column; justify-content: center; gap: 4px; border-right: 1px solid var(--border); }
+.medidor-wrapper-3d .occ-row { display: flex; justify-content: space-between; align-items: center; }
+.medidor-wrapper-3d .occ-track { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.medidor-wrapper-3d .occ-fill { height: 100%; border-radius: 4px; transition: width 0.4s, background 0.4s; }
+
+/* MODAL - LIGHT THEME */
+.modal-overlay-3d { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal-backdrop-3d { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+.modal-card-3d { position: relative; background: #ffffff; width: 100%; max-width: 500px; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+.modal-header-3d { background: #f8fafc; color: var(--text); padding: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); align-items: center; }
+.modal-title-3d { font-size: 1.2rem; font-weight: 800; margin: 0; }
+.modal-close-btn-3d { background: transparent; border: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
+.modal-close-btn-3d:hover { color: var(--red); }
+.modal-body-3d { padding: 25px; color: var(--text); }
+.modal-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.summary-card-3d { background: #f8fafc; border: 1px solid var(--border); padding: 15px; border-radius: 8px; }
+.summary-label { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 5px; }
+.summary-value { font-size: 1.3rem; font-weight: 800; margin: 0; }
+.modal-table-container { border-top: 1px solid var(--border); max-height: 250px; overflow-y: auto; margin-top: 20px; }
+.modal-table-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; align-items: center; }
+.item-with-dot { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.modal-footer-3d { padding: 20px 25px; background: #f8fafc; border-top: 1px solid var(--border); }
+.btn-finalizar-3d { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; font-weight: 800; cursor: pointer; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; transition: background 0.2s; }
+.btn-finalizar-3d:hover { background: var(--accent2); }
+
+/* =========================================
+   TELA DE CARREGAMENTO (LOADING)
+   ========================================= */
+.medidor-loading-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg);
+  z-index: 9999;
+  font-family: 'Inter', sans-serif;
+}
+
+.medidor-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background-color: var(--panel);
+  padding: 40px 60px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+  border: 1px solid var(--border);
+  animation: acompFadeIn 0.4s ease-out forwards;
+}
+
+.medidor-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  margin-bottom: 24px;
+  animation: spin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+}
+
+.medidor-loading-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+}
+
+.medidor-loading-text {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes acompFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

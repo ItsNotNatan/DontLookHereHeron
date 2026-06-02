@@ -1,0 +1,217 @@
+/* src/pages/Home/Home.css */
+
+.home-hub-container {
+  background-color: #f8fafc;
+  max-width: 100%;
+  margin: 0 auto; 
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── CSS DO PLANO DE FUNDO ONDULADO ── */
+.wave-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50vh; /* Ocupa a metade inferior do ecrã */
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none; /* Garante que não bloqueia os cliques nos cards */
+}
+
+.wave-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Envolve o conteúdo para ficar por cima do plano de fundo */
+.home-hub-content-wrapper {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1200px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-hub-header { 
+  text-align: center; 
+  margin-bottom: 3.5rem; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 600px;
+}
+
+.home-hub-logo {
+  height: 100px; /* Mantive o tamanho que conversamos! Ajuste se necessário */
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 0.25rem;
+  animation: logoPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.home-company-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 6px;
+  margin-bottom: 1.5rem;
+  text-indent: 6px;
+}
+
+@keyframes logoPop {
+  0% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.home-greeting { 
+  font-size: 2.2rem; 
+  font-weight: 800; 
+  color: #0f172a; 
+  margin-bottom: 0.75rem; 
+  letter-spacing: -0.025em;
+}
+
+.text-highlight {
+  color: #2563eb;
+}
+
+.logo-accent {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.home-instructions { 
+  font-size: 1.1rem; 
+  color: #475569; 
+  line-height: 1.6;
+}
+
+.home-hub-grid { 
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem; 
+  width: 100%;
+}
+
+/* ── Estilo Base dos Cartões ── */
+.hub-card {
+  background: rgba(255, 255, 255, 0.95); 
+  backdrop-filter: blur(8px); 
+  border: 1px solid #e2e8f0; 
+  border-radius: 20px; 
+  padding: 2rem; 
+  text-decoration: none;
+  display: flex; 
+  flex-direction: column; 
+  align-items: flex-start;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+.hub-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  transition: all 0.25s ease;
+}
+
+.hub-card h3 { 
+  font-size: 1.3rem; 
+  font-weight: 700; 
+  color: #1e293b; 
+  margin-bottom: 0.5rem; 
+  letter-spacing: -0.01em;
+}
+
+.hub-card p { 
+  font-size: 0.95rem; 
+  color: #475569; 
+  line-height: 1.5; 
+  margin-bottom: 2rem; 
+  flex-grow: 1; 
+}
+
+.hub-card-action { 
+  font-size: 0.9rem; 
+  font-weight: 700; 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem;
+  transition: gap 0.2s ease;
+}
+
+.arrow-transition {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.hub-card:hover { 
+  transform: translateY(-6px);
+  background: #ffffff;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+}
+
+.hub-card:hover .arrow-transition {
+  transform: translateX(4px);
+}
+
+/* ── Cores por Módulo ── */
+.hub-card--blue::before { background-color: #2563eb; }
+.hub-card--blue .hub-card-icon { background: #eff6ff; color: #2563eb; }
+.hub-card--blue .hub-card-action { color: #2563eb; }
+.hub-card--blue:hover { border-color: #2563eb; }
+.hub-card--blue:hover .hub-card-icon { background: #2563eb; color: #ffffff; }
+
+.hub-card--indigo::before { background-color: #4f46e5; }
+.hub-card--indigo .hub-card-icon { background: #eef2ff; color: #4f46e5; }
+.hub-card--indigo .hub-card-action { color: #4f46e5; }
+.hub-card--indigo:hover { border-color: #4f46e5; }
+.hub-card--indigo:hover .hub-card-icon { background: #4f46e5; color: #ffffff; }
+
+.hub-card--emerald::before { background-color: #059669; }
+.hub-card--emerald .hub-card-icon { background: #ecfdf5; color: #059669; }
+.hub-card--emerald .hub-card-action { color: #059669; }
+.hub-card--emerald:hover { border-color: #059669; }
+.hub-card--emerald:hover .hub-card-icon { background: #059669; color: #ffffff; }
+
+.hub-card--amber::before { background-color: #d97706; }
+.hub-card--amber .hub-card-icon { background: #fff7ed; color: #d97706; }
+.hub-card--amber .hub-card-action { color: #d97706; }
+.hub-card--amber:hover { border-color: #d97706; }
+.hub-card--amber:hover .hub-card-icon { background: #d97706; color: #ffffff; }
+
+.hub-card-icon { 
+  padding: 0.75rem; 
+  border-radius: 14px; 
+  margin-bottom: 1.25rem; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+/* ── Responsividade ── */
+@media (max-width: 768px) {
+  .home-hub-content-wrapper {
+    padding: 3rem 1.5rem;
+  }
+  .home-greeting { font-size: 1.8rem; }
+  .home-instructions { font-size: 1rem; }
+  .home-hub-header { margin-bottom: 2rem; }
+  .home-hub-grid { grid-template-columns: 1fr; }
+  .wave-container { height: 35vh; }
+}

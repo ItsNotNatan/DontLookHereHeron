@@ -1,0 +1,42 @@
+.aba-simulacao-container {
+  position: fixed;
+  right: 0 !important; /* 👈 Garante que ignore qualquer padding do body */
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #1e40af; 
+  color: white;
+  padding: 15px 10px;
+  border-radius: 8px 0 0 8px; 
+  cursor: pointer;
+  z-index: 99999; /* Aumentei um 9 só por segurança */
+  box-shadow: -2px 4px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0; /* 👈 Evita margens fantasmas */
+}
+
+/* O resto do seu CSS continua exatamente igual! */
+.aba-simulacao-container:hover {
+  padding-right: 20px;
+  background-color: #2563eb;
+}
+
+.aba-simulacao-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: rotate(180deg);
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+}
+
+.aba-simulacao-content i {
+  font-size: 1.2rem;
+  margin-bottom: 5px;
+}

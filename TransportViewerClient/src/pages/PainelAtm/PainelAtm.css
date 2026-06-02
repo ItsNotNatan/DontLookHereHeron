@@ -1,0 +1,537 @@
+
+/* =========================================
+   UTILITIES (Classes utilitárias genéricas)
+   ========================================= */
+.u-text-primary { color: #3b82f6; } 
+.u-text-success { color: #16a34a; }
+.u-text-muted { color: #6b7280; } 
+.u-font-bold { font-weight: 700; } 
+.u-text-center { text-align: center; } 
+
+.u-fade-in { animation: painelSlideDown 0.3s ease-out forwards; }
+
+@keyframes painelSlideDown { 
+  from { opacity: 0; transform: translateY(-0.5rem); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+
+@keyframes painelSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   BLOCO PRINCIPAL: painel-atm
+   ========================================= */
+/* =========================================
+   BLOCO PRINCIPAL: painel-atm
+   ========================================= */
+.painel-atm {
+  /* Mudamos de '1rem' para '1rem 0'. 
+     Isso mantém o espaço em cima e embaixo, mas zera as laterais */
+  padding: 1rem 0; 
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* =========================================
+   BLOCO: painel-table (Tabela de dados)
+   ========================================= */
+.painel-table-wrapper {
+  position: relative;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  /* 🟢 A MÁGICA DO SCROLL AQUI */
+  overflow-x: auto; 
+}
+
+.painel-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.painel-table__head {
+  background-color: #f3f4f6;
+}
+
+.painel-table__header-cell {
+  padding: 10px 8px; /* 🟢 Diminuímos de 12px para 10px em cima e 8px dos lados */
+  border-bottom: 2px solid #e5e7eb;
+  color: #4b5563;
+  font-size: 0.75rem; /* 🟢 Fonte menor (cerca de 12px) */
+  text-transform: uppercase;
+  letter-spacing: 0.02em; /* 🟢 Letras um pouco mais juntas */
+  white-space: nowrap; /* 🟢 Impede que o título da coluna quebre em duas linhas */
+}
+
+.painel-table__header-cell--center {
+  text-align: center;
+}
+
+.painel-table__row {
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.painel-table__row:hover {
+  background-color: #eff6ff;
+}
+
+.painel-table__cell {
+  padding: 10px 8px; /* 🟢 Diminuímos o respiro interno para caber mais coisa */
+  color: #1f2937;
+  font-size: 0.8rem; /* 🟢 Garante que a fonte do texto fique compacta */
+}
+
+/* Modificadores de células */
+.painel-table__cell--center { text-align: center; }
+.painel-table__cell--bold { font-weight: 700; }
+.painel-table__cell--medium { font-weight: 500; }
+.painel-table__cell--success { color: #059669; font-weight: 700; }
+.painel-table__cell--muted { color: #6b7280; }
+.painel-table__cell--empty { padding: 3rem; text-align: center; color: #6b7280; }
+
+/* =========================================
+   BLOCO: Rotas na Tabela
+   ========================================= */
+.painel-table__route {
+  font-size: 0.85rem;
+}
+
+.painel-table__route-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Espaço entre a cidade e a setinha */
+  white-space: nowrap; /* Evita que o nome da cidade quebre no meio */
+}
+
+.painel-table__route-city {
+  font-weight: 600;
+  color: #374151; /* Deixa o texto com um tom de chumbo legível */
+}
+
+.painel-table__route-icon {
+  color: #9ca3af; /* Setinha cinza para ficar discreta */
+  flex-shrink: 0; /* Impede que a seta seja esmagada */
+}
+
+.painel-table__route-label {
+  color: #6b7280;
+}
+
+/* =========================================
+   BLOCO: painel-pagination (Paginação)
+   ========================================= */
+.painel-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.painel-pagination__info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.painel-pagination__controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.painel-pagination__btn {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.painel-pagination__btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.painel-pagination__btn:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.painel-pagination__current {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* =========================================
+   BLOCO: painel-badge (Etiquetas de Status)
+   ========================================= */
+.painel-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.painel-badge--success { background-color: #dcfce7; color: #166534; } 
+.painel-badge--info { background-color: #dbeafe; color: #1e40af; } 
+.painel-badge--warning { background-color: #fef9c3; color: #854d0e; } 
+.painel-badge--default { background-color: #f3f4f6; color: #1f2937; } 
+
+/* =========================================
+   BLOCO: painel-btn (Botões)
+   ========================================= */
+.painel-btn {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.painel-btn--action {
+  color: #2563eb;
+  background-color: #eff6ff;
+  padding: 6px 12px;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.3rem;
+}
+
+.painel-btn--action:hover { background-color: #dbeafe; }
+
+.painel-btn--secondary {
+  background-color: transparent;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.painel-btn--secondary:hover { background-color: #f3f4f6; }
+
+.painel-btn--close {
+  background: none;
+  color: #9ca3af;
+  padding: 0;
+}
+
+.painel-btn--close:hover { color: #ef4444; }
+
+/* =========================================
+   BLOCO: painel-modal (Modal/Ficha Cadastral)
+   ========================================= */
+.painel-modal__overlay {
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100vw; 
+  height: 100vh; 
+  background-color: rgba(17, 24, 39, 0.7);
+  display: flex; 
+  justify-content: center; 
+  align-items: center;
+  z-index: 99999;
+  backdrop-filter: blur(4px);
+}
+
+.painel-modal__content {
+  background: white;
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 850px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: painelSlideUp 0.3s ease-out forwards;
+}
+
+.painel-modal__header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: #f9fafb;
+}
+
+.painel-modal__subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.painel-modal__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+  margin-top: 0.25rem;
+}
+
+.painel-modal__body {
+  padding: 2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.painel-modal__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+}
+
+.painel-modal__section h4 {
+  font-size: 1.1rem;
+  color: #1f2937;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+  font-weight: 700;
+}
+
+.painel-modal__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.painel-modal__list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.875rem;
+  font-size: 0.95rem;
+}
+
+/* Modificador para espaçar mais o item na vertical */
+.painel-modal__list-item--spaced {
+  margin-top: 0.5rem;
+}
+
+.painel-modal__label {
+  color: #6b7280;
+  min-width: 120px;
+}
+
+.painel-modal__value {
+  color: #111827;
+  text-align: right;
+  max-width: 65%;
+  word-wrap: break-word;
+  font-weight: 700;
+}
+
+.painel-modal__value--success { color: #059669; }
+.painel-modal__value--muted { color: #6b7280; }
+.painel-modal__value--block { display: block; }
+
+.painel-modal__sub-text {
+  font-size: 0.8em;
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.painel-modal__obs-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.painel-modal__obs-title {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.painel-modal__obs-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.painel-modal__footer {
+  padding: 1.25rem 2rem;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* =========================================
+   BLOCO: Link de Rastreio (Modal)
+   ========================================= */
+.painel-modal__tracking-box {
+  display: flex;
+  gap: 12px;
+  margin-top: 1.5rem;
+  align-items: center;
+  background-color: #f8fafc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.painel-modal__tracking-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  background-color: #ffffff;
+}
+
+.painel-modal__tracking-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.painel-btn--save-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.2rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: background-color 0.2s;
+}
+
+.painel-btn--save-link:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.painel-btn--save-link:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.painel-btn--link-externo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #eff6ff; 
+  color: #2563eb; 
+  padding: 0.75rem 1.2rem;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid #bfdbfe;
+  transition: all 0.2s ease;
+}
+
+.painel-btn--link-externo:hover {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+}
+
+/* =========================================
+   BLOCO: Link de Rastreio Cliente (Modal)
+   ========================================= */
+.painel-modal__tracking-box {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.painel-btn--track-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2563eb; /* Azul forte e chamativo */
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1);
+}
+
+.painel-btn--track-active:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.painel-btn--track-disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f1f5f9; /* Fundo cinza claro */
+  color: #94a3b8; /* Texto cinza escuro/mudo */
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   BLOCO: LED Status (Desvio de Custo)
+   ========================================= */
+.led-status {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  cursor: help; /* Ao passar o mouse, indica que tem algo a ler (os valores) */
+}
+
+.led-verde {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.led-vermelho {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+/* Estado Neutro/Cinza: Valores ausentes */
+.led-cinza {
+  background-color: #9ca3af;
+  box-shadow: 0 0 6px rgba(156, 163, 175, 0.4);
+}

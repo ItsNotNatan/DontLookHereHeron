@@ -1,0 +1,69 @@
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #f9fafb; /* Fundo claro do seu app */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.splash-icon {
+  color: #2563eb; /* text-primary */
+  margin-bottom: 1rem;
+}
+
+.splash-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.splash-title .text-primary {
+  color: #2563eb;
+}
+
+.splash-subtitle {
+  color: #6b7280;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+/* Animação de "pulsar" no ícone */
+.pulse-animation {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Spinner de carregamento */
+.splash-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #dbeafe; /* Azul clarinho */
+  border-top-color: #2563eb; /* Azul principal */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

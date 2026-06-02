@@ -1,0 +1,182 @@
+/* src/components/FiltroAtm/FiltroAtm.css */
+
+/* Fundo escuro desfocado atrás do modal */
+.filtro-modal__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.5); /* Cinza escuro transparente */
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* O cartão branco do modal */
+.filtro-modal__content {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* Animação suave ao abrir */
+.fade-in {
+  animation: filtroFadeIn 0.25s ease-out forwards;
+}
+
+@keyframes filtroFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Cabeçalho do modal */
+.filtro-modal__header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: #f8fafc;
+}
+
+.filtro-modal__subtitle {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.filtro-modal__title {
+  font-size: 1.25rem;
+  color: #0f172a;
+  font-weight: 800;
+  margin: 0;
+}
+
+.filtro-modal__close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filtro-modal__close-btn:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+/* Corpo do modal com scroll interno */
+.filtro-modal__body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.filtro-modal__body::-webkit-scrollbar {
+  width: 6px;
+}
+.filtro-modal__body::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 3px;
+}
+
+/* Grid de opções (2 colunas em telas grandes, 1 em telas menores) */
+.filtro-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Bloco individual de cada filtro */
+.filtro-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-block__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.filtro-block__label--block {
+  display: block;
+}
+
+/* Rodapé do modal */
+.filtro-modal__footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.filtro-modal__btn-clear {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.filtro-modal__btn-clear:hover {
+  color: #0f172a;
+  background-color: #e2e8f0;
+}
+
+.filtro-modal__btn-submit {
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.625rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto; /* Garante que o botão fique na direita se o Limpar sumir */
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.1);
+}
+
+.filtro-modal__btn-submit:hover {
+  background-color: #1d4ed8;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
+}

@@ -1,0 +1,93 @@
+/* ================== VARIÁVEIS DE CORES ================== */
+:root {
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --text-dark: #1f2937;
+  --text-muted: #6b7280;
+  --bg-page: #f3f4f6;
+  --bg-box: #f9fafb;
+  --border: #e5e7eb;
+}
+
+/* ================== RESET ================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body { background-color: var(--bg-page); color: var(--text-dark); }
+
+/* ================== LAYOUT PRINCIPAL ================== */
+.app-layout { display: flex; flex-direction: column; min-height: 100vh; }
+
+.app-header {
+  background-color: white;
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.logo-container { display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; }
+.logo-container i { color: var(--primary); }
+.text-primary { color: var(--primary); }
+.badge-role { background: var(--primary-light); color: var(--primary); font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 1rem; margin-left: 0.5rem; }
+
+.nav-links { display: flex; gap: 1.5rem; }
+.nav-item { text-decoration: none; color: var(--text-muted); font-weight: 500; transition: color 0.2s; }
+.nav-item:hover { color: var(--primary); }
+.nav-item.active { color: var(--primary); font-weight: 700; border-bottom: 2px solid var(--primary); padding-bottom: 0.2rem; }
+
+.user-profile { display: flex; align-items: center; gap: 0.75rem; }
+.avatar { width: 36px; height: 36px; background: var(--primary-light); color: var(--primary); border: 1px solid #bfdbfe; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.user-info { display: flex; flex-direction: column; font-size: 0.875rem; font-weight: 700; }
+
+/* ================== ÁREA DO FORMULÁRIO ================== */
+.app-main { flex: 1; padding: 2rem; overflow-y: auto; }
+
+.form-card {
+  max-width: 1024px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+.card-title { font-size: 1.5rem; font-weight: 700; }
+.badge-info { background: var(--primary-light); color: #1e40af; border: 1px solid #bfdbfe; padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 700; }
+
+.section-title { font-size: 1.125rem; font-weight: 600; color: var(--primary); margin: 1.5rem 0 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+/* ================== GRID E INPUTS ================== */
+.form-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.form-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.form-grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+
+.input-group label { display: block; font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.4rem; }
+.input-control { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #d1d5db; border-radius: 0.5rem; outline: none; transition: border-color 0.2s; font-size: 0.95rem; background: white; }
+.input-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+.input-control:read-only { background-color: #f3f4f6; cursor: not-allowed; color: var(--text-muted); font-weight: 600; }
+
+.box-highlight { background: var(--bg-box); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border); }
+
+/* ================== BOTÕES ================== */
+.form-actions { display: flex; justify-content: flex-end; gap: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 2rem; }
+.btn { padding: 0.6rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border: none; font-size: 0.95rem; }
+.btn-outline { background: white; color: var(--text-dark); border: 1px solid #d1d5db; }
+.btn-outline:hover { background: var(--bg-page); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+
+/* Animação */
+.fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
