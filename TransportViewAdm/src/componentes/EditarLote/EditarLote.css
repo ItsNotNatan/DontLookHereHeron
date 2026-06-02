@@ -1,0 +1,212 @@
+/* src/componentes/EditarLote/EditarLote.css */
+
+/* ====================================================
+   BLOCK: Batch Modal
+==================================================== */
+.batch-modal__overlay {
+  z-index: 9999;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.batch-modal__content {
+  background-color: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modificador para modal largo */
+.batch-modal__content--large {
+  max-width: 1200px !important; 
+  width: 95%;
+}
+
+/* --- Cabeçalho --- */
+.batch-modal__header {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.batch-modal__subtitle { 
+  font-size: 0.875rem; 
+  color: #6b7280; 
+  display: block; 
+}
+
+.batch-modal__title { 
+  margin: 0; 
+  font-size: 1.25rem; 
+  font-weight: bold; 
+  color: #111827; 
+}
+
+.batch-modal__close-btn {
+  background: transparent; 
+  border: none; 
+  cursor: pointer; 
+  color: #9ca3af;
+  padding: 0.5rem; 
+  border-radius: 0.375rem; 
+  transition: background-color 0.2s;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+}
+
+.batch-modal__close-btn:hover { 
+  background-color: #f3f4f6; 
+}
+
+/* --- Corpo --- */
+.batch-modal__body {
+  padding: 1.5rem;
+  display: flex; 
+  flex-direction: column; 
+  gap: 1.5rem;
+  overflow-y: auto;
+  background-color: #f8fafc;
+}
+
+/* --- Alerta --- */
+.batch-modal__alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: #fffbeb;
+  border-left: 4px solid #f59e0b;
+  padding: 1rem;
+  border-radius: 4px;
+  color: #92400e;
+}
+
+.batch-modal__alert p { 
+  margin: 0; 
+  font-size: 0.9rem; 
+}
+
+/* --- Grid de Filtros --- */
+.batch-modal__grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.batch-modal__grid--cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 900px) {
+  .batch-modal__grid--cols-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .batch-modal__grid--cols-3 { grid-template-columns: 1fr; }
+}
+
+/* --- Cards de Input --- */
+.batch-modal__field-card {
+  background-color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.batch-modal__label { 
+  font-size: 0.85rem; 
+  font-weight: bold; 
+  color: #4b5563; 
+  margin: 0; 
+}
+
+.batch-modal__input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #cbd5e1;
+  outline: none;
+  background-color: #f8fafc;
+  color: #1e293b;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.batch-modal__input:focus {
+  border-color: #3b82f6;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.batch-modal__input::placeholder { 
+  color: #94a3b8; 
+  font-style: italic; 
+}
+
+.batch-modal__input--dropdown { 
+  cursor: pointer; 
+}
+
+/* --- Rodapé e Botões --- */
+.batch-modal__footer {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  gap: 1rem;
+  border-top: 1px solid #e5e7eb; 
+  background-color: white; 
+  padding: 1rem 1.5rem;
+}
+
+.batch-modal__btn {
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  border-radius: 0.375rem; 
+  cursor: pointer;
+  transition: all 0.2s ease; 
+  height: 44px;
+}
+
+.batch-modal__btn--clear {
+  gap: 0.5rem;
+  padding: 0 1.25rem; 
+  border: 1px solid #fca5a5;
+  background-color: #fee2e2; 
+  color: #ef4444; 
+  font-weight: bold; 
+  white-space: nowrap; 
+  flex-shrink: 0;
+}
+
+.batch-modal__btn--clear:hover { 
+  background-color: #fecaca; 
+  color: #dc2626; 
+}
+
+.batch-modal__btn--submit {
+  background-color: #10b981; 
+  color: white; 
+  border: none; 
+  padding: 0 1.5rem; 
+  font-weight: bold; 
+  font-size: 1rem; 
+  flex: 1;
+}
+
+.batch-modal__btn--submit:hover { 
+  background-color: #059669; 
+}
+

@@ -1,0 +1,199 @@
+/* src/componentes/FiltroFat/FiltroFat.css */
+
+/* ====================================================
+   BLOCK: Filtro Modal
+==================================================== */
+.filtro-modal__overlay {
+  z-index: 9999;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filtro-modal__content {
+  max-width: 850px;
+  width: 100%;
+  background-color: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Cabeçalho --- */
+.filtro-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filtro-modal__subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: block;
+}
+
+.filtro-modal__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #047857;
+}
+
+.filtro-modal__close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filtro-modal__close-btn:hover {
+  background-color: #f3f4f6;
+}
+
+/* --- Corpo --- */
+.filtro-modal__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.filtro-modal__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ====================================================
+   BLOCK: Filtro Block (Cards de cada filtro)
+==================================================== */
+.filtro-block {
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.filtro-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.filtro-block__label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #4b5563;
+  margin: 0;
+}
+
+/* Modificador para label que ocupa a linha toda */
+.filtro-block__label--block {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+/* --- Botões de Modo (Específico / Intervalo) --- */
+.filtro-block__btn-group {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.filtro-block__btn-mode {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  border-radius: 0.25rem;
+  border: 1px solid #d1d5db;
+  background-color: white;
+  color: #6b7280;
+  cursor: pointer;
+  font-weight: normal;
+}
+
+.filtro-block__btn-mode--active {
+  background-color: #ecfdf5;
+  border-color: #10b981;
+  color: #047857;
+  font-weight: bold;
+}
+
+/* --- Range e Inputs (Intervalo) --- */
+.filtro-block__range-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.filtro-block__range-item {
+  flex: 1;
+}
+
+.filtro-block__range-sep {
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.filtro-block__input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  outline: none;
+  background-color: #ffffff;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+/* --- Rodapé --- */
+.filtro-modal__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  padding: 1rem 1.5rem;
+}
+
+.filtro-modal__btn-clear {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid #fca5a5;
+  background-color: #fee2e2;
+  color: #ef4444;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.filtro-modal__btn-submit {
+  background-color: #059669;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: bold;
+  cursor: pointer;
+}

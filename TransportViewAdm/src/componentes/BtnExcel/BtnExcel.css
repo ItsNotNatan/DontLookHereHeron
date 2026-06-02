@@ -1,0 +1,33 @@
+/* src/componentes/BtnExcel/BtnExcel.css */
+
+/* BLOCO: O botão principal */
+.btn-excel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #10b981; /* Verde bonito do Tailwind */
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s ease, transform 0.1s ease; /* Suaviza a animação de hover */
+}
+
+/* Pseudo-classe para interatividade (quando o rato passa por cima) */
+.btn-excel:hover {
+  background-color: #059669; /* Um verde um pouco mais escuro */
+}
+
+/* Pseudo-classe para quando o botão é clicado */
+.btn-excel:active {
+  transform: scale(0.98); /* Dá um pequeno efeito de "apertado" */
+}
+
+/* ELEMENTO: O ícone dentro do botão */
+.btn-excel__icon {
+  /* O SVG já herda a cor do texto por causa do 'currentColor', 
+     mas podes adicionar margens ou animações aqui no futuro se precisares */
+}

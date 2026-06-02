@@ -1,0 +1,21 @@
+/* Limpando o CSS padrão do Vite para permitir telas Full-Screen */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* A própria Home vai gerenciar a rolagem (scroll) interna */
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  text-align: left; /* Tira aquele text-align: center que bagunça os textos */
+}
