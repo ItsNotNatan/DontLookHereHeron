@@ -83,7 +83,7 @@ export const AlertProvider = ({ children }) => {
                 className={`alert-btn ${alertConfig.type === 'error' ? 'alert-btn--error' : 'alert-btn--confirm'}`} 
                 onClick={alertConfig.onConfirm}
               >
-                {alertConfig.isConfirm ? alertConfig.confirmText : 'Entendi'}
+                {alertConfig.isConfirm ? alertConfig.confirmText : 'OK'}
               </button>
             </div>
 

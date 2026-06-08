@@ -15,6 +15,9 @@ export default function RequestForm() {
 
   const [carregando, setCarregando] = useState(false);
   const [dataHoje, setDataHoje] = useState('');
+  
+  // 🟢 Variável para travar o calendário de datas passadas (formato YYYY-MM-DD)
+  const [dataMinima, setDataMinima] = useState('');
 
   const [enderecosFixos, setEnderecosFixos] = useState([]);
   const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(null);
@@ -40,12 +43,20 @@ export default function RequestForm() {
   const [wbsSelecionada, setWbsSelecionada] = useState('');
   const [opcoesWbs, setOpcoesWbs] = useState([]);
 
-  // 🟢 ESTADO PARA A MÁSCARA DE DINHEIRO
+  // ESTADO PARA A MÁSCARA DE DINHEIRO
   const [valorNfMask, setValorNfMask] = useState('');
 
   useEffect(() => {
     const hoje = new Date();
+    // Exibição amigável para o cabeçalho (DD/MM/AAAA)
     setDataHoje(hoje.toLocaleDateString('pt-BR'));
+    
+    // Configura a data mínima no formato universal para o <input type="date">
+    // Subtrair o fuso horário (timezoneOffset) garante que a data não pule um dia para trás
+    const timezoneOffset = hoje.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(hoje.getTime() - timezoneOffset)).toISOString().split('T')[0];
+    setDataMinima(localISOTime);
+
     carregarProjetos();
     carregarEnderecos();
   }, []);
@@ -117,13 +128,6 @@ export default function RequestForm() {
     }
   };
 
-  const aplicarMascaraData = (valor) => {
-    let v = valor.replace(/\D/g, '');
-    if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
-    if (v.length > 5) v = v.slice(0, 5) + '/' + v.slice(5, 9);
-    return v;
-  };
-
   const aplicarMascaraTelefone = (valor) => {
     let v = valor.replace(/\D/g, '');
     if (v.length <= 10) {
@@ -169,7 +173,6 @@ export default function RequestForm() {
     }
   };
 
-  // 🟢 LÓGICA DE VALIDAÇÃO OBRIGATÓRIA DA CARGA
   const handleAddCarga = () => {
     if (!novaCarga.nome || !novaCarga.quantidade || !novaCarga.peso || !novaCarga.comprimento || !novaCarga.largura || !novaCarga.altura) {
       showAlert("Campos Obrigatórios", "Por favor, preencha todos os campos da carga (Nome, Quantidade, Peso e Dimensões completas) antes de adicionar.", "warning");
@@ -208,6 +211,17 @@ export default function RequestForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Impede o envio se as datas digitadas manualmente forem do passado
+    if (dataColeta && dataColeta < dataMinima) {
+      showAlert("Data Inválida", "A Data de Coleta não pode ser anterior ao dia de hoje.", "warning");
+      return;
+    }
+
+    if (dataEntrega && dataEntrega < dataMinima) {
+      showAlert("Data Inválida", "A Data de Entrega não pode ser anterior ao dia de hoje.", "warning");
+      return;
+    }
+
     if (cargas.length === 0) {
       showAlert("Atenção", "Você precisa adicionar pelo menos uma carga na lista antes de salvar a solicitação.", "warning");
       return;
@@ -223,7 +237,16 @@ export default function RequestForm() {
     const formData = new FormData(e.target);
     const dados = Object.fromEntries(formData.entries());
 
-    dados.dataSolicitacao = dataHoje;
+    dados.dataSolicitacao = dataHoje; // Já está em DD/MM/AAAA
+    
+    // 🟢 MÁGICA AQUI: Converte as datas (AAAA-MM-DD) enviadas pelo calendário para DD/MM/AAAA antes de mandar para o banco
+    if (dados.dataColeta) {
+      dados.dataColeta = dados.dataColeta.split('-').reverse().join('/');
+    }
+    if (dados.dataEntrega) {
+      dados.dataEntrega = dados.dataEntrega.split('-').reverse().join('/');
+    }
+
     dados.listaCargas = JSON.stringify(cargas);
     dados.pesoTotal = cargas.reduce((acc, curr) => acc + (parseFloat(curr.peso || 0) * parseInt(curr.quantidade || 1)), 0);
     dados.quantidadeVolumes = cargas.reduce((acc, curr) => acc + parseInt(curr.quantidade || 1), 0);
@@ -307,6 +330,8 @@ export default function RequestForm() {
           <div className="badge-info"><i className="fa-solid fa-clock"></i> Preencha os dados</div>
         </div>
 
+        
+
         <form onSubmit={handleSubmit}>
 
           <h4 className="section-title"><i className="fa-solid fa-user-tag"></i> Dados do Solicitante</h4>
@@ -327,8 +352,8 @@ export default function RequestForm() {
               <label>Tipo de Operação *</label>
               <select name="tipo_operacao" required className="input-control" defaultValue="">
                 <option value="" disabled>Selecione...</option>
-                <option value="Nacional">NACIONAL</option>
-                <option value="Importação">IMPORTAÇÃO</option>
+                                <option value="Importação">NACIONAL</option>
+                <option value="Nacional">NACIONALIZADO</option>
               </select>
             </div>
           </div>
@@ -388,7 +413,18 @@ export default function RequestForm() {
               </div>
               <div className="input-group">
                 <label>Data Desejada Coleta *</label>
-                <input type="text" name="dataColeta" value={dataColeta} onChange={(e) => setDataColeta(aplicarMascaraData(e.target.value))} placeholder="DD/MM/AAAA" maxLength="10" required className="input-control" />
+                <input 
+                  type="date" 
+                  name="dataColeta" 
+                  value={dataColeta} 
+                  onChange={(e) => setDataColeta(e.target.value)} 
+                  min={dataMinima} 
+                  required 
+                  className="input-control" 
+                  onKeyDown={(e) => e.preventDefault()}
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
             </div>
 
@@ -459,7 +495,18 @@ export default function RequestForm() {
               </div>
               <div className="input-group">
                 <label>Data Desejada Entrega *</label>
-                <input type="text" name="dataEntrega" value={dataEntrega} onChange={(e) => setDataEntrega(aplicarMascaraData(e.target.value))} placeholder="DD/MM/AAAA" maxLength="10" required className="input-control" />
+                <input 
+                  type="date" 
+                  name="dataEntrega" 
+                  value={dataEntrega} 
+                  onChange={(e) => setDataEntrega(e.target.value)} 
+                  min={dataMinima} 
+                  required 
+                  className="input-control" 
+                  onKeyDown={(e) => e.preventDefault()}
+                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
             </div>
             

@@ -258,7 +258,7 @@ export const buildVehicle = (vehicleConfig, sceneState, THREE) => {
   }
 
   if (vehicleType === 'sider') {
-    const matCurtain = new THREE.MeshPhongMaterial({ color: 0x1133aa, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false }); // 👈 Add depthWrite: false
+    const matCurtain = new THREE.MeshPhongMaterial({ color: 0x1133aa, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false });
     createMesh(createBox(length + 0.04, 0.065, 0.065), matChrome, 0, groundClearance + height + 0.065, width / 2 + 0.03);
     createMesh(createBox(length + 0.04, 0.065, 0.065), matChrome, 0, groundClearance + height + 0.065, -width / 2 - 0.03);
     createMesh(createBox(length + 0.04, 0.04, 0.04), matMetal, 0, groundClearance, width / 2 + 0.03);
@@ -298,9 +298,10 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
   const placeOnDeck = (deckUnits, bayLength, bayWidth, bayHeight, floorY) => {
     let currentX = -bayLength / 2 + GAP;
     let currentZ = -bayWidth / 2 + GAP;
-    let currentY = floorY + GAP;
     let maxRowLength = 0;
-    let currentLayerHeight = 0;
+
+    // 🟢 MUDANÇA AQUI: Mantemos a altura da caixa SEMPRE colada ao chão.
+    let currentY = floorY + GAP;
 
     deckUnits.forEach(cargoUnit => {
       const cLength = cargoUnit.length;
@@ -314,17 +315,11 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
         maxRowLength = 0; 
       }
       
-      // Quebra de linha X (comprimento) -> sobe uma camada em Y
-      if (currentX + cLength > bayLength / 2 - GAP) { 
-        currentY += currentLayerHeight + GAP; 
-        currentX = -bayLength / 2 + GAP; 
-        currentZ = -bayWidth / 2 + GAP; 
-        maxRowLength = 0; 
-        currentLayerHeight = 0; 
-      }
+      // 🟢 MUDANÇA AQUI: Removemos a lógica que subia o eixo Y.
+      // Se a caixa passar do comprimento X, ela simplesmente continua para fora do caminhão.
 
       let cargoX = currentX + cLength / 2;
-      let cargoY = currentY + cHeight / 2;
+      let cargoY = currentY + cHeight / 2; // O Y da base + metade da altura
       let cargoZ = currentZ + cWidth / 2;
       
       const positionKey = cargoUnit.id + '_' + cargoUnit.unitIdx;
@@ -356,7 +351,7 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
       cargoMesh.position.set(cargoX, cargoY, cargoZ);
       cargoMesh.castShadow = true; 
       cargoMesh.receiveShadow = true;
-      cargoMesh.frustumCulled = false; // 👈 1. ADICIONAR AQUI
+      cargoMesh.frustumCulled = false; 
       cargoMesh.userData = { movable: true, cid: cargoUnit.id, label: cargoUnit.label, unitIdx: cargoUnit.unitIdx, posKey: positionKey, inBay: isInsideBay };
       sceneState.cargoGrp.add(cargoMesh);
 
@@ -365,7 +360,7 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
       const edgeMaterial = new THREE.LineBasicMaterial({ color: cargoColor, transparent: true, opacity: isInsideBay ? 0.95 : 0.35 });
       const edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
       edgeLines.position.copy(cargoMesh.position);
-      edgeLines.frustumCulled = false; // 👈 2. ADICIONAR AQUI
+      edgeLines.frustumCulled = false;
       edgeLines.userData = { linkedTo: cargoMesh.uuid };
       sceneState.cargoGrp.add(edgeLines);
 
@@ -377,7 +372,7 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
       const topFace = new THREE.Mesh(topGeometry, topMaterial);
       topFace.rotation.x = -Math.PI / 2;
       topFace.position.set(cargoX, cargoY + cHeight / 2 + 0.003, cargoZ);
-      topFace.frustumCulled = false; // 👈 3. ADICIONAR AQUI
+      topFace.frustumCulled = false; 
       topFace.userData = { topOf: cargoMesh.uuid };
       sceneState.cargoGrp.add(topFace);
 
@@ -388,11 +383,10 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
       const frontMaterial = new THREE.MeshBasicMaterial({ color: frontColor, transparent: true, opacity: isInsideBay ? 0.12 : 0.04, side: THREE.DoubleSide });
       const frontFace = new THREE.Mesh(frontGeometry, frontMaterial);
       frontFace.position.set(cargoX, cargoY, cargoZ + cWidth / 2 + 0.003);
-      frontFace.frustumCulled = false; // 👈 4. ADICIONAR AQUI
+      frontFace.frustumCulled = false; 
       sceneState.cargoGrp.add(frontFace);
 
       maxRowLength = Math.max(maxRowLength, cLength);
-      currentLayerHeight = Math.max(currentLayerHeight, cHeight);
       currentZ += cWidth + GAP;
     });
   };
@@ -401,6 +395,7 @@ export const placeCargos = (vehicleConfig, cargosList, sceneState, selectedCargo
   if (vehicleConfig.type === 'ddeck') {
     const deckHeight = vehicleConfig.H * 0.475 - 0.08;
     const halfUnits = Math.ceil(cargoUnits.length / 2);
+    // Para caminhões de dois andares, a lógica respeita o facto de que as caixas não se empilham por andar!
     placeOnDeck(cargoUnits.slice(0, halfUnits), vehicleConfig.L, vehicleConfig.W, deckHeight, groundClearance);
     placeOnDeck(cargoUnits.slice(halfUnits), vehicleConfig.L, vehicleConfig.W, deckHeight, groundClearance + vehicleConfig.H * 0.475 + 0.08);
   } else {
