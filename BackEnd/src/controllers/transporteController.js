@@ -8,7 +8,7 @@ const criarTransporte = async (req, res) => {
   try {
     // 1. INSERE O LOCAL DE COLETA (Na tabela de Histórico)
     const { data: localColeta, error: erroColeta } = await supabase
-      .from('enderecos_pedido') // 🌟 MUDOU AQUI
+      .from('enderecos_pedido') 
       .insert([{ 
         nome_local: dados.empresaColeta, 
         municipio: dados.cidadeColeta, 
@@ -17,7 +17,6 @@ const criarTransporte = async (req, res) => {
         logradouro: dados.logradouroColeta || null,
         numero: dados.numeroColeta || null,
         bairro: dados.bairroColeta || null
-        // 🌟 REMOVIDO: O campo salvo_pelo_admin já não existe nesta tabela
       }])
       .select('id');
       
@@ -25,7 +24,7 @@ const criarTransporte = async (req, res) => {
 
     // 2. INSERE O LOCAL DE ENTREGA (Na tabela de Histórico)
     const { data: localEntrega, error: erroEntrega } = await supabase
-      .from('enderecos_pedido') // 🌟 MUDOU AQUI
+      .from('enderecos_pedido') 
       .insert([{ 
         nome_local: dados.empresaEntrega || 'Destinatário', 
         municipio: dados.cidadeEntrega, 
@@ -47,6 +46,7 @@ const criarTransporte = async (req, res) => {
         tipo_operacao: dados.tipo_operacao, 
         pedido_compra: dados.pedidoCompra, 
         nf: dados.nf || null,
+        valor_nf: dados.valor_nf ? parseFloat(dados.valor_nf) : null,
         wbs: dados.wbs,                    
         
         contato_coleta: dados.nomeContatoColeta || null,
@@ -112,54 +112,48 @@ const atualizarTransporteAdmin = async (req, res) => {
 
   try {
     const num = (val) => (val === "" || val === undefined || val === null ? null : parseFloat(val));
-    const str = (val) => (val === "" || val === undefined ? null : val);
+    const str = (val) => (val === "" || val === undefined || val === null ? null : String(val));
+
+    // 1. ATUALIZAR TABELA PRINCIPAL (Somente o que for enviado)
+    const updateAtm = {};
+    if (d.status !== undefined) updateAtm.status = str(d.status);
+    if (d.tipo_operacao !== undefined) updateAtm.tipo_operacao = str(d.tipo_operacao);
+    if (d.solicitacao !== undefined) updateAtm.solicitacao = str(d.solicitacao);
+    if (d.data_solicitacao !== undefined) updateAtm.data_solicitacao = d.data_solicitacao ? formatarProBanco(d.data_solicitacao) : null;
+    if (d.pedido_compra !== undefined) updateAtm.pedido_compra = str(d.pedido_compra);
+    if (d.numero_reserva !== undefined) updateAtm.numero_reserva = str(d.numero_reserva);
+    if (d.wbs !== undefined) updateAtm.wbs = str(d.wbs);
+    if (d.nf !== undefined) updateAtm.nf = str(d.nf);
+    if (d.valor_nf !== undefined) updateAtm.valor_nf = num(d.valor_nf);
+    if (d.valor_realizado !== undefined) updateAtm.valor_realizado = num(d.valor_realizado);
+    if (d.cotacao_bid !== undefined) updateAtm.cotacao_bid = str(d.cotacao_bid);
+    if (d.veiculo !== undefined) updateAtm.veiculo = str(d.veiculo);
+    if (d.tipo_frete !== undefined) updateAtm.tipo_frete = str(d.tipo_frete);
+    if (d.peso !== undefined) updateAtm.peso = num(d.peso);
+    if (d.volume !== undefined) updateAtm.volume = num(d.volume);
+    if (d.medidas !== undefined) updateAtm.medidas = str(d.medidas);
+    if (d.lista_cargas !== undefined) updateAtm.lista_cargas = d.lista_cargas ? JSON.parse(d.lista_cargas) : null;
+    if (d.comprovantes !== undefined) updateAtm.comprovantes = d.comprovantes ? JSON.parse(d.comprovantes) : null;
+    if (d.link_rastreio !== undefined) updateAtm.link_rastreio = str(d.link_rastreio);
+    if (d.motivo !== undefined) updateAtm.motivo = str(d.motivo);
+    if (d.observacoes !== undefined) updateAtm.observacoes = str(d.observacoes);
+    if (d.data_coleta !== undefined) updateAtm.data_coleta = d.data_coleta ? formatarProBanco(d.data_coleta) : null;
+    if (d.contato_coleta !== undefined) updateAtm.contato_coleta = str(d.contato_coleta);
+    if (d.telefone_coleta !== undefined) updateAtm.telefone_coleta = str(d.telefone_coleta);
+    if (d.data_entrega !== undefined) updateAtm.data_entrega = d.data_entrega ? formatarProBanco(d.data_entrega) : null;
+    if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
+    if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
 
     const { data: pedido, error: erroPedido } = await supabase
       .from('pedidos_atm')
-      .update({
-        status: str(d.status),
-        tipo_operacao: str(d.tipo_operacao),
-        solicitacao: str(d.solicitacao),
-        data_solicitacao: d.data_solicitacao ? formatarProBanco(d.data_solicitacao) : null,
-        pedido_compra: str(d.pedido_compra),
-        numero_reserva: str(d.numero_reserva),
-        wbs: str(d.wbs),
-        
-        nf: str(d.nf),
-        valor_nf: num(d.valor_nf),
-        cotacao_bid: str(d.cotacao_bid),
-        
-        veiculo: str(d.veiculo),
-        tipo_frete: str(d.tipo_frete),
-        peso: num(d.peso),
-        volume: num(d.volume),
-        medidas: str(d.medidas),
-        lista_cargas: d.lista_cargas ? JSON.parse(d.lista_cargas) : null,
-        
-        // 🟢 SALVANDO OS ANEXOS NO BANCO:
-        comprovantes: d.comprovantes ? JSON.parse(d.comprovantes) : null,
-        
-        link_rastreio: str(d.link_rastreio),
-        motivo: str(d.motivo),
-        observacoes: str(d.observacoes),
-        
-        data_coleta: d.data_coleta ? formatarProBanco(d.data_coleta) : null,
-        contato_coleta: str(d.contato_coleta),
-        telefone_coleta: str(d.telefone_coleta),
-        
-        data_entrega: d.data_entrega ? formatarProBanco(d.data_entrega) : null,
-        contato_entrega: str(d.contato_entrega),
-        telefone_entrega: str(d.telefone_entrega)
-      })
+      .update(updateAtm)
       .eq('id', id)
       .select('id_origem, id_destino')
       .single();
 
-    // ... (o restante da função continua igual)
-
     if (erroPedido) throw new Error('Erro Pedido: ' + erroPedido.message);
 
-    // 🌟 MUDOU AQUI: Atualiza o local de origem no Histórico
+    // 2. ATUALIZAR ENDEREÇOS
     if (pedido.id_origem && d.origem) {
       await supabase.from('enderecos_pedido').update({
         logradouro: str(d.origem.logradouro),
@@ -169,7 +163,6 @@ const atualizarTransporteAdmin = async (req, res) => {
       }).eq('id', pedido.id_origem);
     }
 
-    // 🌟 MUDOU AQUI: Atualiza o local de destino no Histórico
     if (pedido.id_destino && d.destino) {
       await supabase.from('enderecos_pedido').update({
         logradouro: str(d.destino.logradouro),
@@ -179,23 +172,34 @@ const atualizarTransporteAdmin = async (req, res) => {
       }).eq('id', pedido.id_destino);
     }
 
-    // Atualiza a tabela de faturamento SAP/FI
-    const { error: erroFat } = await supabase
-      .from('faturamento_atm')
-      .upsert({
-        id_atm: id,
-        tipo_documento: str(d.tipo_documento),
-        data_mapeamento: d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null,
-        fatura_cte: str(d.fatura_cte),
-        valor: num(d.valor), 
-        data_emissao: d.data_emissao ? formatarProBanco(d.data_emissao) : null,
-        vencimento: d.vencimento ? formatarProBanco(d.vencimento) : null,
-        elemento_pep_cc_wbs: str(d.wbs),
-        validacao_pep: str(d.validacao_pep),
-        registrado_sap: str(d.registrado_sap)
-      }, { onConflict: 'id_atm' });
+    // 3. 🟢 ATUALIZAR FATURAMENTO COM O NOVO NOME (valor_previsto)
+    const fatData = {};
+    if (d.tipo_documento !== undefined) fatData.tipo_documento = str(d.tipo_documento);
+    if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null;
+    if (d.fatura_cte !== undefined) fatData.fatura_cte = str(d.fatura_cte);
+    
+    if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto); // 🟢 O NOME NOVO
+    
+    if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : null;
+    if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : null;
+    if (d.wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.wbs);
+    if (d.validacao_pep !== undefined) fatData.validacao_pep = str(d.validacao_pep);
+    if (d.registrado_sap !== undefined) fatData.registrado_sap = str(d.registrado_sap);
 
-    if (erroFat) throw new Error('Erro Financeiro: ' + erroFat.message);
+    if (Object.keys(fatData).length > 0) {
+      // Procura para ver se o faturamento já existe
+      const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).single();
+      
+      if (existingFat) {
+        // Se já existe, atualiza
+        const { error: erroFat } = await supabase.from('faturamento_atm').update(fatData).eq('id_atm', id);
+        if (erroFat) throw new Error('Erro Financeiro Update: ' + erroFat.message);
+      } else {
+        // Se não existe, cria
+        const { error: erroFat } = await supabase.from('faturamento_atm').insert([{ ...fatData, id_atm: id }]);
+        if (erroFat) throw new Error('Erro Financeiro Insert: ' + erroFat.message);
+      }
+    }
 
     res.json({ mensagem: '✅ Pedido, Endereços e Faturamento atualizados!' });
     
@@ -232,16 +236,15 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.wbs !== undefined) updateAtm.wbs = str(dados.wbs);
     if (dados.nf !== undefined) updateAtm.nf = str(dados.nf);
     if (dados.valor_nf !== undefined) updateAtm.valor_nf = num(dados.valor_nf);
+    if (dados.valor_realizado !== undefined) updateAtm.valor_realizado = num(dados.valor_realizado);
     if (dados.cotacao_bid !== undefined) updateAtm.cotacao_bid = str(dados.cotacao_bid);
     
-    // Carga
     if (dados.veiculo !== undefined) updateAtm.veiculo = str(dados.veiculo);
     if (dados.tipo_frete !== undefined) updateAtm.tipo_frete = str(dados.tipo_frete);
     if (dados.peso !== undefined) updateAtm.peso = num(dados.peso);
     if (dados.volume !== undefined) updateAtm.volume = num(dados.volume);
     if (dados.medidas !== undefined) updateAtm.medidas = str(dados.medidas);
     
-    // Logística
     if (dados.link_rastreio !== undefined) updateAtm.link_rastreio = str(dados.link_rastreio);
     if (dados.observacoes !== undefined) updateAtm.observacoes = str(dados.observacoes);
     if (dados.data_coleta !== undefined) updateAtm.data_coleta = formatarProBanco(dados.data_coleta);
@@ -258,34 +261,34 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = formatarProBanco(dados.data_mapeamento);
     if (dados.data_emissao !== undefined) updateFat.data_emissao = formatarProBanco(dados.data_emissao);
     if (dados.vencimento !== undefined) updateFat.vencimento = formatarProBanco(dados.vencimento);
-    if (dados.valor !== undefined) updateFat.valor = num(dados.valor);
+    
+    if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); // 🟢 O NOME NOVO NO LOTE
+    
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
-    if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs); // Espelha o WBS no financeiro
+    if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs); 
 
     // 3. EXECUTA A ATUALIZAÇÃO PARA CADA ID SELECIONADO
     const promessas = ids.map(async (id) => {
-      // Salva dados principais
       if (Object.keys(updateAtm).length > 0) {
         await supabase.from('pedidos_atm').update(updateAtm).eq('id', id);
       }
 
-      // Salva dados financeiros (Upsert cria se não existir)
       if (Object.keys(updateFat).length > 0) {
-        const fatParaSalvar = { ...updateFat, id_atm: id };
-        await supabase.from('faturamento_atm').upsert(fatParaSalvar, { onConflict: 'id_atm' });
+        const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).single();
+        if (existingFat) {
+          await supabase.from('faturamento_atm').update(updateFat).eq('id_atm', id);
+        } else {
+          await supabase.from('faturamento_atm').insert([{ ...updateFat, id_atm: id }]);
+        }
       }
 
-      // Salva Histórico de Endereço (Origem / Destino)
       if (dados.origem !== undefined || dados.destino !== undefined) {
         const { data: atm } = await supabase.from('pedidos_atm').select('id_origem, id_destino').eq('id', id).single();
-        
         if (atm) {
-          // Atualiza o NOME do local de origem
           if (dados.origem !== undefined && atm.id_origem) {
             await supabase.from('enderecos_pedido').update({ nome_local: str(dados.origem) }).eq('id', atm.id_origem);
           }
-          // Atualiza o NOME do local de destino
           if (dados.destino !== undefined && atm.id_destino) {
             await supabase.from('enderecos_pedido').update({ nome_local: str(dados.destino) }).eq('id', atm.id_destino);
           }

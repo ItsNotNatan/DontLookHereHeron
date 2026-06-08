@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "atmlog-integracao-494713",
+  "private_key_id": "1db97a6af142b4dc0ed2185d71dbde68107e9ed6",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDGuJh6CSRqZ+8v\noxhlVb4VPVJKKhfbcemhybDzbtIxpZeYfnLflD92qLMsLu6FpyiGbPFN5AxYecx/\nr7U2fRBjnWIZ03p/OpsZrnnQTsqQEgoltL9JNr4n6+dCC/y5zKWpj7l5hhl3A7v1\nB3fX5S2xrpBRFErGDKYX1ksxc1Uxm53eIVwVWPJXLCwYaWhvJsJqctwMFcMB/ak1\nVnpTIwNkdzm1fxeuMCE+MTUVwxBcdfkM6yBryLn7Mrq2U7VcgvLP9JC0XgreeWV9\nEbiZn5caC7yTXmrwp2VgjxKdFcm1TNUI/2ieE/U8qahrtUF0zuTyJrwE+4dIRPr9\nu5aS7CUTAgMBAAECggEADIrFcnWJDlj9kCPUXAtaCJlXsowCK6mYK/8AtsSItw7Z\nlaU5cKIFki9aK51rFK8Bqd/oKCXbn52EVvS+IUoqBb3lQ9yeL4SBgIPyEHMnA4ox\niMKyv5cZNlTQ9WqwEM8sdecdai2Y0tmlL1uOAhrNVDJAmoig1YVVc4Cx1NVC8ozG\nxfF3UfreLLXzIlq7J51LjY0Am9CY3dbgE9O0QRDfQxBtgjHFpbW9Ek5cMOa7msYW\nTlmNTYthwVt4DDF6H7xUNM7/LRnlTVzmvA1d90wfla2hLgbIPuv7kdUM5Ey2mGMs\ndwNQ1BYXtmeQqcTArJvbUN3ShYSArxalJT5YDi5FMQKBgQDx7b8mTTp9ueN2wqSQ\nZmO2YcG+0qzuCksB77rQaZWIhZDfg/tl8CuVUR/KtPexQgCmNwQ/pMJ0e3ly2Diu\nofe5qybkZp1jUOExFt7gDw3qOhqzWcohY0s/u/EXiU+Ih08LWwgboTueZaVhEWCx\niIR+h8qK64AhfuDjM7ltgtR3UQKBgQDSR3/CVvOvd8n1d18pmP71prvDDdmnfnNf\n/FLxYTk9AiKRXJqr//hBlGnO/AJxGdJCrGs8KOmPa0+CM8ejrwKghjasFL8WpNjI\nL4Fg2J7aXuwsiuzOPXzej2sOKU5XSxUDJW9/LmM3dhjBGL/kGnpey5UZ8ybBWuUj\nzx13gIdFIwKBgHu2cL38VgG+0fOD+zUgNrMn8DRNdULQnqSh220B4QaMDpZN3nu1\nQgQ8FL7KpbLOJpjYn2KQNSPtlCBHM00R5CTcwamgU7FaxZ0dreDzsdDp34eBTdye\n8vbne5TmkXYmgyQya8X9QAhywAwQH9sJDX/KnqdFYCNAx21HoPXAJjfRAoGBAJm+\nlyXTh3Z64hnsPpLef0PCtbPGs6XoKZk7lrVPvZbisb2QdLJfg/cG+VnSHkLtezMu\nd3VUAHjRIB/1lfkSo5wUpXKp9JEs1CeBvFm/6F2HW6yxorSkdmEPgVmoT9Q5XFKh\nk2Ts2LQbT7wXSW4RAfm/ZfPEOUjUGYdWDphqS/z7AoGBAOJfXeKWdqis1WIb4gjN\nE0yx9dF82z33z27Y21iQcXuqDvqk8j3u1IQfEtpFgE9NNb5i8h45xO2P8eLBv9fN\n7fHvPIjxUJLLfXoVBLY//7F7zAyT2XHg/3V8qq80kAu3H5Zk2yhvUdjscQCmenwU\nlIlrJx5519WSmUrL3tR0lDZP\n-----END PRIVATE KEY-----\n",
+  "client_email": "robo-atmlog@atmlog-integracao-494713.iam.gserviceaccount.com",
+  "client_id": "108257295135709000052",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/robo-atmlog%40atmlog-integracao-494713.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
