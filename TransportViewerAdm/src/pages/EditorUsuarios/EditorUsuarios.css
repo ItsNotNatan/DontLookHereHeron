@@ -1,0 +1,155 @@
+/* src/pages/EditorUsuarios/EditorUsuarios.css */
+
+.user-editor-page {
+  padding: 20px;
+  height: 100%;
+}
+
+.user-layout-grid {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 20px;
+  height: calc(100vh - 120px);
+  
+  /* 🟢 A MÁGICA PARA ESTICAR A TELA: */
+  max-width: 100%; 
+  margin: 0 auto;
+}
+
+.user-list-panel, .user-form-panel {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.user-panel-header {
+  padding: 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-panel-header h3 { 
+  margin: 0; 
+  font-size: 1.15rem; 
+  color: #1e293b; 
+  font-weight: 800; 
+}
+
+.user-btn-new {
+  background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; transition: background 0.2s;
+}
+.user-btn-new:hover { background: #1d4ed8; }
+
+.user-search-box {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background-color: #f8fafc;
+}
+
+.user-input-search {
+  width: 100%; padding: 10px 10px 10px 35px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.9rem; color: #1f2937; background-color: #ffffff; transition: border-color 0.2s;
+}
+.user-input-search:focus { outline: none; border-color: #2563eb; }
+
+/* Proteção do check box de 'Selecionar todos' */
+.user-select-all-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.user-select-all-row input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.user-select-all-row label {
+  font-size: 0.85rem !important;
+  color: #4b5563 !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  margin: 0 !important;
+}
+
+.user-btn-del-mass {
+  background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+}
+.user-btn-del-mass:hover { background: #fee2e2; border-color: #ef4444; }
+
+.user-list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  background-color: #f8fafc;
+}
+
+.user-msg-status { text-align: center; color: #64748b; font-size: 0.9rem; margin-top: 2rem; }
+
+.user-card-item {
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  background-color: white;
+}
+
+.user-card-item:hover { border-color: #bfdbfe; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.user-card-item.active { border-color: #2563eb; background: #eff6ff !important; }
+
+.user-card-info { flex-grow: 1; color: #1f2937; margin-left: 10px; }
+.user-card-info strong { display: block; font-size: 0.95rem; color: #111827; }
+.user-card-info span { font-size: 0.8rem; color: #4b5563; display: block; }
+.user-badge-perfil { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; margin-top: 6px; background: #e0e7ff; color: #1e40af; border: 1px solid #bfdbfe;}
+
+.user-btn-del-small {
+  background: none; border: none; color: #94a3b8; cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s;
+}
+.user-btn-del-small:hover { color: #ef4444; background: #fee2e2; }
+
+/* 🟢 EMPTY STATE DO LADO DIREITO */
+.user-empty-state {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; color: #64748b; text-align: center; padding: 2rem;
+}
+.user-empty-state h3 { margin: 15px 0 10px; color: #334155; font-size: 1.25rem; }
+.user-empty-state p { max-width: 400px; font-size: 0.95rem; line-height: 1.5; }
+
+.user-form-content { padding: 30px; overflow-y: auto; flex: 1; }
+
+.user-form-group { margin-bottom: 20px; }
+.user-form-group label { display: block; font-size: 0.85rem; font-weight: bold; color: #475569; margin-bottom: 8px; text-transform: none; letter-spacing: normal; }
+.user-form-group input, .user-form-group select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; outline: none; background: white; color: #1f2937; transition: border-color 0.2s; }
+.user-form-group input:focus, .user-form-group select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+.user-form-actions {
+  display: flex; justify-content: flex-end; gap: 15px;
+  border-top: 1px solid #e5e7eb; padding-top: 25px; margin-top: 30px;
+}
+
+.user-btn-save-primary { background: #2563eb; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; font-size: 0.95rem; }
+.user-btn-save-primary:hover { background: #1d4ed8; }
+.user-btn-cancel { background: white; border: 1px solid #cbd5e1; color: #4b5563; padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-size: 0.95rem; }
+.user-btn-cancel:hover { background: #f1f5f9; }
+
+@media (max-width: 900px) {
+  .user-layout-grid { grid-template-columns: 1fr; height: auto; }
+  .user-list-panel { height: 500px; }
+}
