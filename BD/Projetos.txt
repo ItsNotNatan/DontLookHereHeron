@@ -1,0 +1,27 @@
+-- =========================================================================
+-- SCRIPT DE INSERÇÃO DE PROJETOS/WBS - ATMLOG
+-- =========================================================================
+
+INSERT INTO projetos (wbs) VALUES
+    ('STELLANTIS - GOI - J3U - BRBCBBB44'),
+    ('COMAU - BRASIL - ROBÓTICA - BRBRRCY21'),
+    ('COMAU - BRASIL - LOGÍSTICA - 08Z22002'),
+    ('COMAU - BRASIL - MFG - 08A22001'),
+    ('COMAU - BRASIL - T.I  - 09S19001'),
+    ('COMAU - BRASIL - RH - 09P19001'),
+    ('STELLANTIS - SP - MAIN LINE CVT - BRBCABA04'),
+    ('STELLANTIS - SP - REMONTAGEM ASSY LINE - BRBCABA10'),
+    ('VOLKSWAGEM - SBDC - Montagem Short Block - BRBCABA13'),
+    ('STELLANTIS - BET - Suspensão F1H/F2U - BRBCABA16'),
+    ('STELLANTIS - GOI - Retooling GSE J4U - BRBCABA17'),
+    ('STELLANTIS - BET - FAMILIA B - BRBCABA19'),
+    ('PSA - PRTR - JJ SUSPENSION LINE - BRBCABA20'),
+    ('STELLANTIS - BET - RETOOLING TURBO II N3 - BRBCABA21'),
+    ('STELLANTIS - GOI - ASSISTENCIA PE - BRBRRBA18'),
+    ('COMAU - BET - MFG - BRBRRBA42'),
+    ('GM - SCSU - JBQC - BRBCBBA98'),
+    ('GM - GRVT - General Activities - BRBCBBA86')
+ON CONFLICT (wbs) DO NOTHING;
+
+-- Notifica a API sobre as mudanças, se necessário
+NOTIFY pgrst, 'reload schema';

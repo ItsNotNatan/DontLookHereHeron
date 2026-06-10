@@ -1,0 +1,321 @@
+-- =========================================================================
+-- SCRIPT COMPLETO DE BANCO DE DADOS - ATMLOG (ARQUITETURA SEGURA)
+-- =========================================================================
+
+-- 1. Habilita a geração de UUIDs automáticos
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. Limpa as tabelas antigas para evitar erros de duplicação e conflitos
+DROP TABLE IF EXISTS refresh_tokens CASCADE;
+DROP TABLE IF EXISTS faturamento_atm CASCADE;
+DROP TABLE IF EXISTS pedidos_atm CASCADE;
+DROP TABLE IF EXISTS enderecos_pedido CASCADE; -- 🌟 NOVA TABELA DE HISTÓRICO
+DROP TABLE IF EXISTS locais_base CASCADE;      -- 🌟 NOVA TABELA DE AGENDA DO ADMIN
+DROP TABLE IF EXISTS transportadoras CASCADE;
+DROP TABLE IF EXISTS veiculos CASCADE;
+DROP TABLE IF EXISTS projetos CASCADE;
+DROP TABLE IF EXISTS motivos CASCADE; 
+DROP TABLE IF EXISTS usuarios CASCADE;
+DROP TABLE IF EXISTS atms_externos_temp CASCADE;
+
+-- =========================================================================
+-- CRIAÇÃO DAS TABELAS BASE
+-- =========================================================================
+
+-- 3. Tabela de Usuários
+CREATE TABLE usuarios (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    senha VARCHAR(255) NOT NULL,
+    perfil VARCHAR(50) DEFAULT 'Visualizador', 
+    ativo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3.1 Tabela de Refresh Tokens
+CREATE TABLE refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    usuario_id UUID NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    expira_em TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
+
+-- 4. Tabela de Transportadoras
+CREATE TABLE transportadoras (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Tabela de Projetos / WBS
+CREATE TABLE projetos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    wbs VARCHAR(255) NOT NULL UNIQUE,
+    ativo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6. Tabela de Veículos
+CREATE TABLE veiculos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome VARCHAR(100) NOT NULL,
+    comprimento NUMERIC(10, 2) NOT NULL, 
+    largura NUMERIC(10, 2) NOT NULL,     
+    altura NUMERIC(10, 2) NOT NULL,      
+    ativo BOOLEAN DEFAULT TRUE,          
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 6.1 Tabela de Motivos / Divergências 
+CREATE TABLE motivos (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    cor VARCHAR(20) DEFAULT '#ef4444',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =========================================================================
+-- 7. TABELAS DE LOCAIS (AGENDA E HISTÓRICO)
+-- =========================================================================
+
+-- 7.1 Tabela Agenda (Base gerida pelo Administrador)
+CREATE TABLE locais_base (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome_local VARCHAR(255) NOT NULL,
+    logradouro VARCHAR(255),
+    numero VARCHAR(50),
+    bairro VARCHAR(100),
+    municipio VARCHAR(150),
+    uf CHAR(2),
+    cep VARCHAR(20),
+    ativo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- 🌟 Restrição: Impede que o admin cadastre o mesmo local e CEP duas vezes
+    CONSTRAINT uk_nome_local_cep UNIQUE (nome_local, cep)
+);
+
+-- 7.2 Tabela Histórico (Fotografia do endereço no momento do pedido)
+CREATE TABLE enderecos_pedido (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nome_local VARCHAR(255) NOT NULL,
+    logradouro VARCHAR(255),
+    numero VARCHAR(50),
+    bairro VARCHAR(100),
+    municipio VARCHAR(150),
+    uf CHAR(2),
+    cep VARCHAR(20),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =========================================================================
+-- TABELAS PRINCIPAIS DE OPERAÇÃO
+-- =========================================================================
+
+-- 8. Tabela Principal de ATMs
+CREATE TABLE pedidos_atm (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    numero_atm VARCHAR(50) UNIQUE,
+    tipo_operacao VARCHAR(50), 
+    data_solicitacao DATE,
+    data_coleta DATE, 
+    pedido_compra VARCHAR(100),
+    nf VARCHAR(100),
+    wbs VARCHAR(255),
+    
+    contato_coleta VARCHAR(255),
+    telefone_coleta VARCHAR(50),
+    contato_entrega VARCHAR(255),
+    telefone_entrega VARCHAR(50),
+    numero_reserva VARCHAR(100),
+
+    -- 🌟 Agora os pedidos apontam para o Histórico de Endereços
+    id_origem UUID REFERENCES enderecos_pedido(id) ON DELETE RESTRICT,
+    id_destino UUID REFERENCES enderecos_pedido(id) ON DELETE RESTRICT,
+    
+    lista_cargas JSONB,
+    quantidade_volumes INTEGER,
+    peso NUMERIC(10, 3),
+    volume NUMERIC(10, 3),
+    medidas VARCHAR(255),
+    
+    tipo_frete VARCHAR(50),
+    solicitacao VARCHAR(100),
+    id_transportadora UUID REFERENCES transportadoras(id),
+    veiculo VARCHAR(100), 
+    cotacao_bid VARCHAR(50),
+    valor_nf NUMERIC(15, 2),
+    data_entrega DATE,
+    status VARCHAR(50) DEFAULT 'Pendente',
+    observacoes TEXT,
+    
+    link_rastreio VARCHAR(255),
+    motivo VARCHAR(100),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 9. Tabela de Faturamento (SAP / CTE / FI)
+CREATE TABLE faturamento_atm (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_atm UUID REFERENCES pedidos_atm(id) ON DELETE CASCADE,
+    valor_bid_dedicado NUMERIC(15, 2),
+    valor_bid NUMERIC(15, 2),
+    tipo_documento VARCHAR(50),
+    data_mapeamento DATE,
+    fatura_cte VARCHAR(100),
+    
+    -- 🟢 NOME DA COLUNA ATUALIZADO AQUI
+    valor_previsto NUMERIC(15, 2), 
+    
+    data_emissao DATE,
+    vencimento DATE,
+    elemento_pep_cc_wbs VARCHAR(100),
+    validacao_pep VARCHAR(50),
+    registrado_sap VARCHAR(10),
+    registro_sap VARCHAR(100),
+    lancamento_fi VARCHAR(10),
+    processo_lancamento_fi VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT unique_id_atm UNIQUE (id_atm)
+);
+
+-- 10. Tabela Temporária (Formulários Externos)
+CREATE TABLE atms_externos_temp (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    solicitante TEXT,
+    data_solicitacao DATE,
+    tipo_operacao VARCHAR(50),
+    pedido_compra TEXT,
+    nf TEXT,
+    wbs TEXT, 
+    
+    empresa_coleta TEXT,
+    contato_coleta TEXT,
+    telefone_coleta TEXT,
+    data_coleta DATE,
+    cep_coleta TEXT,
+    logradouro_coleta TEXT,
+    numero_coleta TEXT,
+    bairro_coleta TEXT,
+    cidade_coleta TEXT,
+    uf_coleta CHAR(2),
+
+    empresa_entrega TEXT,
+    contato_entrega TEXT,
+    telefone_entrega TEXT,
+    data_entrega DATE,
+    cep_entrega TEXT,
+    logradouro_entrega TEXT,
+    numero_entrega TEXT,
+    bairro_entrega TEXT,
+    cidade_entrega TEXT,
+    uf_entrega CHAR(2),
+
+    lista_cargas JSONB, 
+    quantidade_volumes INTEGER,
+    peso NUMERIC,
+    volume NUMERIC,
+    medidas TEXT,
+    veiculo_sugerido TEXT,
+    tipo_frete TEXT,
+    observacoes TEXT,
+
+    processado BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =========================================================================
+-- INSERÇÕES DE DADOS INICIAIS (SEED)
+-- =========================================================================
+
+-- 1. Inserção dos Perfis de Usuários
+INSERT INTO usuarios (nome, email, senha, perfil) VALUES 
+('Administrador Comau', 'admin@comau.com', 'admin123', 'Admin'),
+('Operador Logística', 'operador@comau.com', 'operador123', 'Operador'),
+('Visualizador Diretoria', 'visualizador@comau.com', 'visu123', 'Visualizador')
+ON CONFLICT (email) DO NOTHING;
+
+-- 2. Inserção dos Projetos
+INSERT INTO projetos (wbs) VALUES
+('STELLANTIS - GOI - STLA J3U/J1U - BRBCBBB44'),
+('PSA - PTR - JJ Avenger - BRBCBBB21'),
+('RENAULT - CRT - XDF - BRBCBBB29'),
+('VOLKSWAGEN - SBC - SAGA/A-SUV - BRBCBBB38')
+ON CONFLICT (wbs) DO NOTHING;
+
+-- 3. Inserção da Frota
+INSERT INTO veiculos (nome, comprimento, largura, altura) VALUES
+('Fiorino', 1.60, 1.30, 1.10),
+('VAN (Sprinter/Master)', 3.30, 1.70, 1.80),
+('Caminhão VUC', 4.50, 2.20, 2.20),
+('Caminhão 3/4', 5.50, 2.20, 2.30),
+('Truck (Padrão)', 7.50, 2.45, 2.50),
+('Truck (8 metros)', 8.00, 2.45, 2.60),
+('Carreta (10 metros)', 10.00, 2.45, 2.60),
+('Carreta (12 metros)', 12.00, 2.45, 2.70),
+('Carreta (15 metros)', 15.00, 2.45, 2.80),
+('Sider (Padrão)', 14.50, 2.50, 2.70),
+('Double Deck (Baú)', 14.50, 2.45, 4.00);
+
+-- 4. Inserção de Transportadoras
+INSERT INTO transportadoras (id, nome) VALUES 
+('10000000-0000-4000-a000-000000000001', 'Expresso M2000 LTDA'),
+('10000000-0000-4000-a000-000000000002', 'JSL Logística S/A'),
+('10000000-0000-4000-a000-000000000003', 'ACP TRANSPORTES'),
+('10000000-0000-4000-a000-000000000004', 'EXPRESSO BOM SUCESSO'),
+('10000000-0000-4000-a000-000000000005', 'DHL'),
+('10000000-0000-4000-a000-000000000006', 'VENTANA')
+ON CONFLICT (id) DO NOTHING;
+
+-- 5. Inserção da Agenda de Locais (O Cadastro do Admin)
+INSERT INTO locais_base (id, nome_local, logradouro, numero, bairro, municipio, uf, cep, ativo) VALUES 
+('20000000-0000-4000-a000-000000000001', 'COMAU SP', 'Av. das Indústrias', '1000', 'Distrito Industrial', 'São Paulo', 'SP', '01000-000', TRUE),
+('20000000-0000-4000-a000-000000000002', 'COMAU MG', 'Rodovia Fernão Dias', 'S/N', 'Polo Automotivo', 'Betim', 'MG', '32600-000', TRUE),
+('20000000-0000-4000-a000-000000000003', 'Fábrica Cliente A', 'Rua dos Imigrantes', '500', 'Centro', 'Curitiba', 'PR', '80000-000', TRUE),
+('20000000-0000-4000-a000-000000000004', 'Galpão Cliente B', 'Av. Brasil', '2500', 'Penha', 'Rio de Janeiro', 'RJ', '21000-000', TRUE)
+ON CONFLICT (nome_local, cep) DO NOTHING;
+
+-- 6. Inserção do Histórico de Endereços (A "fotografia" para os pedidos testes)
+INSERT INTO enderecos_pedido (id, nome_local, logradouro, numero, bairro, municipio, uf, cep) VALUES 
+('40000000-0000-4000-a000-000000000001', 'COMAU SP', 'Av. das Indústrias', '1000', 'Distrito Industrial', 'São Paulo', 'SP', '01000-000'),
+('40000000-0000-4000-a000-000000000002', 'COMAU MG', 'Rodovia Fernão Dias', 'S/N', 'Polo Automotivo', 'Betim', 'MG', '32600-000'),
+('40000000-0000-4000-a000-000000000003', 'Fábrica Cliente A', 'Rua dos Imigrantes', '500', 'Centro', 'Curitiba', 'PR', '80000-000'),
+('40000000-0000-4000-a000-000000000004', 'Galpão Cliente B', 'Av. Brasil', '2500', 'Penha', 'Rio de Janeiro', 'RJ', '21000-000')
+ON CONFLICT (id) DO NOTHING;
+
+-- 7. Inserção de Pedidos Completos (Apontando para os endereços do histórico acima)
+INSERT INTO pedidos_atm (
+    id, numero_atm, data_solicitacao, tipo_operacao, pedido_compra, nf, wbs, contato_coleta, telefone_coleta, 
+    id_origem, id_destino, medidas, tipo_frete, solicitacao, id_transportadora, veiculo, 
+    valor_nf, volume, peso, data_entrega, status, motivo, link_rastreio
+) VALUES 
+('30000000-0000-4000-a000-000000000001', '10001', '2024-10-01', 'Nacional', 'PC-9901', 'NF-111', '10025A', 'Carlos Silva', '(11) 98888-1111', '40000000-0000-4000-a000-000000000001', '40000000-0000-4000-a000-000000000003', '2x2x2', 'Dedicado', 'Ana Souza', '10000000-0000-4000-a000-000000000001', 'Carreta', 55000.00, 15.5, 4500, '2024-10-03', 'Entregue', NULL, 'https://rastreio.m2000.com.br/10001'),
+('30000000-0000-4000-a000-000000000002', '10002', '2024-10-02', 'Nacional', 'PC-9902', 'NF-112', '10025A', 'Carlos Silva', '(11) 98888-1111', '40000000-0000-4000-a000-000000000001', '40000000-0000-4000-a000-000000000004', '1x1x1', 'Fracionado', 'Ana Souza', '10000000-0000-4000-a000-000000000002', 'Fiorino', 12000.00, 2.0, 500, '2024-10-05', 'Entregue', NULL, NULL),
+('30000000-0000-4000-a000-000000000003', '10003', '2024-10-05', 'Nacional', 'PC-9903', 'NF-113', '88899B', 'João Mendes', '(31) 97777-2222', '40000000-0000-4000-a000-000000000002', '40000000-0000-4000-a000-000000000003', '3x2x1', 'Dedicado', 'Roberto Lima', '10000000-0000-4000-a000-000000000001', 'Truck', 35000.00, 10.0, 3000, '2024-10-08', 'Entregue', NULL, NULL),
+('30000000-0000-4000-a000-000000000004', '10004', '2024-10-06', 'Nacional', 'PC-9904', 'NF-114', '10025A', 'Carlos Silva', '(11) 98888-1111', '40000000-0000-4000-a000-000000000001', '40000000-0000-4000-a000-000000000004', '1x2x1', 'Fracionado', 'Ana Souza', '10000000-0000-4000-a000-000000000002', 'Van', 8500.00, 4.0, 800, '2024-10-10', 'Entregue', NULL, NULL)
+ON CONFLICT (id) DO NOTHING;
+
+-- 8. Inserir o Faturamento 
+-- 🟢 COLUNA ATUALIZADA AQUI NA INSERÇÃO
+INSERT INTO faturamento_atm (
+    id_atm, fatura_cte, valor_previsto, data_emissao, vencimento, elemento_pep_cc_wbs, registrado_sap
+) VALUES 
+('30000000-0000-4000-a000-000000000001', 'CTE-001', 2500.00, '2024-10-04', '2024-11-04', '10027A', 'SIM'),
+('30000000-0000-4000-a000-000000000002', 'CTE-002', 800.50, '2024-10-06', '2024-11-06', '10027A', 'SIM'),
+('30000000-0000-4000-a000-000000000003', 'CTE-003', 3100.00, '2024-10-09', '2024-11-09', '88897B', 'SIM'),
+('30000000-0000-4000-a000-000000000004', 'CTE-004', 450.00, '2024-10-11', '2024-11-11', '10075A', 'NÃO')
+ON CONFLICT (id_atm) DO NOTHING;
+
+ALTER TABLE pedidos_atm ADD COLUMN comprovantes JSONB;
+-- Notifica a API sobre as novas rotas/schemas do banco
+NOTIFY pgrst, 'reload schema';
+
+ALTER TABLE pedidos_atm ADD COLUMN valor_realizado NUMERIC(15, 2);
+NOTIFY pgrst, 'reload schema';
+
+ALTER TABLE transportadoras ADD COLUMN ativo BOOLEAN DEFAULT TRUE;
