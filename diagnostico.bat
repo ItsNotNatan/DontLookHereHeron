@@ -15,7 +15,7 @@ echo. >> "%REPORT%"
 echo --- NODE.JS --- >> "%REPORT%"
 where node >> "%REPORT%" 2>&1
 node -v >> "%REPORT%" 2>&1
-npm -v >> "%REPORT%" 2>&1
+call npm -v >> "%REPORT%" 2>&1
 echo. >> "%REPORT%"
 
 echo --- ARQUIVOS DO PACOTE --- >> "%REPORT%"
