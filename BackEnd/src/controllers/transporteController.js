@@ -4,14 +4,14 @@ const { formatarProBanco } = require('../utils/formatters');
 
 const criarTransporte = async (req, res) => {
   const dados = req.body;
-  
+
   try {
     // 1. INSERE O LOCAL DE COLETA (Na tabela de Histórico)
     const { data: localColeta, error: erroColeta } = await supabase
-      .from('enderecos_pedido') 
-      .insert([{ 
-        nome_local: dados.empresaColeta, 
-        municipio: dados.cidadeColeta, 
+      .from('enderecos_pedido')
+      .insert([{
+        nome_local: dados.empresaColeta,
+        municipio: dados.cidadeColeta,
         uf: dados.ufColeta,
         cep: dados.cepColeta || null,
         logradouro: dados.logradouroColeta || null,
@@ -19,15 +19,15 @@ const criarTransporte = async (req, res) => {
         bairro: dados.bairroColeta || null
       }])
       .select('id');
-      
+
     if (erroColeta) throw new Error('Erro Coleta: ' + erroColeta.message);
 
     // 2. INSERE O LOCAL DE ENTREGA (Na tabela de Histórico)
     const { data: localEntrega, error: erroEntrega } = await supabase
-      .from('enderecos_pedido') 
-      .insert([{ 
-        nome_local: dados.empresaEntrega || 'Destinatário', 
-        municipio: dados.cidadeEntrega, 
+      .from('enderecos_pedido')
+      .insert([{
+        nome_local: dados.empresaEntrega || 'Destinatário',
+        municipio: dados.cidadeEntrega,
         uf: dados.ufEntrega,
         cep: dados.cepEntrega || null,
         logradouro: dados.logradouroEntrega || null,
@@ -35,26 +35,26 @@ const criarTransporte = async (req, res) => {
         bairro: dados.bairroEntrega || null
       }])
       .select('id');
-      
+
     if (erroEntrega) throw new Error('Erro Entrega: ' + erroEntrega.message);
 
     // 3. INSERE O PEDIDO ATM
     const { data: pedidoAtm, error: erroAtm } = await supabase
       .from('pedidos_atm')
-      .insert([{ 
+      .insert([{
         data_solicitacao: formatarProBanco(dados.dataSolicitacao),
-        tipo_operacao: dados.tipo_operacao, 
-        pedido_compra: dados.pedidoCompra, 
+        tipo_operacao: dados.tipo_operacao,
+        pedido_compra: dados.pedidoCompra,
         nf: dados.nf || null,
         valor_nf: dados.valor_nf ? parseFloat(dados.valor_nf) : null,
-        wbs: dados.wbs,                    
-        
+        wbs: dados.wbs,
+
         contato_coleta: dados.nomeContatoColeta || null,
         telefone_coleta: dados.telefoneColeta || null,
         contato_entrega: dados.nomeContatoEntrega || null,
         telefone_entrega: dados.telefoneEntrega || null,
         numero_reserva: dados.numeroReserva || null,
-        
+
         id_origem: localColeta[0].id,
         id_destino: localEntrega[0].id,
         tipo_frete: dados.frete,
@@ -64,16 +64,16 @@ const criarTransporte = async (req, res) => {
         lista_cargas: dados.listaCargas ? JSON.parse(dados.listaCargas) : null,
         quantidade_volumes: parseInt(dados.quantidadeVolumes) || 0,
         peso: parseFloat(dados.pesoTotal) || 0,
-        volume: 0, 
-        
-        data_entrega: formatarProBanco(dados.dataEntrega), 
+        volume: 0,
+
+        data_entrega: formatarProBanco(dados.dataEntrega),
         status: 'Aguardando Aprovação',
         observacoes: dados.obs || null
       }])
       .select('id');
 
     if (erroAtm) throw new Error('Erro ATM: ' + erroAtm.message);
-    
+
     res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedidoAtm[0].id });
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -95,9 +95,10 @@ const listarTransportesAdmin = async (req, res) => {
 
     if (error) throw new Error(error.message);
 
+    // 🟢 CORREÇÃO: Trata a formatação corretamente quer o Supabase devolva um Array ou um Objeto
     const dadosFormatados = data.map(item => ({
       ...item,
-      faturamento: item.faturamento && item.faturamento.length > 0 ? item.faturamento[0] : null
+      faturamento: Array.isArray(item.faturamento) ? item.faturamento[0] : (item.faturamento || null)
     }));
 
     res.json(dadosFormatados);
@@ -107,7 +108,7 @@ const listarTransportesAdmin = async (req, res) => {
 };
 
 const atualizarTransporteAdmin = async (req, res) => {
-  const { id } = req.params; 
+  const { id } = req.params;
   const d = req.body;
 
   try {
@@ -177,9 +178,9 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.tipo_documento !== undefined) fatData.tipo_documento = str(d.tipo_documento);
     if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null;
     if (d.fatura_cte !== undefined) fatData.fatura_cte = str(d.fatura_cte);
-    
+
     if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto); // 🟢 O NOME NOVO
-    
+
     if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : null;
     if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : null;
     if (d.wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.wbs);
@@ -187,9 +188,9 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.registrado_sap !== undefined) fatData.registrado_sap = str(d.registrado_sap);
 
     if (Object.keys(fatData).length > 0) {
-      // Procura para ver se o faturamento já existe
-      const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).single();
-      
+      // 🟢 CORREÇÃO: Usar .maybeSingle() em vez de .single()
+      const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).maybeSingle();
+
       if (existingFat) {
         // Se já existe, atualiza
         const { error: erroFat } = await supabase.from('faturamento_atm').update(fatData).eq('id_atm', id);
@@ -202,7 +203,7 @@ const atualizarTransporteAdmin = async (req, res) => {
     }
 
     res.json({ mensagem: '✅ Pedido, Endereços e Faturamento atualizados!' });
-    
+
   } catch (erro) {
     console.error("Erro completo no Update:", erro);
     res.status(400).json({ erro: erro.message });
@@ -238,13 +239,13 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.valor_nf !== undefined) updateAtm.valor_nf = num(dados.valor_nf);
     if (dados.valor_realizado !== undefined) updateAtm.valor_realizado = num(dados.valor_realizado);
     if (dados.cotacao_bid !== undefined) updateAtm.cotacao_bid = str(dados.cotacao_bid);
-    
+
     if (dados.veiculo !== undefined) updateAtm.veiculo = str(dados.veiculo);
     if (dados.tipo_frete !== undefined) updateAtm.tipo_frete = str(dados.tipo_frete);
     if (dados.peso !== undefined) updateAtm.peso = num(dados.peso);
     if (dados.volume !== undefined) updateAtm.volume = num(dados.volume);
     if (dados.medidas !== undefined) updateAtm.medidas = str(dados.medidas);
-    
+
     if (dados.link_rastreio !== undefined) updateAtm.link_rastreio = str(dados.link_rastreio);
     if (dados.observacoes !== undefined) updateAtm.observacoes = str(dados.observacoes);
     if (dados.data_coleta !== undefined) updateAtm.data_coleta = formatarProBanco(dados.data_coleta);
@@ -261,12 +262,12 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = formatarProBanco(dados.data_mapeamento);
     if (dados.data_emissao !== undefined) updateFat.data_emissao = formatarProBanco(dados.data_emissao);
     if (dados.vencimento !== undefined) updateFat.vencimento = formatarProBanco(dados.vencimento);
-    
+
     if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); // 🟢 O NOME NOVO NO LOTE
-    
+
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
-    if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs); 
+    if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs);
 
     // 3. EXECUTA A ATUALIZAÇÃO PARA CADA ID SELECIONADO
     const promessas = ids.map(async (id) => {
@@ -275,7 +276,9 @@ const atualizarLoteAdmin = async (req, res) => {
       }
 
       if (Object.keys(updateFat).length > 0) {
-        const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).single();
+        // 🟢 CORREÇÃO: Usar .maybeSingle() também na edição em lote
+        const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).maybeSingle();
+
         if (existingFat) {
           await supabase.from('faturamento_atm').update(updateFat).eq('id_atm', id);
         } else {
@@ -299,7 +302,7 @@ const atualizarLoteAdmin = async (req, res) => {
     await Promise.all(promessas);
 
     res.json({ mensagem: `✅ Lote de ${ids.length} pedidos atualizado com sucesso!` });
-    
+
   } catch (erro) {
     console.error("Erro na edição em lote:", erro);
     res.status(500).json({ erro: erro.message });
@@ -308,7 +311,7 @@ const atualizarLoteAdmin = async (req, res) => {
 
 const rastrearPedidoPublico = async (req, res) => {
   const { codigo } = req.params;
-  
+
   try {
     const { data, error } = await supabase
       .from('pedidos_atm')
@@ -317,7 +320,7 @@ const rastrearPedidoPublico = async (req, res) => {
         origem:id_origem (nome_local, municipio, uf),
         destino:id_destino (nome_local, municipio, uf)
       `)
-      .or(`numero_atm.eq.${codigo},id.ilike.${codigo}%`) 
+      .or(`numero_atm.eq.${codigo},id.ilike.${codigo}%`)
       .single();
 
     if (error || !data) {

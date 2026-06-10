@@ -1,0 +1,120 @@
+/* src/pages/Login/Login.css */
+
+/* Container que ocupa a tela toda e centraliza o form */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 20px;
+}
+
+/* O "Card" branco do formulário */
+.login-form {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  /* A animação fica aqui, apenas no cartão! */
+  animation: fadeIn 0.4s ease-out forwards; 
+}
+
+/* Cabeçalho do Login */
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.login-header-icon {
+  color: #2563eb;
+  margin-bottom: 1rem;
+}
+
+.login-form h2 {
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 1.5rem;
+}
+
+.login-form p {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* Grupos de Input */
+.input-group {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  box-sizing: border-box; /* Garante que o padding não quebre a largura */
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Botão Entrar (Principal) */
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 1rem;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: translateY(-1px); /* Dá um efeitinho de clique */
+}
+
+.btn-submit:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Mensagem de Erro */
+.error-message {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #fee2e2;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+}
+
+/* Animação Suave */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
