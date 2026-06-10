@@ -79,7 +79,7 @@ if "%PB_ADMIN_PASSWORD%"=="" set "PB_ADMIN_PASSWORD=ChangeMe_ATMLog_2026"
 echo [OK] superuser do banco: %PB_ADMIN_EMAIL%
 
 rem --- Dependencias (npm install) ---
-if not exist "%BASEDIR%node_modules" (
+if not exist "%BASEDIR%node_modules\dotenv" (
   echo [..] Instalando dependencias ^(npm install - pode levar 1-2 min^)...
   call npm install --no-audit --no-fund
   if errorlevel 1 (
