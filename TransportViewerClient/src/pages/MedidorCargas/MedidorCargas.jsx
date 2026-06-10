@@ -11,8 +11,8 @@ import { buildVehicle, placeCargos } from './engine3D';
 
 // Componentes modulares
 import ModalRelatorio from '../../components/ModalRelatorio/ModalRelatorio';
-import CargoForm from '../../components/CargoForm/CargoForm';
-import VehicleGrid from '../../components/VehicleGrid/VehicleGrid';
+import SidebarCargas from './SidebarCargas';
+import StatsBar from './StatsBar';
 
 export default function MedidorCargas() {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export default function MedidorCargas() {
   const [veiculosBD, setVeiculosBD] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [showRelatorio, setShowRelatorio] = useState(false);
+  const [hasOverlap, setHasOverlap] = useState(false);
 
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
@@ -44,14 +45,14 @@ export default function MedidorCargas() {
     orbiting: false, panning: false, lastMX: 0, lastMY: 0,
     dragging: false, dragObj: null, dragPlane: null, dragOff: null,
     hovered: null, posOv: {}, nextId: 0,
-    selCid: null, mode: 'orbit', selVeh: null
+    selCid: null, mode: 'orbit', selVeh: null,
+    selPosKey: null // NOVO: Guarda a chave única da instância da caixa clicada
   }).current;
 
   useEffect(() => { tState.selCid = selCid; }, [selCid]);
   useEffect(() => { tState.mode = mode; }, [mode]);
   useEffect(() => { tState.selVeh = selVeh; }, [selVeh]);
 
-  // 1. CARREGAMENTO LOCAL INSTANTÂNEO SEM API
   useEffect(() => {
     setVeiculosBD(VEHICLES);
     if (VEHICLES.length > 0) setSelVeh(VEHICLES[0].id);
@@ -68,24 +69,44 @@ export default function MedidorCargas() {
   const toM = (v) => unit === 'cm' ? v / 100 : v;
   const fmt = (v) => unit === 'm' ? v.toFixed(2) + 'm' : (v * 100).toFixed(0) + 'cm';
   
-  // 🟢 TRADUÇÃO E CÁLCULO DE VOLUME (Com trava de segurança)
   const totalVol = () => {
     if (!cargas) return 0;
     return cargas.reduce((s, c) => s + (parseFloat(c.comprimento || 0) * parseFloat(c.largura || 0) * parseFloat(c.altura || 0) * parseInt(c.quantidade || 1)), 0);
   };
 
+  const totalArea = () => {
+    if (!cargas) return 0;
+    return cargas.reduce((s, c) => s + (parseFloat(c.comprimento || 0) * parseFloat(c.largura || 0) * parseInt(c.quantidade || 1)), 0);
+  };
+
   const checkFit = (v) => {
     if (!cargas || !cargas.length) return '';
     const vol = totalVol();
+    const area = totalArea();
+    
     const bv = v.vol || (v.L * v.W * v.H);
+    const ba = v.type === 'ddeck' ? (v.L * v.W * 2) : (v.L * v.W);
+
     const dimOk = cargas.every(c => parseFloat(c.comprimento || 0) <= v.L && parseFloat(c.largura || 0) <= v.W && parseFloat(c.altura || 0) <= v.H);
-    if (!dimOk || vol > bv) return 'over';
-    if (vol / bv > 0.85) return 'tight';
+    if (!dimOk || vol > bv || area > ba) return 'over';
+    if (vol / bv > 0.85 || area / ba > 0.85) return 'tight';
     return 'ok';
   };
   
+  // NOVO: Atualizamos esta função para procurar a caixa exata que foi clicada
   const getSelMesh = (cid) => {
     if (!tState.cargoGrp) return null;
+    
+    // 1. Tenta encontrar a caixa EXATA que o utilizador clicou 
+    // Garantimos também que a chave começa com o ID selecionado (ex: "123_0" pertence ao cid 123)
+    if (tState.selPosKey && tState.selPosKey.startsWith(String(cid))) {
+      const exactMesh = tState.cargoGrp.children.find(
+        c => c.isMesh && c.userData.movable && c.userData.posKey === tState.selPosKey
+      );
+      if (exactMesh) return exactMesh;
+    }
+
+    // 2. Fallback: Se não encontrarmos a exata, pega a primeira caixa do grupo
     return tState.cargoGrp.children.find(c => c.isMesh && c.userData.movable && c.userData.cid === cid);
   };
   
@@ -144,7 +165,36 @@ export default function MedidorCargas() {
     updateCam();
   };
 
-  // 🟢 EFFECT CORRIGIDO COM LIMPEZA DE MEMÓRIA DO WEBGL
+  const checkAllCollisions = useCallback(() => {
+    if (!tState.cargoGrp) return false;
+    const meshes = tState.cargoGrp.children.filter(c => c.isMesh && c.userData.movable);
+    const overlappingIds = new Set();
+    let overlapFound = false;
+
+    for (let i = 0; i < meshes.length; i++) {
+      const boxA = new THREE.Box3().setFromObject(meshes[i]);
+      boxA.expandByScalar(-0.015);
+
+      for (let j = i + 1; j < meshes.length; j++) {
+        const boxB = new THREE.Box3().setFromObject(meshes[j]);
+        boxB.expandByScalar(-0.015);
+
+        if (boxA.intersectsBox(boxB)) {
+          overlappingIds.add(meshes[i].uuid);
+          overlappingIds.add(meshes[j].uuid);
+          overlapFound = true;
+        }
+      }
+    }
+
+    meshes.forEach(mesh => {
+      mesh.userData.isOverlapping = overlappingIds.has(mesh.uuid);
+    });
+
+    setHasOverlap(overlapFound);
+    return overlapFound;
+  }, [tState]);
+
   useEffect(() => {
     if (tState.scene || !canvasRef.current || !wrapRef.current || carregando) return;
 
@@ -208,18 +258,13 @@ export default function MedidorCargas() {
     const resizeObserver = new ResizeObserver(() => handleResize());
     if (wrapRef.current) resizeObserver.observe(wrapRef.current);
 
-    // 🟢 LIMPEZA DE MEMÓRIA EVITA O ERRO "Error creating WebGL context"
     return () => {
       cancelAnimationFrame(reqId);
       resizeObserver.disconnect();
-      
       if (tState.renderer) {
         tState.renderer.dispose();
-        tState.renderer.forceContextLoss();
-        tState.renderer.domElement = null;
         tState.renderer = null;
       }
-      
       tState.scene = null;
       tState.cam = null;
     };
@@ -235,7 +280,6 @@ export default function MedidorCargas() {
 
     buildVehicle(v, tState, THREE);
 
-    // 🟢 TRADUÇÃO: O motor 3D espera os dados em inglês/abreviados (l, w, h, qty)
     const cargasPara3D = (cargas || []).map(c => ({
       id: c.id,
       name: c.nome,
@@ -246,7 +290,6 @@ export default function MedidorCargas() {
       color: c.cor || '#cccccc'
     }));
 
-    // Passa a lista traduzida para o motor 3D
     placeCargos(v, cargasPara3D, tState, selCid, THREE);
 
     if (selCid !== null) {
@@ -255,7 +298,10 @@ export default function MedidorCargas() {
     } else {
       updateSelBar(null);
     }
-  }, [selVeh, cargas, selCid, veiculosBD, tState]);
+
+    setTimeout(() => { checkAllCollisions(); }, 50);
+
+  }, [selVeh, cargas, selCid, veiculosBD, tState, checkAllCollisions]);
   
   useEffect(() => { buildScene(); }, [selVeh, cargas, buildScene]);
 
@@ -271,24 +317,6 @@ export default function MedidorCargas() {
     return hits.length ? hits[0] : null;
   };
 
-  const checkCollision = (mesh, newX, newY, newZ) => {
-    const boxA = new THREE.Box3().setFromObject(mesh);
-    const dx = newX - mesh.position.x;
-    const dy = newY - mesh.position.y;
-    const dz = newZ - mesh.position.z;
-    boxA.translate(new THREE.Vector3(dx, dy, dz));
-    boxA.expandByScalar(-0.001); 
-    for (let i = 0; i < tState.cargoGrp.children.length; i++) {
-      const other = tState.cargoGrp.children[i];
-      if (other.isMesh && other.userData.movable && other.uuid !== mesh.uuid) {
-        const boxB = new THREE.Box3().setFromObject(other);
-        boxB.expandByScalar(-0.001); 
-        if (boxA.intersectsBox(boxB)) return true;
-      }
-    }
-    return false;
-  };
-
   const onMD = (e) => {
     tState.lastMX = e.clientX; tState.lastMY = e.clientY;
     if (tState.mode === 'drag') {
@@ -296,6 +324,7 @@ export default function MedidorCargas() {
       if (hit && hit.object.userData.movable) {
         tState.dragging = true; tState.dragObj = hit.object;
         setSelCid(hit.object.userData.cid);
+        tState.selPosKey = hit.object.userData.posKey; // NOVO: Armazena exatamente qual foi clicada
         const ch = tState.dragObj.geometry.parameters.height;
         tState.dragPlane.set(new THREE.Vector3(0, 1, 0), -(tState.dragObj.position.y - ch / 2));
         const pt = new THREE.Vector3();
@@ -305,7 +334,10 @@ export default function MedidorCargas() {
     } else {
       if (e.buttons === 1) {
         const hit2 = getHit(getNDC(e));
-        if (hit2 && hit2.object.userData.movable) setSelCid(hit2.object.userData.cid);
+        if (hit2 && hit2.object.userData.movable) {
+          setSelCid(hit2.object.userData.cid);
+          tState.selPosKey = hit2.object.userData.posKey; // NOVO: Armazena a identidade única
+        }
         tState.orbiting = true;
       }
       if (e.buttons === 2) tState.panning = true;
@@ -335,14 +367,8 @@ export default function MedidorCargas() {
         const clampedX = Math.max(-hw + chl, Math.min(hw - chl, proposedX));
         const clampedZ = Math.max(-hd + chd, Math.min(hd - chd, proposedZ));
 
-        let finalX = tState.dragObj.position.x;
-        let finalZ = tState.dragObj.position.z;
-
-        if (!checkCollision(tState.dragObj, clampedX, tState.dragObj.position.y, finalZ)) finalX = clampedX;
-        if (!checkCollision(tState.dragObj, finalX, tState.dragObj.position.y, clampedZ)) finalZ = clampedZ;
-
-        tState.dragObj.position.x = finalX;
-        tState.dragObj.position.z = finalZ;
+        tState.dragObj.position.x = clampedX;
+        tState.dragObj.position.z = clampedZ;
         
         syncEdges(tState.dragObj);
         const key = tState.dragObj.userData.posKey;
@@ -387,6 +413,7 @@ export default function MedidorCargas() {
     if (tState.dragging) {
       tState.dragging = false; tState.dragObj = null;
       if (canvasRef.current) canvasRef.current.style.cursor = tState.mode === 'drag' ? 'crosshair' : 'default';
+      checkAllCollisions();
     }
   };
   
@@ -396,11 +423,16 @@ export default function MedidorCargas() {
     if (!tState.cargoGrp) return;
     tState.cargoGrp.children.forEach(c => {
       if (c.isMesh && c.userData.movable) {
-        if (c.userData.cid === selCid) c.material.emissive.setHex(0x222222);
-        else c.material.emissive.setHex(c.userData.inBay ? 0x000000 : 0x440000);
+        if (c.userData.isOverlapping) {
+          c.material.emissive.setHex(0xaa0000);
+        } else if (c.userData.cid === selCid) {
+          c.material.emissive.setHex(0x222222);
+        } else {
+          c.material.emissive.setHex(c.userData.inBay ? 0x000000 : 0x440000);
+        }
       }
     });
-  }, [selCid, tState]);
+  }, [selCid, tState, hasOverlap]); 
   
   useEffect(() => {
     if (canvasRef.current) canvasRef.current.style.cursor = mode === 'drag' ? 'crosshair' : 'default';
@@ -427,12 +459,16 @@ export default function MedidorCargas() {
   const handleDelCargo = (id) => {
     setCargas((cargas || []).filter(x => x.id !== id));
     Object.keys(tState.posOv).forEach(k => { if (k.split('_')[0] == id) delete tState.posOv[k]; });
-    if (selCid === id) setSelCid(null);
+    if (selCid === id) {
+      setSelCid(null);
+      tState.selPosKey = null; // NOVO: Limpa a referência
+    }
   };
   
   const handleSelectVeh = (id) => {
     setSelVeh(id);
     tState.posOv = {}; 
+    tState.selPosKey = null; // NOVO: Limpa a referência
     setSelCid(null);
     resetCam();
   };
@@ -463,6 +499,7 @@ export default function MedidorCargas() {
     if (key) tState.posOv[key] = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z };
     updateSelBar(mesh);
     syncPanel(mesh);
+    checkAllCollisions(); 
   };
 
   const alternarAndar = (cid) => {
@@ -490,6 +527,7 @@ export default function MedidorCargas() {
     if (key) tState.posOv[key] = { x: mesh.position.x, y: mesh.position.y, z: mesh.position.z };
     updateSelBar(mesh);
     syncPanel(mesh);
+    checkAllCollisions();
   };
   
   const nudge = (cid, axis, delta) => {
@@ -527,17 +565,61 @@ export default function MedidorCargas() {
   if (!veiculosBD || veiculosBD.length === 0) return <div style={{ color: 'var(--text)', padding: 20 }}>Nenhum veículo configurado no sistema.</div>;
 
   const actVeh = veiculosBD.find(x => x.id === selVeh);
+  
   const vVol = totalVol();
   const vBv = actVeh ? (actVeh.vol || (actVeh.L * actVeh.W * actVeh.H)) : 0;
   const vPct = vBv ? Math.round(vVol / vBv * 100) : 0;
   
+  const vArea = totalArea();
+  const vBa = actVeh ? (actVeh.L * actVeh.W) : 0;
+  const areaMax = actVeh?.type === 'ddeck' ? vBa * 2 : vBa;
+  const aPct = areaMax ? Math.round(vArea / areaMax * 100) : 0;
+  
+  const maxOcupacao = Math.max(vPct, aPct);
+
   let fCls = '', fChip = 'Aguardando', fChipCls = 'chip-idle', fSv = '—', fBg = 'var(--muted)';
+  
+  // 🟢 NOVA LÓGICA PARA VERIFICAR OS LIMITES EXCEDIDOS
+  let avisoCapacidade = null;
   if (actVeh) {
-    if (!cargas || cargas.length === 0) { fChip = 'Sem cargas'; fBg = 'var(--muted)'; }
-    else if (vPct > 100) { fCls = 'sv-over'; fChip = 'Excede capacidade'; fChipCls = 'chip-over'; fSv = 'Excede!'; fBg = 'var(--red)'; }
-    else if (vPct > 85) { fCls = 'sv-tight'; fChip = 'Espaço apertado'; fChipCls = 'chip-tight'; fSv = 'Ajustado'; fBg = 'var(--yellow)'; }
-    else { fCls = 'sv-ok'; fChip = 'Cabe perfeitamente'; fChipCls = 'chip-ok'; fSv = '✓ OK'; fBg = 'var(--green)'; }
+    if (vPct > 100 && aPct > 100) {
+      avisoCapacidade = "Capacidade de Volume e Piso Excedidas!";
+    } else if (vPct > 100) {
+      avisoCapacidade = "Capacidade de Volume Excedida!";
+    } else if (aPct > 100) {
+      avisoCapacidade = "Capacidade de Piso Excedida!";
+    }
+
+    if (!cargas || cargas.length === 0) { 
+      fChip = 'Sem cargas'; fBg = 'var(--muted)'; 
+    }
+    else if (vPct > 100) { 
+      fCls = 'sv-over'; fChip = 'Excede capacidade'; fChipCls = 'chip-over'; fSv = 'Excede Vol!'; fBg = 'var(--red)'; 
+    }
+    else if (aPct > 100) { 
+      fCls = 'sv-over'; fChip = 'Falta Piso (Chão)'; fChipCls = 'chip-over'; fSv = 'Excede Área!'; fBg = 'var(--orange)'; 
+    }
+    else if (maxOcupacao > 85) { 
+      fCls = 'sv-tight'; fChip = 'Espaço apertado'; fChipCls = 'chip-tight'; fSv = 'Ajustado'; fBg = 'var(--yellow)'; 
+    }
+    else { 
+      fCls = 'sv-ok'; fChip = 'Cabe perfeitamente'; fChipCls = 'chip-ok'; fSv = '✓ OK'; fBg = 'var(--green)'; 
+    }
   }
+
+  const sidebarProps = {
+    unit, setUnit, cargas, selCid, setSelCid,
+    handleAddCargo, handleDelCargo, fmt, focusCargo,
+    applyPos, resetPos, alternarAndar, nudge, panelRefs,
+    actVeh, veiculosBD, selVeh, handleSelectVeh, checkFit
+  };
+
+  const statsProps = {
+    vVol, vBv, vArea, areaMax, maxOcupacao, actVeh, fCls, fSv, fBg, vPct, aPct
+  };
+
+  // 🟢 Encontra qual é a carga atualmente selecionada
+  const selectedCargo = cargas?.find(c => c.id === selCid);
 
   return (
     <div className="medidor-wrapper-3d">
@@ -554,87 +636,8 @@ export default function MedidorCargas() {
       </header>
 
       <div className="layout">
-        <aside className="sidebar">
-          <div className="sb-scroll">
-            
-            <div className="sec">
-              <div className="stitle">Unidade de Medida</div>
-              <div className="urow">
-                <button className={`ubtn ${unit === 'm' ? 'on' : ''}`} onClick={() => setUnit('m')}>Metros (m)</button>
-                <button className={`ubtn ${unit === 'cm' ? 'on' : ''}`} onClick={() => setUnit('cm')}>Centímetros (cm)</button>
-              </div>
-            </div>
-
-            <CargoForm unit={unit} onAddCargo={handleAddCargo} />
-
-            <div className="sec">
-              <div className="stitle">
-                Cargas
-                <span id="cnt" style={{ background: 'var(--accent)', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.6rem' }}>{(cargas || []).length}</span>
-                <span style={{ color: 'var(--muted)', fontSize: '0.6rem', marginLeft: 'auto', fontWeight: 600, textTransform: 'none', letterSpacing: 0 }}>Clique para posicionar</span>
-              </div>
-              <div className="clist">
-      {(!cargas || cargas.length === 0) ? (
-                <div className="no-c">Nenhuma carga adicionada.</div>
-              ) : (
-                cargas.map(c => {
-                  const vol = (parseFloat(c.comprimento || 0) * parseFloat(c.largura || 0) * parseFloat(c.altura || 0) * parseInt(c.quantidade || 1)).toFixed(3);
-                  const isSel = selCid === c.id;
-                  return (
-                    <div key={c.id} className={`ci ${isSel ? 'sel' : ''}`} onClick={() => setSelCid(c.id)}>
-                      <div className="ci-top">
-                        <div className="ci-dot" style={{ background: c.cor }}></div>
-                        <div className="ci-body">
-                          <div className="ci-name">{c.nome}{parseInt(c.quantidade || 1) > 1 && <span className="ci-qty">×{c.quantidade}</span>}</div>
-                          <div className="ci-dim">{fmt(parseFloat(c.comprimento || 0))} × {fmt(parseFloat(c.largura || 0))} × {fmt(parseFloat(c.altura || 0))}</div>
-                          <div className="ci-vol">{vol} m³ total</div>
-                        </div>
-                        <div className="ci-acts">
-                          <button className="ci-act" onClick={(e) => { e.stopPropagation(); focusCargo(c.id); }} title="Focar">◎</button>
-                          <button className="ci-act ci-del" onClick={(e) => { e.stopPropagation(); handleDelCargo(c.id); }} title="Remover">✕</button>
-                        </div>
-                      </div>
-
-                      <div className="pp" onClick={(e) => e.stopPropagation()}>
-                        <div className="pp-title">📍 Posição Manual</div>
-                        <div className="pp-grid">
-                          {['x', 'y', 'z'].map(axis => (
-                            <div key={axis} className="pp-field">
-                              <label style={{ color: `var(--${axis === 'x' ? 'red' : axis === 'y' ? 'green' : 'accent'})` }}>Eixo {axis.toUpperCase()}</label>
-                              <div className="pp-iw">
-                                <input type="number" defaultValue="0" step="0.05" onChange={() => applyPos(c.id)} ref={el => { if (!panelRefs.current[c.id]) panelRefs.current[c.id] = {}; panelRefs.current[c.id][`p${axis}`] = el; }} />
-                                <span className="pp-suf">m</span>
-                              </div>
-                              <div className="pp-arrows">
-                                <div className="pp-arr" onClick={() => nudge(c.id, axis, -0.1)}>{axis === 'y' ? '▼' : '◀'}</div>
-                                <div className="pp-arr" onClick={() => nudge(c.id, axis, 0.1)}>{axis === 'y' ? '▲' : '▶'}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="pp-btns">
-                          <div className="pp-btn ok" onClick={() => applyPos(c.id)}>✓ Aplicar</div>
-                          <div className="pp-btn" onClick={() => resetPos(c.id)}>↺ Resetar</div>
-                          
-                          {actVeh && actVeh.type === 'ddeck' && (
-                            <div className="pp-btn" style={{ gridColumn: 'span 2', borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--acD)' }} onClick={() => alternarAndar(c.id)}>
-                              ↕ Mudar Andar (Cima/Baixo)
-                            </div>
-                          )}
-
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              </div>
-            </div>
-
-            <VehicleGrid veiculos={veiculosBD} selVeh={selVeh} onSelectVeh={handleSelectVeh} checkFit={checkFit} />
-
-          </div>
-        </aside>
+        
+        <SidebarCargas {...sidebarProps} />
 
         <div className="main-view">
           <div className="topbar">
@@ -645,10 +648,79 @@ export default function MedidorCargas() {
             <div className={`chip ${fChipCls}`}>{fChip}</div>
           </div>
 
-          <div id="cwrap" ref={wrapRef}>
+          <div id="cwrap" ref={wrapRef} style={{ position: 'relative' }}>
             <canvas id="c" tabIndex={0} ref={canvasRef}
               onMouseDown={onMD} onMouseMove={onMM} onMouseUp={onMU} onMouseLeave={onMU} onWheel={onWheel}
               onContextMenu={e => e.preventDefault()} />
+
+            {/* 🟢 PAINEL DE POSIÇÃO MANUAL */}
+            {selectedCargo && (
+              <div style={{
+                position: 'absolute', bottom: '20px', left: '20px',
+                background: 'rgba(255, 255, 255, 0.95)', border: '1px solid var(--border)',
+                padding: '15px', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                zIndex: 20, width: '280px', display: 'flex', flexDirection: 'column', gap: '10px',
+                pointerEvents: 'auto'
+              }}>
+                <div className="pp-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: 0, fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  <span>📍 Manual: <span style={{ color: 'var(--text)' }}>{selectedCargo.nome}</span></span>
+                  <button onClick={() => setSelCid(null)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem' }} title="Fechar painel">✕</button>
+                </div>
+                <div className="pp-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  {['x', 'y', 'z'].map(axis => (
+                    <div key={axis} className="pp-field" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', textAlign: 'center', color: `var(--${axis === 'x' ? 'red' : axis === 'y' ? 'green' : 'accent'})` }}>Eixo {axis.toUpperCase()}</label>
+                      <div className="pp-iw" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input type="number" defaultValue="0" step="0.05" onChange={() => applyPos(selectedCargo.id)} ref={el => { if (!panelRefs.current[selectedCargo.id]) panelRefs.current[selectedCargo.id] = {}; panelRefs.current[selectedCargo.id][`p${axis}`] = el; }} style={{ background: '#ffffff', border: '1px solid var(--border2)', borderRadius: '6px', color: 'var(--text)', fontSize: '0.85rem', padding: '6px 22px 6px 8px', outline: 'none', width: '100%', textAlign: 'right' }} />
+                        <span className="pp-suf" style={{ position: 'absolute', right: '8px', fontSize: '0.65rem', color: 'var(--muted)', fontWeight: 700, pointerEvents: 'none' }}>m</span>
+                      </div>
+                      <div className="pp-arrows" style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                        <div className="pp-arr" onClick={() => nudge(selectedCargo.id, axis, -0.1)} style={{ flex: 1, background: '#ffffff', border: '1px solid var(--border2)', color: 'var(--muted2)', cursor: 'pointer', fontSize: '0.8rem', padding: '4px 0', borderRadius: '4px', textAlign: 'center' }}>{axis === 'y' ? '▼' : '◀'}</div>
+                        <div className="pp-arr" onClick={() => nudge(selectedCargo.id, axis, 0.1)} style={{ flex: 1, background: '#ffffff', border: '1px solid var(--border2)', color: 'var(--muted2)', cursor: 'pointer', fontSize: '0.8rem', padding: '4px 0', borderRadius: '4px', textAlign: 'center' }}>{axis === 'y' ? '▲' : '▶'}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="pp-btns" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                  <div className="pp-btn ok" onClick={() => applyPos(selectedCargo.id)} style={{ padding: '8px', border: '1px solid var(--green)', background: '#f0fdf4', color: 'var(--green)', cursor: 'pointer', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', textAlign: 'center' }}>✓ Aplicar</div>
+                  <div className="pp-btn" onClick={() => resetPos(selectedCargo.id)} style={{ padding: '8px', border: '1px solid var(--border2)', background: '#ffffff', color: 'var(--muted2)', cursor: 'pointer', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', textAlign: 'center' }}>↺ Resetar</div>
+                  
+                  {actVeh && actVeh.type === 'ddeck' && (
+                    <div className="pp-btn" style={{ gridColumn: 'span 2', borderColor: 'var(--accent)', color: 'var(--accent)', background: 'var(--acD)', padding: '8px', border: '1px solid var(--accent)', cursor: 'pointer', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', textAlign: 'center' }} onClick={() => alternarAndar(selectedCargo.id)}>
+                      ↕ Mudar Andar
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 🔴 BANNER DE AVISO DE SOBREPOSIÇÃO 🔴 */}
+            {hasOverlap && (
+              <div style={{
+                position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)',
+                backgroundColor: '#ef4444', color: 'white', padding: '8px 16px',
+                borderRadius: '8px', fontWeight: 'bold', fontSize: '0.9rem',
+                boxShadow: '0 4px 10px rgba(239, 68, 68, 0.4)', zIndex: 10,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                animation: 'slideUp 0.3s'
+              }}>
+                ⚠️ SOBREPOSIÇÃO DE CAIXA: Uma ou mais cargas estão a colidir!
+              </div>
+            )}
+
+            {/* 🔴 BANNER DE AVISO DE CAPACIDADE EXCEDIDA */}
+            {avisoCapacidade && (
+              <div style={{
+                position: 'absolute', top: '20px', right: '20px',
+                backgroundColor: '#ef4444', color: 'white', padding: '10px 16px',
+                borderRadius: '8px', fontWeight: 'bold', fontSize: '0.85rem',
+                boxShadow: '0 4px 10px rgba(239, 68, 68, 0.4)', zIndex: 10,
+                display: 'flex', alignItems: 'center', gap: '8px',
+                animation: 'slideUp 0.3s'
+              }}>
+                ⛔ {avisoCapacidade}
+              </div>
+            )}
 
             {!selVeh && (
               <div className="hint"><h3>🚛 VISUALIZAÇÃO 3D</h3><p>Adicione cargas e selecione um veículo</p></div>
@@ -688,22 +760,19 @@ export default function MedidorCargas() {
             )}
           </div>
 
-          {selVeh && (
-            <div className="statsbar">
-              <div className="stat"><div className="sl">Vol. Cargas</div><div className="sv">{vVol.toFixed(3)} m³</div></div>
-              <div className="stat"><div className="sl">Vol. Baú</div><div className="sv">{actVeh.vol ? actVeh.vol.toFixed(1) : vBv.toFixed(1)} m³</div></div>
-              <div className="occ">
-                <div className="occ-row">
-                  <span className="sl">Ocupação</span>
-                  <span className={`sv ${fCls}`} style={{ fontSize: '0.88rem' }}>{Math.min(200, vPct)}%</span>
-                </div>
-                <div className="occ-track"><div className="occ-fill" style={{ width: `${Math.min(100, vPct)}%`, background: fBg }}></div></div>
-              </div>
-              <div className="stat"><div className="sl">Status</div><div className={`sv ${fCls}`}>{fSv}</div></div>
-            </div>
-          )}
+          <StatsBar {...statsProps} />
+          
         </div>
       </div>
+      
+      {showRelatorio && (
+        <ModalRelatorio 
+          veiculo={actVeh} 
+          cargas={cargas} 
+          ocupacao={Math.min(200, maxOcupacao)} 
+          onClose={() => setShowRelatorio(false)} 
+        />
+      )}
     </div>
   );
 }

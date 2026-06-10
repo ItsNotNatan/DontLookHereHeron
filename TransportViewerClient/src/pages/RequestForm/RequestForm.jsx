@@ -15,44 +15,77 @@ export default function RequestForm() {
 
   const [carregando, setCarregando] = useState(false);
   const [dataHoje, setDataHoje] = useState('');
-  
-  // 🟢 Variável para travar o calendário de datas passadas (formato YYYY-MM-DD)
   const [dataMinima, setDataMinima] = useState('');
 
+  // 🟢 NOVO: Função para resgatar dados do SessionStorage de forma segura
+  const getSavedState = () => {
+    try {
+      const saved = sessionStorage.getItem('requestFormState');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  };
+  const savedState = getSavedState();
+
+  // 🟢 NOVO: Estados para os inputs que antes não eram controlados
+  const [solicitante, setSolicitante] = useState(savedState.solicitante || '');
+  const [pedidoCompra, setPedidoCompra] = useState(savedState.pedidoCompra || '');
+  const [tipoOperacao, setTipoOperacao] = useState(savedState.tipoOperacao || '');
+  const [veiculo, setVeiculo] = useState(savedState.veiculo || '');
+  const [frete, setFrete] = useState(savedState.frete || '');
+  const [nf, setNf] = useState(savedState.nf || '');
+  const [obs, setObs] = useState(savedState.obs || '');
+
+  // Inicializando os estados existentes com os dados do SessionStorage (se existirem)
   const [enderecosFixos, setEnderecosFixos] = useState([]);
-  const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(null);
-  const [enderecoEntregaSelecionado, setEnderecoEntregaSelecionado] = useState(null);
+  const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(savedState.enderecoColetaSelecionado || null);
+  const [enderecoEntregaSelecionado, setEnderecoEntregaSelecionado] = useState(savedState.enderecoEntregaSelecionado || null);
 
-  const [empresaColeta, setEmpresaColeta] = useState('');
-  const [nomeContatoColeta, setNomeContatoColeta] = useState('');
-  const [telefoneColeta, setTelefoneColeta] = useState('');
-  const [dataColeta, setDataColeta] = useState('');
-  const [coleta, setColeta] = useState({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
+  const [empresaColeta, setEmpresaColeta] = useState(savedState.empresaColeta || '');
+  const [nomeContatoColeta, setNomeContatoColeta] = useState(savedState.nomeContatoColeta || '');
+  const [telefoneColeta, setTelefoneColeta] = useState(savedState.telefoneColeta || '');
+  const [dataColeta, setDataColeta] = useState(savedState.dataColeta || '');
+  const [coleta, setColeta] = useState(savedState.coleta || { cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
 
-  const [empresaEntrega, setEmpresaEntrega] = useState('');
-  const [nomeContatoEntrega, setNomeContatoEntrega] = useState('');
-  const [telefoneEntrega, setTelefoneEntrega] = useState('');
-  const [dataEntrega, setDataEntrega] = useState('');
-  const [entrega, setEntrega] = useState({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
+  const [empresaEntrega, setEmpresaEntrega] = useState(savedState.empresaEntrega || '');
+  const [nomeContatoEntrega, setNomeContatoEntrega] = useState(savedState.nomeContatoEntrega || '');
+  const [telefoneEntrega, setTelefoneEntrega] = useState(savedState.telefoneEntrega || '');
+  const [dataEntrega, setDataEntrega] = useState(savedState.dataEntrega || '');
+  const [entrega, setEntrega] = useState(savedState.entrega || { cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
 
   const [novaCarga, setNovaCarga] = useState({
     nome: '', quantidade: 1, peso: '', comprimento: '', largura: '', altura: '', cor: '#3b82f6'
   });
   const [cargasSelecionadas, setCargasSelecionadas] = useState([]);
 
-  const [wbsSelecionada, setWbsSelecionada] = useState('');
+  const [wbsSelecionada, setWbsSelecionada] = useState(savedState.wbsSelecionada || '');
   const [opcoesWbs, setOpcoesWbs] = useState([]);
 
-  // ESTADO PARA A MÁSCARA DE DINHEIRO
-  const [valorNfMask, setValorNfMask] = useState('');
+  const [valorNfMask, setValorNfMask] = useState(savedState.valorNfMask || '');
+
+  // 🟢 NOVO: Efeito que guarda tudo no SessionStorage sempre que houver alguma alteração
+  useEffect(() => {
+    const stateToSave = {
+      solicitante, pedidoCompra, tipoOperacao, veiculo, frete, nf, obs,
+      wbsSelecionada,
+      enderecoColetaSelecionado, empresaColeta, nomeContatoColeta, telefoneColeta, dataColeta, coleta,
+      enderecoEntregaSelecionado, empresaEntrega, nomeContatoEntrega, telefoneEntrega, dataEntrega, entrega,
+      valorNfMask
+    };
+    sessionStorage.setItem('requestFormState', JSON.stringify(stateToSave));
+  }, [
+    solicitante, pedidoCompra, tipoOperacao, veiculo, frete, nf, obs,
+    wbsSelecionada,
+    enderecoColetaSelecionado, empresaColeta, nomeContatoColeta, telefoneColeta, dataColeta, coleta,
+    enderecoEntregaSelecionado, empresaEntrega, nomeContatoEntrega, telefoneEntrega, dataEntrega, entrega,
+    valorNfMask
+  ]);
 
   useEffect(() => {
     const hoje = new Date();
-    // Exibição amigável para o cabeçalho (DD/MM/AAAA)
     setDataHoje(hoje.toLocaleDateString('pt-BR'));
     
-    // Configura a data mínima no formato universal para o <input type="date">
-    // Subtrair o fuso horário (timezoneOffset) garante que a data não pule um dia para trás
     const timezoneOffset = hoje.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(hoje.getTime() - timezoneOffset)).toISOString().split('T')[0];
     setDataMinima(localISOTime);
@@ -208,10 +241,33 @@ export default function RequestForm() {
     setCargasSelecionadas([]);
   };
 
+  // 🟢 NOVO: Função central para resetar todo o formulário e a memória do navegador
+  const limparFormularioCompleto = () => {
+    sessionStorage.removeItem('requestFormState');
+    setSolicitante('');
+    setPedidoCompra('');
+    setTipoOperacao('');
+    setVeiculo('');
+    setFrete('');
+    setNf('');
+    setObs('');
+    setWbsSelecionada('');
+    setEnderecoColetaSelecionado(null);
+    setEnderecoEntregaSelecionado(null);
+    setEmpresaColeta(''); setEmpresaEntrega('');
+    setNomeContatoColeta(''); setNomeContatoEntrega('');
+    setDataColeta(''); setDataEntrega('');
+    setTelefoneColeta(''); setTelefoneEntrega('');
+    setColeta({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
+    setEntrega({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
+    setValorNfMask('');
+    setCargas([]); 
+    setCargasSelecionadas([]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Impede o envio se as datas digitadas manualmente forem do passado
     if (dataColeta && dataColeta < dataMinima) {
       showAlert("Data Inválida", "A Data de Coleta não pode ser anterior ao dia de hoje.", "warning");
       return;
@@ -237,9 +293,8 @@ export default function RequestForm() {
     const formData = new FormData(e.target);
     const dados = Object.fromEntries(formData.entries());
 
-    dados.dataSolicitacao = dataHoje; // Já está em DD/MM/AAAA
+    dados.dataSolicitacao = dataHoje; 
     
-    // 🟢 MÁGICA AQUI: Converte as datas (AAAA-MM-DD) enviadas pelo calendário para DD/MM/AAAA antes de mandar para o banco
     if (dados.dataColeta) {
       dados.dataColeta = dados.dataColeta.split('-').reverse().join('/');
     }
@@ -274,18 +329,9 @@ export default function RequestForm() {
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
+      // 🟢 Chamamos a função de limpeza central
+      limparFormularioCompleto();
       e.target.reset();
-      setColeta({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
-      setEntrega({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
-      setEmpresaColeta(''); setEmpresaEntrega('');
-      setNomeContatoColeta(''); setNomeContatoEntrega('');
-      setDataColeta(''); setDataEntrega('');
-      setTelefoneColeta(''); setTelefoneEntrega('');
-      setCargas([]); setCargasSelecionadas([]);
-      setWbsSelecionada(''); 
-      setEnderecoColetaSelecionado(null); setEnderecoEntregaSelecionado(null);
-      
-      setValorNfMask('');
 
     } catch (erro) {
       console.error("Erro no envio:", erro);
@@ -330,15 +376,14 @@ export default function RequestForm() {
           <div className="badge-info"><i className="fa-solid fa-clock"></i> Preencha os dados</div>
         </div>
 
-        
-
         <form onSubmit={handleSubmit}>
 
           <h4 className="section-title"><i className="fa-solid fa-user-tag"></i> Dados do Solicitante</h4>
           <div className="form-grid-4">
             <div className="input-group">
               <label>Nome completo *</label>
-              <input type="text" name="solicitante" required className="input-control" placeholder="Seu nome" />
+              {/* 🟢 Inputs agora recebem value e onChange para estarem amarrados ao estado */}
+              <input type="text" name="solicitante" value={solicitante} onChange={e => setSolicitante(e.target.value)} required className="input-control" placeholder="Seu nome" />
             </div>
             <div className="input-group">
               <label>Data da Solicitação</label>
@@ -346,13 +391,13 @@ export default function RequestForm() {
             </div>
             <div className="input-group">
               <label>Nº do Pedido *</label>
-              <input type="text" name="pedidoCompra" required className="input-control" placeholder="Digite o nº do pedido" />
+              <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} required className="input-control" placeholder="Digite o nº do pedido" />
             </div>
             <div className="input-group">
               <label>Tipo de Operação *</label>
-              <select name="tipo_operacao" required className="input-control" defaultValue="">
+              <select name="tipo_operacao" value={tipoOperacao} onChange={e => setTipoOperacao(e.target.value)} required className="input-control">
                 <option value="" disabled>Selecione...</option>
-                                <option value="Importação">NACIONAL</option>
+                <option value="Importação">NACIONAL</option>
                 <option value="Nacional">NACIONALIZADO</option>
               </select>
             </div>
@@ -656,11 +701,11 @@ export default function RequestForm() {
           <div className="form-grid-4">
             <div className="input-group">
               <label>Veículo *</label>
-              <select name="veiculo" required className="input-control">
+              <select name="veiculo" value={veiculo} onChange={e => setVeiculo(e.target.value)} required className="input-control">
                 <option value="">Selecione...</option>
-                {LISTA_VEICULOS.map((veiculo, index) => (
-                  <option key={index} value={veiculo}>
-                    {veiculo}
+                {LISTA_VEICULOS.map((veiculoItem, index) => (
+                  <option key={index} value={veiculoItem}>
+                    {veiculoItem}
                   </option>
                 ))}
               </select>
@@ -668,7 +713,7 @@ export default function RequestForm() {
 
             <div className="input-group">
               <label>Tipo de Frete *</label>
-              <select name="frete" required className="input-control">
+              <select name="frete" value={frete} onChange={e => setFrete(e.target.value)} required className="input-control">
                 <option value="">Selecione...</option>
                 <option value="Dedicado">DEDICADO</option>
                 <option value="Fracionado">FRACIONADO</option>
@@ -680,7 +725,7 @@ export default function RequestForm() {
 
             <div className="input-group">
               <label>Nota Fiscal *</label>
-              <input type="text" name="nf" required className="input-control" placeholder="Nº da NFe" />
+              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} required className="input-control" placeholder="Nº da NFe" />
             </div>
 
             <div className="input-group">
@@ -704,14 +749,12 @@ export default function RequestForm() {
 
           <div className="input-group" style={{ marginTop: '1rem' }}>
             <label>Observações Adicionais</label>
-            <textarea name="obs" rows="3" className="input-control" placeholder="Instruções especiais, restrições de horário, etc."></textarea>
+            <textarea name="obs" value={obs} onChange={e => setObs(e.target.value)} rows="3" className="input-control" placeholder="Instruções especiais, restrições de horário, etc."></textarea>
           </div>
 
           <div className="form-actions" style={{ marginTop: '2rem' }}>
-            <button type="reset" className="btn btn-outline" onClick={() => {
-              setWbsSelecionada('');
-              setValorNfMask('');
-            }}>Limpar</button>
+            {/* 🟢 O botão Limpar agora apaga a memória e limpa os campos através da função */}
+            <button type="button" className="btn btn-outline" onClick={limparFormularioCompleto}>Limpar</button>
             <button type="submit" disabled={carregando} className="btn btn-primary">
               <i className="fa-solid fa-floppy-disk"></i> {carregando ? 'Salvando...' : 'Salvar Solicitação'}
             </button>
