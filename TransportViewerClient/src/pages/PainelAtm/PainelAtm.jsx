@@ -7,6 +7,15 @@ import BtnExcel from '../../components/BtnExcel/BtnExcel';
 import SearchBar from '../../components/SearchBar/SearchBar';
 import FiltroAtm from '../../components/FiltroATM/FiltroAtm';
 
+// 🟢 1. IMPORTA O SOCKET
+import { io } from 'socket.io-client';
+
+// 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou para a URL do Render)
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
+const socket = io(SOCKET_URL);
+
+
 // --- Ícones SVG embutidos ---
 const FolderOpen = ({ size = 24, className = "" }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/></svg>
@@ -53,6 +62,17 @@ export default function PainelAtm() {
 
   useEffect(() => {
     buscarPedidos();
+
+    // 🟢 3. ESCUTA O EVENTO DO BACKEND
+    socket.on('transportes_atualizados', () => {
+      console.log('🔄 Atualização de transportes recebida via Socket. Recarregando tabela...');
+      buscarPedidos();
+    });
+
+    // 🟢 4. DESLIGA O EVENTO QUANDO SAIR DA TELA
+    return () => {
+      socket.off('transportes_atualizados');
+    };
   }, []);
 
   useEffect(() => {
@@ -67,7 +87,9 @@ export default function PainelAtm() {
   }, [selectedAtm]);
 
   const buscarPedidos = async () => {
-    setCarregando(true);
+    // Para não piscar a tela no real-time, só ativa o loading visual se a lista estiver vazia
+    if (atms.length === 0) setCarregando(true);
+    
     try {
       const resposta = await api.get('/admin/transportes'); 
       setAtms(resposta.data);
@@ -168,26 +190,19 @@ export default function PainelAtm() {
     return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  // 🟢 NOVA FUNÇÃO: Renderiza o LED de Desvio de Custo
-  // Compara se o valor realizado passou do previsto
-// 🟢 FUNÇÃO ATUALIZADA: Renderiza o LED de Desvio de Custo com o estado "Cinza"
   const renderDesvioCusto = (atm) => {
-    // Pega os valores originais que vêm do banco de dados
     const previstoRaw = atm.valor || atm.valor_nf;
     const realizadoRaw = atm.valor_realizado;
 
-    // Se NÃO houver previsto E NÃO houver realizado, acende a luz cinza
     if (!previstoRaw && !realizadoRaw) {
       return (
         <span className="led-status led-cinza" title="Nenhum valor financeiro informado"></span>
       );
     }
 
-    // Se houver algum valor, fazemos a conversão para número e comparamos
     const previsto = Number(previstoRaw || 0);
     const realizado = Number(realizadoRaw || 0);
     
-    // Se o realizado for maior que o previsto, fica vermelho. Senão, verde.
     const isOverBudget = realizado > previsto;
     const ledClass = isOverBudget ? 'led-vermelho' : 'led-verde';
     
@@ -250,10 +265,8 @@ export default function PainelAtm() {
             
             <tbody>
               {carregando ? (
-                /* 🟢 colSpan alterado para 11 porque agora temos uma coluna a menos */
                 <tr><td colSpan="11" className="painel-table__cell--empty">Carregando seus pedidos...</td></tr>
               ) : atmsExibidos.length === 0 ? (
-                /* 🟢 colSpan alterado para 11 */
                 <tr><td colSpan="11" className="painel-table__cell--empty">Nenhum pedido encontrado com estes filtros.</td></tr>
               ) : atmsExibidos.map((atm) => (
                 <tr key={atm.id} className="painel-table__row">
@@ -283,7 +296,7 @@ export default function PainelAtm() {
                       </div>
                     </div>
                   </td>
-   
+    
                   <td className="painel-table__cell">{atm.veiculo}</td>
                   <td className="painel-table__cell painel-table__cell--medium">
                     {atm.transportadora?.nome || <span className="painel-table__cell--muted">A Definir</span>}

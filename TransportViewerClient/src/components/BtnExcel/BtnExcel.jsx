@@ -1,4 +1,4 @@
-// src/componentes/BtnExcel/BtnExcel.jsx
+// src/components/BtnExcel/BtnExcel.jsx
 import React from 'react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -13,6 +13,13 @@ const DownloadIcon = ({ size = 20, className = "" }) => (
 export default function BtnExcel({ atmsFiltrados }) {
   
   const shortId = (id) => id ? id.substring(0, 8).toUpperCase() : 'N/A';
+
+  // 🟢 HELPER: Transforma texto em Número Real para o Excel permitir fazer Somas/Fórmulas
+  const parseValor = (val) => {
+    if (!val) return '';
+    const num = Number(val);
+    return isNaN(num) ? val : num;
+  };
 
   const exportarExcel = async () => {
     if (!atmsFiltrados || atmsFiltrados.length === 0) {
@@ -33,43 +40,32 @@ export default function BtnExcel({ atmsFiltrados }) {
       worksheet.getCell('D2').font = { bold: true, size: 16 };
       
       // ============================================================
-      // INSERÇÃO DA IMAGEM NO EXCEL
-      // ============================================================
-// ============================================================
       // INSERÇÃO DA IMAGEM NO EXCEL (COM PROPORÇÃO AUTOMÁTICA)
       // ============================================================
-      
-      // 1. Transforma a imagem importada em dados brutos (Buffer)
       const response = await fetch(logoComau);
       const bufferImage = await response.arrayBuffer();
 
-      // 2. Lógica para descobrir o tamanho real da imagem e não distorcer
       const img = new Image();
       img.src = logoComau;
       await new Promise((resolve) => {
         img.onload = resolve;
       });
       
-      // Defina aqui qual a ALTURA que você quer que a logo tenha no Excel
       const alturaDesejada = 80; 
-      // A mágica: calcula a largura exata para não espremer!
       const larguraProporcional = (img.width / img.height) * alturaDesejada;
 
-      // 3. Registra a imagem dentro do arquivo do ExcelJS
       const logoId = workbook.addImage({
         buffer: bufferImage,
         extension: 'png', 
       });
 
-      // 4. Cola a imagem na planilha na posição desejada
       worksheet.addImage(logoId, {
-        tl: { col: 0, row: 0 }, // col: 0 = Coluna A | row: 1 = Linha 2
+        tl: { col: 0, row: 0 }, 
         ext: { width: larguraProporcional, height: alturaDesejada } 
       });
       // ============================================================
-      // ============================================================
 
-      // Configuração das Colunas
+      // Configuração das Colunas (Atualizado)
       worksheet.columns = [
         { key: 'data_sol', width: 22 },
         { key: 'atm', width: 12 },
@@ -94,12 +90,11 @@ export default function BtnExcel({ atmsFiltrados }) {
         { key: 'valor_previsto', width: 22 },
         { key: 'status', width: 15 },
         { key: 'obs', width: 35 },
-        // 👇 COLUNA SEPARADORA PRETA AQUI 👇
         { key: 'separador_preto', width: 3 }, 
         { key: 'tipo_doc', width: 15 },
         { key: 'data_map', width: 18 },
         { key: 'fatura', width: 15 },
-        { key: 'valor', width: 15 },
+        { key: 'valor_realizado', width: 20 }, // 🟢 SUBSTITUÍDO "valor" POR "valor_realizado"
         { key: 'data_emissao', width: 15 },
         { key: 'vencimento', width: 15 },
         { key: 'elemento_pep', width: 25 },
@@ -109,13 +104,13 @@ export default function BtnExcel({ atmsFiltrados }) {
         { key: 'registrado_sap', width: 22 }
       ];
 
-      // Títulos do Cabeçalho
+      // Títulos do Cabeçalho (Atualizado)
       const titulos = [
         "DATA DA SOLICITAÇÃO", "ATM", "PEDIDO DE COMPRA", "NF", "WBS", "UF", "MUNICIPIO", "LOCAL DE COLETA", "X", 
         "LOCAL DA ENTREGA", "UF 2", "MUNICIPIO 2", "Fracionado/Dedicado", "SOLICITAÇÃO", "VEÍCULO", "TRANSPORTADORA", 
-        "COTAÇÃO/BID", "VALOR NF", "VOLUME", "PESO", "Valor previsto do frete", "STATUS", "OBSERVAÇÕES", 
+        "COTAÇÃO/BID", "VALOR NF", "VOLUME", "PESO", "VALOR PREVISTO", "STATUS", "OBSERVAÇÕES", 
         "", // Título vazio para a coluna preta
-        "TIPO", "DATA MAPEAMENTO", "FATURA", "VALOR", "DATA EMISSÃO", "VENCIMENTO", "ELEMENTO PEP - CC / WBS", 
+        "TIPO", "DATA MAPEAMENTO", "FATURA", "VALOR REALIZADO", "DATA EMISSÃO", "VENCIMENTO", "ELEMENTO PEP - CC / WBS", 
         "VALIDAÇÃO PEP - CC /WBS", "Lançamento V360", "Id V360", "Registrado SAP (S/N)"
       ];
 
@@ -123,7 +118,6 @@ export default function BtnExcel({ atmsFiltrados }) {
       linhaCabecalho.values = titulos;
 
       linhaCabecalho.eachCell((cell, colNumber) => {
-        // Verifica se é a coluna do separador
         if (worksheet.getColumn(colNumber).key === 'separador_preto') {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
         } else {
@@ -155,17 +149,18 @@ export default function BtnExcel({ atmsFiltrados }) {
           veiculo: atm.veiculo || atm.modal || '-',
           transportadora: atm.transportadora?.nome || '-',
           cotacao: atm.cotacao_bid ? "Cotação" : (atm.valor_bid ? "BID" : '-'),
-          valor_nf: atm.valor_nf || '',
+          valor_nf: parseValor(atm.valor_nf),
           volume: atm.volume || '',
           peso: atm.peso || '',
-          valor_previsto: atm.valor_bid_dedicado || '',
+          valor_previsto: parseValor(atm.valor || atm.valor_nf || atm.valor_bid_dedicado), 
           status: atm.status || '-',
           obs: atm.observacoes || '-',
-          separador_preto: '', // Valor vazio para a coluna preta
+          separador_preto: '', 
           tipo_doc: atm.tipo_documento || '-',
           data_map: atm.data_mapeamento ? atm.data_mapeamento.split('T')[0] : '-',
           fatura: atm.fatura_cte || '-',
-          valor: atm.valor || '',
+          // 🟢 MAPEADO PARA "valor_realizado" NO LUGAR DO "valor"
+          valor_realizado: parseValor(atm.valor_realizado),
           data_emissao: atm.data_emissao ? atm.data_emissao.split('T')[0] : '-',
           vencimento: atm.vencimento ? atm.vencimento.split('T')[0] : '-',
           elemento_pep: atm.elemento_pep_cc_wbs || '-',
@@ -186,6 +181,11 @@ export default function BtnExcel({ atmsFiltrados }) {
         });
       });
 
+      // 🟢 Formata as colunas financeiras como Moeda do Brasil nativamente no Excel
+      ['valor_nf', 'valor_previsto', 'valor_realizado'].forEach(key => {
+        worksheet.getColumn(key).numFmt = '"R$ "#,##0.00';
+      });
+
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       saveAs(blob, "Gestao_de_Fretes.xlsx");
@@ -199,7 +199,7 @@ export default function BtnExcel({ atmsFiltrados }) {
   return (
     <button 
       onClick={exportarExcel} 
-      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#10b981', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
+      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#10b981', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem', border: 'none', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}
       title="Baixar Tabela no Formato Original"
     >
       <DownloadIcon size={18} /> Exportar Gestão de Fretes

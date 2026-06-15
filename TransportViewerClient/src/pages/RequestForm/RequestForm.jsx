@@ -1,4 +1,4 @@
-// src/componentes/RequestForm/RequestForm.jsx
+// src/pages/RequestForm/RequestForm.jsx
 import React, { useState, useEffect } from 'react';
 import AbaSimulacao from '../../components/AbaSimulacao/AbaSimulacao.jsx';
 import Select from 'react-select'; 
@@ -9,6 +9,14 @@ import { LISTA_VEICULOS } from './ListaVeiculos.js';
 import { useAlert } from '../../components/AlertContext/AlertContext';
 import { useCargasContext } from '../../components/context/CargasContext.jsx'; 
 
+// 🟢 1. IMPORTA O SOCKET
+import { io } from 'socket.io-client';
+
+// 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou nuvem)
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
+const socket = io(SOCKET_URL);
+
 export default function RequestForm() {
   const { showAlert } = useAlert();
   const { cargasGlobais: cargas, setCargasGlobais: setCargas } = useCargasContext();
@@ -17,7 +25,6 @@ export default function RequestForm() {
   const [dataHoje, setDataHoje] = useState('');
   const [dataMinima, setDataMinima] = useState('');
 
-  // 🟢 NOVO: Função para resgatar dados do SessionStorage de forma segura
   const getSavedState = () => {
     try {
       const saved = sessionStorage.getItem('requestFormState');
@@ -28,7 +35,6 @@ export default function RequestForm() {
   };
   const savedState = getSavedState();
 
-  // 🟢 NOVO: Estados para os inputs que antes não eram controlados
   const [solicitante, setSolicitante] = useState(savedState.solicitante || '');
   const [pedidoCompra, setPedidoCompra] = useState(savedState.pedidoCompra || '');
   const [tipoOperacao, setTipoOperacao] = useState(savedState.tipoOperacao || '');
@@ -37,7 +43,6 @@ export default function RequestForm() {
   const [nf, setNf] = useState(savedState.nf || '');
   const [obs, setObs] = useState(savedState.obs || '');
 
-  // Inicializando os estados existentes com os dados do SessionStorage (se existirem)
   const [enderecosFixos, setEnderecosFixos] = useState([]);
   const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(savedState.enderecoColetaSelecionado || null);
   const [enderecoEntregaSelecionado, setEnderecoEntregaSelecionado] = useState(savedState.enderecoEntregaSelecionado || null);
@@ -64,7 +69,6 @@ export default function RequestForm() {
 
   const [valorNfMask, setValorNfMask] = useState(savedState.valorNfMask || '');
 
-  // 🟢 NOVO: Efeito que guarda tudo no SessionStorage sempre que houver alguma alteração
   useEffect(() => {
     const stateToSave = {
       solicitante, pedidoCompra, tipoOperacao, veiculo, frete, nf, obs,
@@ -92,6 +96,23 @@ export default function RequestForm() {
 
     carregarProjetos();
     carregarEnderecos();
+
+    // 🟢 3. ESCUTA EVENTOS DO SERVIDOR PARA ATUALIZAR OS DROPDOWNS EM TEMPO REAL
+    socket.on('projetos_atualizados', () => {
+      console.log('🔄 Lista de projetos alterada! Atualizando dropdown...');
+      carregarProjetos();
+    });
+
+    socket.on('locais_atualizados', () => {
+      console.log('🔄 Lista de locais alterada! Atualizando dropdown...');
+      carregarEnderecos();
+    });
+
+    // 🟢 4. DESCONECTA OS OUVINTES AO SAIR DA TELA
+    return () => {
+      socket.off('projetos_atualizados');
+      socket.off('locais_atualizados');
+    };
   }, []);
 
   const carregarProjetos = async () => {
@@ -241,7 +262,6 @@ export default function RequestForm() {
     setCargasSelecionadas([]);
   };
 
-  // 🟢 NOVO: Função central para resetar todo o formulário e a memória do navegador
   const limparFormularioCompleto = () => {
     sessionStorage.removeItem('requestFormState');
     setSolicitante('');
@@ -329,7 +349,6 @@ export default function RequestForm() {
       
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
-      // 🟢 Chamamos a função de limpeza central
       limparFormularioCompleto();
       e.target.reset();
 
@@ -382,7 +401,6 @@ export default function RequestForm() {
           <div className="form-grid-4">
             <div className="input-group">
               <label>Nome completo *</label>
-              {/* 🟢 Inputs agora recebem value e onChange para estarem amarrados ao estado */}
               <input type="text" name="solicitante" value={solicitante} onChange={e => setSolicitante(e.target.value)} required className="input-control" placeholder="Seu nome" />
             </div>
             <div className="input-group">
