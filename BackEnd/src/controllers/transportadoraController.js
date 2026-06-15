@@ -1,3 +1,4 @@
+// src/controllers/transportadoraController.js
 const supabase = require('../config/supabase');
 
 const listarTransportadoras = async (req, res) => {
@@ -5,7 +6,7 @@ const listarTransportadoras = async (req, res) => {
     const { data, error } = await supabase
       .from('transportadoras')
       .select('*')
-      .eq('ativo', true) // 🟢 MÁGICA: Só puxa as transportadoras ativas!
+      .eq('ativo', true)
       .order('nome', { ascending: true });
       
     if (error) throw error;
@@ -18,13 +19,16 @@ const listarTransportadoras = async (req, res) => {
 const criarTransportadora = async (req, res) => {
   try {
     const { nome } = req.body;
-    // Garante que a nova transportadora nasça ativa
     const { data, error } = await supabase
       .from('transportadoras')
       .insert([{ nome, ativo: true }])
       .select();
       
     if (error) throw error;
+
+    // 🟢 AVISA O FRONT-END
+    req.app.get('io').emit('transportadoras_atualizadas');
+
     res.status(201).json(data[0]);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -43,6 +47,10 @@ const atualizarTransportadora = async (req, res) => {
       .select();
       
     if (error) throw error;
+
+    // 🟢 AVISA O FRONT-END
+    req.app.get('io').emit('transportadoras_atualizadas');
+
     res.json(data[0]);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -53,13 +61,16 @@ const excluirTransportadora = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 🟢 SOFT DELETE: Em vez de .delete(), usamos .update({ ativo: false })
     const { error } = await supabase
       .from('transportadoras')
       .update({ ativo: false })
       .eq('id', id);
       
     if (error) throw error;
+
+    // 🟢 AVISA O FRONT-END
+    req.app.get('io').emit('transportadoras_atualizadas');
+
     res.status(204).send();
   } catch (erro) {
     res.status(500).json({ erro: erro.message });

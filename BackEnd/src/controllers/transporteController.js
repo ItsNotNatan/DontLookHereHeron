@@ -74,6 +74,9 @@ const criarTransporte = async (req, res) => {
 
     if (erroAtm) throw new Error('Erro ATM: ' + erroAtm.message);
 
+    // 🟢 AVISA O FRONT-END QUE UM NOVO PEDIDO FOI CRIADO!
+    req.app.get('io').emit('transportes_atualizados');
+
     res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedidoAtm[0].id });
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -202,6 +205,9 @@ const atualizarTransporteAdmin = async (req, res) => {
       }
     }
 
+    // 🟢 AVISA O FRONT-END QUE UM PEDIDO FOI ATUALIZADO!
+    req.app.get('io').emit('transportes_atualizados');
+
     res.json({ mensagem: '✅ Pedido, Endereços e Faturamento atualizados!' });
 
   } catch (erro) {
@@ -300,6 +306,9 @@ const atualizarLoteAdmin = async (req, res) => {
     });
 
     await Promise.all(promessas);
+
+    // 🟢 AVISA O FRONT-END QUE UM LOTE DE PEDIDOS FOI ATUALIZADO!
+    req.app.get('io').emit('transportes_atualizados');
 
     res.json({ mensagem: `✅ Lote de ${ids.length} pedidos atualizado com sucesso!` });
 

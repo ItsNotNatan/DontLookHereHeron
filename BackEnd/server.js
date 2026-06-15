@@ -1,8 +1,9 @@
-// server.js - Versão Atualizada com Veículos, Drive e Sincronizador Google Sheets
+// server.js - Versão Atualizada com Veículos, Drive, Sincronizador Google Sheets e SOCKET.IO
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const { Server } = require('socket.io'); // 🟢 1. Importando o Socket.io
 
 // 1. Importando as rotas
 const projetoRoutes = require('./src/routes/projetoRoutes');
@@ -15,8 +16,28 @@ const motivoRoutes = require('./src/routes/motivoRoutes');
 const localRoutes = require('./src/routes/localRoutes');
 const transportadoraRoutes = require('./src/routes/transportadoraRoutes');
 
-// 2. INICIALIZANDO O APP 
+// 2. INICIALIZANDO O APP E O SERVIDOR HTTP
 const app = express(); 
+const server = http.createServer(app);
+
+// 🟢 3. INICIALIZANDO O SOCKET.IO
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Libera o acesso para qualquer front-end (em produção, coloque a URL do seu site)
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
+
+// 🟢 4. DEIXANDO O 'IO' DISPONÍVEL GLOBALMENTE PARA OS CONTROLLERS
+app.set('io', io);
+
+// 🟢 5. OUVINDO QUEM CONECTA NO TÚNEL
+io.on('connection', (socket) => {
+  console.log(`🟢 Novo cliente conectado (Tempo Real): ${socket.id}`);
+  socket.on('disconnect', () => {
+    console.log(`🔴 Cliente desconectado: ${socket.id}`);
+  });
+});
 
 // 3. MIDDLEWARES GLOBAIS
 app.use(cors());
@@ -44,8 +65,8 @@ setInterval(puxarDadosDaPlanilha, 120000);
 // 5. INICIALIZAÇÃO DO SERVIDOR
 const PORT = process.env.PORT || 3001;
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const server = http.createServer(app);
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+// 🟢 6. ATENÇÃO: Mudou de app.listen para server.listen!
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor HTTP e WebSockets rodando na porta ${PORT}`);
 });

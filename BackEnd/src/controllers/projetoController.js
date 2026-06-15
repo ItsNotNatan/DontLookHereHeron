@@ -1,3 +1,4 @@
+// src/controllers/projetoController.js
 const supabase = require('../config/supabase');
 
 const listarProjetos = async (req, res) => {
@@ -12,13 +13,14 @@ const listarProjetos = async (req, res) => {
 
 const criarProjeto = async (req, res) => {
   try {
-    // Pega o nome do projeto/wbs que veio do Front-end
     const { descricao } = req.body;
-    
-    // 🟢 GRAVA NA COLUNA CERTA (wbs) O VALOR QUE VEIO (descricao)
     const { data, error } = await supabase.from('projetos').insert([{ wbs: descricao }]).select();
     
     if (error) throw error;
+
+    // 🟢 AVISA O FRONT-END
+    req.app.get('io').emit('projetos_atualizados');
+
     res.status(201).json(data[0]);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -30,10 +32,13 @@ const atualizarProjeto = async (req, res) => {
     const { id } = req.params;
     const { descricao } = req.body;
     
-    // 🟢 ATUALIZA A COLUNA CERTA (wbs)
     const { data, error } = await supabase.from('projetos').update({ wbs: descricao }).eq('id', id).select();
     
     if (error) throw error;
+
+    // 🟢 AVISA O FRONT-END
+    req.app.get('io').emit('projetos_atualizados');
+
     res.json(data[0]);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
@@ -45,6 +50,10 @@ const excluirProjeto = async (req, res) => {
     const { id } = req.params;
     const { error } = await supabase.from('projetos').delete().eq('id', id);
     if (error) throw error;
+
+    // 🟢 AVISA O FRONT-END
+    req.app.get('io').emit('projetos_atualizados');
+
     res.status(204).send();
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
