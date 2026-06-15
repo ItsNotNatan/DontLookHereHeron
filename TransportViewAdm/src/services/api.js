@@ -1,14 +1,7 @@
 import axios from 'axios';
 
-// URL da API: usa VITE_API_URL se definido; senão deriva do hostname da página (porta 3001).
-// Assim funciona no dev (localhost) e no servidor remoto sem IP fixo nem rebuild.
-const ehLocal = typeof window === 'undefined'
-  || window.location.hostname === 'localhost'
-  || window.location.hostname === '127.0.0.1';
-const runtimeDefault = ehLocal
-  ? 'http://localhost:3001/api'
-  : `http://${window.location.hostname}:3001/api`;
-const API_URL = import.meta.env.VITE_API_URL || runtimeDefault;
+// 1. Criamos a variável mágica no topo para usar em todo o arquivo
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const api = axios.create({
   baseURL: API_URL

@@ -22,7 +22,7 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
   // Função auxiliar para transformar YYYY-MM-DD em DD/MM/YYYY no Select
   const formatarDataParaBR = (dataStr) => {
     if (!dataStr) return '';
-    if (dataStr.includes('/')) return dataStr; 
+    if (dataStr.includes('/')) return dataStr;
     const [ano, mes, dia] = dataStr.split('-');
     return `${dia}/${mes}/${ano}`;
   };
@@ -48,6 +48,7 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
       if (atm.vencimento) datasVenc.add(atm.vencimento.split('T')[0]);
     });
 
+    
     const formatarOpcoes = (set) => Array.from(set).filter(Boolean).sort().map(item => ({ value: item, label: item }));
 
     const formatarData = (set) => Array.from(set).filter(Boolean).sort().map(d => {
@@ -326,8 +327,8 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
                   { value: 'NÃO', label: 'NÃO (Pendente registro)' }
                 ]}
                 value={
-                  filtros.registrado_sap 
-                    ? { value: filtros.registrado_sap, label: filtros.registrado_sap === 'SIM' ? 'SIM (Já registrado)' : 'NÃO (Pendente registro)' } 
+                  filtros.registrado_sap
+                    ? { value: filtros.registrado_sap, label: filtros.registrado_sap === 'SIM' ? 'SIM (Já registrado)' : 'NÃO (Pendente registro)' }
                     : null
                 }
                 onChange={(opt) => onFiltroChange({ target: { name: 'registrado_sap', value: opt ? opt.value : '' } })}

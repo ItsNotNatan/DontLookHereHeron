@@ -1,7 +1,14 @@
+// src/pages/AdminDashboard/AdminDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api'; 
 import CardExpandido from '../../componentes/CardExpandido/CardExpandido';
 import DashboardComponent from '../../componentes/Dashboard/Dashboard';
+
+// 🟢 1. IMPORTA O SOCKET
+import { io } from 'socket.io-client';
+
+// 🟢 2. CONECTA AO SEU BACK-END (Como os dois rodam localmente, fica localhost:3001)
+const socket = io('http://localhost:3001');
 
 export default function AdminDashboard() {
   const [selectedAtm, setSelectedAtm] = useState(null);
@@ -10,11 +17,26 @@ export default function AdminDashboard() {
   const [debugInfo, setDebugInfo] = useState('Iniciando busca...'); 
 
   useEffect(() => {
+    // Busca os dados quando a tela carrega pela primeira vez
     buscarPedidos();
+
+    // 🟢 3. FICA ESCUTANDO O BACK-END GRITAR "transportes_atualizados"
+    socket.on('transportes_atualizados', () => {
+      console.log('🔄 O banco de dados de transportes mudou! Atualizando a tabela sem F5...');
+      buscarPedidos();
+    });
+
+    // 🟢 4. DESLIGA O "RÁDIO" AO SAIR DA TELA (Evita vazamento de memória e travamentos)
+    return () => {
+      socket.off('transportes_atualizados');
+    };
   }, []);
 
   const buscarPedidos = async () => {
-    setCarregando(true);
+    // Mantém o estado 'carregando' apenas se a tabela estiver vazia (primeira carga).
+    // Assim, quando atualizar em tempo real, a tabela não pisca "Carregando..."
+    if (atms.length === 0) setCarregando(true); 
+    
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) setDebugInfo("ERRO: Você não tem accessToken no localStorage!");
@@ -30,17 +52,11 @@ export default function AdminDashboard() {
     }
   };
 
-  // 🟢 NOVO: Função para lidar com a abertura do modal de edição em lote
   const handleOpenBatchEdit = (idsSelecionados) => {
-    // Para já, mostramos um alert, mas no futuro vais abrir o teu modal aqui!
     alert(`Pronto para editar ${idsSelecionados.length} itens em lote!\nIDs selecionados: ${idsSelecionados.join(', ')}`);
-    
-    // Exemplo do futuro: 
-    // setBatchEditModalOpen(true);
-    // setIdsParaEditar(idsSelecionados);
   };
 
-return (
+  return (
     <div style={{ width: '100%', height: '100%' }}>
       <DashboardComponent 
         atms={atms} 

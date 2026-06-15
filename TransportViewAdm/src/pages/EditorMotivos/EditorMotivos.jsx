@@ -3,8 +3,12 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import './EditorMotivos.css';
 
-// 🟢 1. IMPORTAÇÃO DO SEU CONTEXTO DE ALERTAS OFICIAL
+// 🟢 1. IMPORTAÇÃO DO CONTEXTO DE ALERTAS E DO SOCKET
 import { useAlert } from '../../componentes/AlertContext/AlertContext';
+import { io } from 'socket.io-client';
+
+// 🟢 2. CONECTA AO BACK-END
+const socket = io('http://localhost:3001');
 
 // --- Ícones ---
 const Save = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
@@ -19,8 +23,6 @@ export default function EditorMotivos() {
   const [motivos, setMotivos] = useState([]);
   const [carregando, setCarregando] = useState(false);
   const [selecionado, setSelecionado] = useState(null);
-  
-  // 🟢 NOVO ESTADO: Controla se o formulário está visível
   const [mostrarForm, setMostrarForm] = useState(false);
 
   const [termoBusca, setTermoBusca] = useState('');
@@ -33,10 +35,21 @@ export default function EditorMotivos() {
 
   useEffect(() => {
     fetchMotivos();
-  }, []);
+
+    // 🟢 3. ESCUTA O AVISO DO BACK-END E ATUALIZA A TELA
+    socket.on('motivos_atualizados', () => {
+        console.log('🔄 Motivos alterados no banco. Recarregando lista...');
+        fetchMotivos();
+    });
+
+    // 🟢 4. DESLIGA O AVISO AO SAIR DA TELA
+    return () => {
+        socket.off('motivos_atualizados');
+    };
+  }, []); // <-- ⚠️ Apenas UM useEffect lidando com motivos
 
   const fetchMotivos = async () => {
-    setCarregando(true);
+    setCarregando(motivos.length === 0);
     try {
       const response = await api.get('/admin/motivos'); 
       setMotivos(response.data);
@@ -55,13 +68,13 @@ export default function EditorMotivos() {
       descricao: m.descricao || '',
       cor: m.cor || '#ef4444'
     });
-    setMostrarForm(true); // 🟢 Abre o formulário
+    setMostrarForm(true); 
   };
 
   const handleNovo = () => {
     setSelecionado(null);
     setFormData({ nome: '', descricao: '', cor: '#ef4444' });
-    setMostrarForm(true); // 🟢 Abre o formulário vazio
+    setMostrarForm(true); 
   };
 
   const handleCancelar = () => {
@@ -86,8 +99,7 @@ export default function EditorMotivos() {
         showAlert("Sucesso!", "Novo motivo registrado com sucesso.", "success");
       }
 
-      fetchMotivos();
-      setMostrarForm(false); // 🟢 Volta para a tela de descanso
+      setMostrarForm(false); 
       setSelecionado(null);
     } catch (error) {
       console.error("Erro ao salvar:", error);
@@ -107,7 +119,6 @@ export default function EditorMotivos() {
 
     try {
       await api.delete(`/admin/motivos/${id}`);
-      fetchMotivos();
       if (selecionado && selecionado.id === id) handleCancelar();
       setItensSelecionados(prev => prev.filter(itemId => itemId !== id));
       showAlert("Removido!", "O motivo foi excluído.", "success");
@@ -145,7 +156,6 @@ export default function EditorMotivos() {
       await Promise.all(itensSelecionados.map(id => api.delete(`/admin/motivos/${id}`)));
       setItensSelecionados([]);
       if (selecionado && itensSelecionados.includes(selecionado.id)) handleCancelar(); 
-      fetchMotivos();
       showAlert("Concluído!", "Motivos apagados com sucesso.", "success");
     } catch (error) {
       console.error("Erro ao excluir em lote:", error);
@@ -172,7 +182,6 @@ export default function EditorMotivos() {
               <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{motivos.length} motivos cadastrados</span>
             </div>
             
-            {/* 🟢 BOTÃO NOVO NO TOPO */}
             <button onClick={handleNovo} style={{ background: '#2563eb', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
               <Plus /> Novo Motivo
             </button>
@@ -193,7 +202,6 @@ export default function EditorMotivos() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
               {motivosFiltrados.length > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#4b5563' }}>
-                  {/* 🟢 O ERRO DE DIGITAÇÃO FOI CORRIGIDO AQUI ABAIXO */}
                   <input type="checkbox" checked={itensSelecionados.length === motivosFiltrados.length && motivosFiltrados.length > 0} onChange={handleSelectAll} style={{ cursor: 'pointer', width: '16px', height: '16px', margin: 0 }} />
                   <label style={{ margin: 0, fontWeight: 600 }}>Selecionar todos</label>
                 </div>
@@ -208,7 +216,7 @@ export default function EditorMotivos() {
           </div>
 
           <div className="list-scroll" style={{ backgroundColor: '#f8fafc' }}>
-            {carregando ? <p className="msg-status">Carregando...</p> :
+            {carregando && motivos.length === 0 ? <p className="msg-status">Carregando...</p> :
               motivos.length === 0 ? <p className="msg-status">Nenhum motivo cadastrado.</p> :
               motivosFiltrados.length === 0 ? <p className="msg-status">Nenhum motivo encontrado.</p> :
               motivosFiltrados.map(m => (
@@ -240,9 +248,7 @@ export default function EditorMotivos() {
 
         {/* ─── PAINEL DIREITO (FORMULÁRIO OU EMPTY STATE) ─── */}
         <main className="form-panel">
-          
           {!mostrarForm ? (
-            /* 🟢 EMPTY STATE: Tela de descanso */
             <div className="fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: '#64748b', textAlign: 'center', padding: '2rem' }}>
               <TagIcon />
               <h3 style={{ margin: '15px 0 10px', color: '#334155', fontSize: '1.25rem', fontWeight: 700 }}>Nenhum motivo selecionado</h3>
@@ -252,7 +258,6 @@ export default function EditorMotivos() {
               </button>
             </div>
           ) : (
-            /* 🟢 FORMULÁRIO DE EDIÇÃO */
             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div className="panel-header" style={{ padding: '20px', background: '#ffffff', borderBottom: '1px solid #e5e7eb' }}>
                 <div>

@@ -3,8 +3,12 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import './EditorEndereco.css';
 
-// 🟢 IMPORTAÇÃO DO CONTEXTO DE ALERTAS
+// 🟢 1. IMPORTAÇÃO DO CONTEXTO DE ALERTAS E DO SOCKET
 import { useAlert } from '../../componentes/AlertContext/AlertContext';
+import { io } from 'socket.io-client';
+
+// 🟢 2. CONECTA AO BACK-END
+const socket = io('http://localhost:3001');
 
 // --- Ícones ---
 const Save = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
@@ -24,9 +28,8 @@ export default function EditorEndereco() {
     const [termoBusca, setTermoBusca] = useState('');
     const [itensSelecionados, setItensSelecionados] = useState([]);
 
-    // 🟢 ESTADOS DA PAGINAÇÃO
     const [paginaAtual, setPaginaAtual] = useState(1);
-    const itensPorPagina = 50; // Altere isso se quiser mais itens por página
+    const itensPorPagina = 50; 
 
     const [formData, setFormData] = useState({
         nome_local: '', cep: '', logradouro: '', numero: '',
@@ -35,15 +38,26 @@ export default function EditorEndereco() {
 
     useEffect(() => {
         fetchLocais();
+
+        // 🟢 3. ESCUTA O AVISO DO BACK-END E ATUALIZA A TELA
+        socket.on('locais_atualizados', () => {
+            console.log('🔄 Endereços alterados no banco. Recarregando lista...');
+            fetchLocais();
+        });
+
+        // 🟢 4. DESLIGA O AVISO AO SAIR DA TELA
+        return () => {
+            socket.off('locais_atualizados');
+        };
     }, []);
 
-    // Se o usuário digitar algo na busca, volta para a página 1 automaticamente
     useEffect(() => {
         setPaginaAtual(1);
     }, [termoBusca]);
 
     const fetchLocais = async () => {
-        setCarregando(true);
+        // Só exibe carregando se a lista estiver vazia (evita piscar a tela no Real-Time)
+        setCarregando(locais.length === 0); 
         try {
             const response = await api.get('/admin/locais');
             
@@ -63,19 +77,15 @@ export default function EditorEndereco() {
         }
     };
 
-    // 🟢 1. FILTRA EM TODOS OS 3200 REGISTROS
     const locaisFiltrados = locais.filter(l => {
         const termo = termoBusca.toLowerCase();
         const texto = `${l.nome_local} ${l.municipio} ${l.uf} ${l.logradouro}`.toLowerCase();
         return texto.includes(termo);
     });
 
-    // 🟢 2. CÁLCULO DA PAGINAÇÃO
     const totalPaginas = Math.ceil(locaisFiltrados.length / itensPorPagina);
     const indiceUltimoItem = paginaAtual * itensPorPagina;
     const indicePrimeiroItem = indiceUltimoItem - itensPorPagina;
-    
-    // 🟢 3. CORTA APENAS O QUE VAI APARECER NA TELA
     const locaisExibidos = locaisFiltrados.slice(indicePrimeiroItem, indiceUltimoItem);
 
     const handleSelect = (local) => {
@@ -135,8 +145,6 @@ export default function EditorEndereco() {
                 await api.post('/admin/locais', formData);
                 showAlert("Sucesso!", "Novo endereço cadastrado!", "success");
             }
-
-            fetchLocais();
             setMostrarForm(false);
             setSelecionado(null);
         } catch (error) {
@@ -155,11 +163,8 @@ export default function EditorEndereco() {
 
         try {
             await api.delete(`/admin/locais/${id}`);
-            
-            fetchLocais();
             if (selecionado && selecionado.id === id) handleCancelar();
             setItensSelecionados(prev => prev.filter(itemId => itemId !== id));
-            
             showAlert("Excluído!", "Endereço removido com sucesso.", "success");
         } catch (error) {
             console.error("Erro ao excluir:", error);
@@ -177,7 +182,6 @@ export default function EditorEndereco() {
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            // Seleciona todos os da busca atual para facilitar edições em lote
             const todosIds = locaisFiltrados.map(l => l.id);
             setItensSelecionados(todosIds);
         } else {
@@ -200,8 +204,6 @@ export default function EditorEndereco() {
             
             setItensSelecionados([]);
             if (selecionado && itensSelecionados.includes(selecionado.id)) handleCancelar();
-            fetchLocais();
-            
             showAlert("Sucesso!", "Endereços excluídos com sucesso!", "success");
         } catch (error) {
             console.error("Erro ao excluir em lote:", error);
@@ -209,7 +211,6 @@ export default function EditorEndereco() {
             showAlert("Exclusão Parcial", msgErro, "warning");
         } finally {
             setCarregando(false);
-            fetchLocais(); 
         }
     };
 
@@ -241,7 +242,6 @@ export default function EditorEndereco() {
                             />
                         </div>
 
-                        {/* 🟢 SELECIONAR TODOS E BOTÃO DE EXCLUIR EM LOTE 🟢 */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
                             {locaisFiltrados.length > 0 && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#4b5563' }}>
@@ -268,7 +268,7 @@ export default function EditorEndereco() {
                     </div>
 
                     <div className="list-scroll">
-                        {carregando ? <p className="msg-status" style={{textAlign: 'center', padding: '1rem', color: '#64748b'}}>Carregando lista...</p> :
+                        {carregando && locais.length === 0 ? <p className="msg-status" style={{textAlign: 'center', padding: '1rem', color: '#64748b'}}>Carregando lista...</p> :
                             locais.length === 0 ? <p className="msg-status" style={{textAlign: 'center', padding: '1rem', color: '#64748b'}}>Nenhum endereço cadastrado.</p> :
                                 locaisFiltrados.length === 0 ? <p className="msg-status" style={{textAlign: 'center', padding: '1rem', color: '#64748b'}}>Nenhum endereço encontrado na busca.</p> :
                                     locaisExibidos.map(l => (
@@ -304,31 +304,13 @@ export default function EditorEndereco() {
                         }
                     </div>
 
-                    {/* 🟢 CONTROLES DA PAGINAÇÃO FICA AQUI EMBAIXO */}
                     {!carregando && locaisFiltrados.length > itensPorPagina && (
                         <div className="pagination-controls">
                             <span>Total: {locaisFiltrados.length}</span>
-                            
                             <div className="pagination-buttons">
-                                <button 
-                                    className="btn-page" 
-                                    disabled={paginaAtual === 1} 
-                                    onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
-                                >
-                                    ◀
-                                </button>
-                                
-                                <span className="page-indicator">
-                                    Pág {paginaAtual} de {totalPaginas}
-                                </span>
-                                
-                                <button 
-                                    className="btn-page" 
-                                    disabled={paginaAtual === totalPaginas} 
-                                    onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
-                                >
-                                    ▶
-                                </button>
+                                <button className="btn-page" disabled={paginaAtual === 1} onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}>◀</button>
+                                <span className="page-indicator">Pág {paginaAtual} de {totalPaginas}</span>
+                                <button className="btn-page" disabled={paginaAtual === totalPaginas} onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}>▶</button>
                             </div>
                         </div>
                     )}
@@ -398,7 +380,7 @@ export default function EditorEndereco() {
 
                                 <div className="form-actions-p" style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', borderTop: '1px solid #e5e7eb', paddingTop: '25px', marginTop: '30px' }}>
                                     <button type="button" className="btn-cancel" onClick={handleCancelar} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#4b5563', padding: '12px 25px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}>Cancelar</button>
-                                    <button type="submit" className="btn-save-primary" style={{ background: '2563eb', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <button type="submit" className="btn-save-primary" style={{ background: '#2563eb', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <Save /> {selecionado ? 'Salvar Alterações' : 'Confirmar Registro'}
                                     </button>
                                 </div>
