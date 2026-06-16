@@ -47,7 +47,10 @@ if not exist "%APPDIR%\.git" (
   if errorlevel 1 ( echo [ERRO] Falha ao clonar o repositorio. Verifique a internet. & pause & exit /b 1 )
   echo [OK] Repositorio clonado em: %APPDIR%
 ) else (
-  echo [OK] Repositorio ja existe em: %APPDIR%
+  echo [OK] Repositorio ja existe. Sincronizando com o GitHub...
+  cd /d "%APPDIR%"
+  git fetch origin
+  git reset --hard origin/main
 )
 
 echo.

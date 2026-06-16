@@ -36,6 +36,23 @@ function gitOut(args) {
   return (spawnSync('git', args, { cwd: ROOT, shell: true, encoding: 'utf8' }).stdout || '').trim();
 }
 
+// Mata processos antigos (PocketBase/Node) que possam estar ocupando as portas.
+function killPort(port) {
+  const out = (spawnSync('cmd', ['/c', `netstat -aon | findstr :${port} | findstr LISTENING`], { encoding: 'utf8' }).stdout || '');
+  const pids = new Set();
+  out.split(/\r?\n/).forEach((l) => { const p = l.trim().split(/\s+/).pop(); if (/^\d+$/.test(p)) pids.add(p); });
+  pids.forEach((p) => { try { spawnSync('taskkill', ['/f', '/pid', p], { shell: true, stdio: 'ignore' }); } catch (e) {} });
+}
+function killExisting() {
+  try { spawnSync('taskkill', ['/f', '/im', 'pocketbase.exe'], { shell: true, stdio: 'ignore' }); } catch (e) {}
+  [3001, 8080, 8082, 8090].forEach(killPort);
+}
+// Alinha o clone ao remoto (resiste a force-push / historico divergente).
+function syncRepo() {
+  shShell('git', ['fetch', 'origin'], ROOT);
+  shShell('git', ['reset', '--hard', 'origin/main'], ROOT);
+}
+
 // ----------------- processos longos (PB e server) -----------------
 const procs = {};
 function stopProc(name) {
@@ -161,8 +178,9 @@ function verificarAtualizacao() {
   atualizando = true;
   hr();
   log(`\x1b[1mNovo commit detectado!\x1b[0m  ${local.slice(0, 7)} -> ${remoto.slice(0, 7)}`);
-  log('Baixando alteracoes (git pull)...');
-  if (!shShell('git', ['pull', '--ff-only'], ROOT)) { err('git pull falhou'); atualizando = false; return; }
+  log('Baixando alteracoes (git fetch + reset --hard)...');
+  shShell('git', ['fetch', 'origin'], ROOT);
+  if (!shShell('git', ['reset', '--hard', 'origin/main'], ROOT)) { err('git reset falhou'); atualizando = false; return; }
 
   const mudou = gitOut(['diff', '--name-only', local, 'HEAD']).split(/\r?\n/).filter(Boolean);
   const tocou = (pref) => mudou.some(f => f.startsWith(pref));
@@ -208,6 +226,11 @@ function main() {
   hr();
   console.log('\x1b[1m  ATMLog - AUTO-DEPLOY\x1b[0m   (Ctrl+C para encerrar)');
   hr();
+
+  log('Encerrando instancias antigas e liberando as portas...');
+  killExisting();
+  log('Sincronizando o codigo com o GitHub...');
+  syncRepo();
 
   if (!ensurePocketBase()) process.exit(1);
   ensureEnv();
