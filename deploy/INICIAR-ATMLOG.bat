@@ -35,7 +35,7 @@ if errorlevel 1 ( echo [ERRO] Git nao encontrado. Instale o Git em https://git-s
 for /f "delims=" %%v in ('git --version') do echo [OK] %%v
 
 rem --- Firewall ---
-call :fw ATMLog-PB-8090 8090
+call :fw ATMLog-PB-8091 8091
 call :fw ATMLog-API-3001 3001
 call :fw ATMLog-Client-8080 8080
 call :fw ATMLog-Admin-8082 8082

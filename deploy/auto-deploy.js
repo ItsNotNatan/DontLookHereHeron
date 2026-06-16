@@ -5,7 +5,8 @@
    - Sobe PocketBase + Backend (que serve os 2 frontends)
    - Vigia o GitHub; commit novo -> fetch+reset -> rebuild do que mudou ->
      reinicia o necessario -> tudo no terminal.
-   - Teclas de controle: [R] reiniciar  [U] atualizar agora  [Q] parar e sair
+   - Teclas: [R] reiniciar  [U] atualizar agora  [Q] parar e sair
+   Portas: API 3001 | Client 8080 | Admin 8082 | PocketBase 8091
    Uso:  node deploy/auto-deploy.js     (rodado pelo INICIAR-ATMLOG.bat)
    ===================================================================== */
 const { spawn, spawnSync } = require('child_process');
@@ -20,6 +21,8 @@ const ADMIN = path.join(ROOT, 'TransportViewAdm');
 const PBDIR = path.join(ROOT, 'pocketbase');
 const PBEXE = path.join(PBDIR, 'pocketbase.exe');
 const PB_VERSION = '0.36.7';
+const PB_PORT = 8091; // PocketBase do ATMLog (evita colisao com outros sistemas na 8090)
+const PORTS = [3001, 8080, 8082, PB_PORT];
 const POLL_MS = 30000;
 
 // ----------------- logging -----------------
@@ -38,17 +41,15 @@ function gitOut(args) {
   return (spawnSync('git', args, { cwd: ROOT, shell: true, encoding: 'utf8' }).stdout || '').trim();
 }
 
-// Mata processos antigos (PocketBase/Node) que possam estar ocupando as portas.
+// Mata SO os processos nas portas do ATMLog (NAO mexe em PocketBase de outros sistemas).
 function killPort(port) {
   const out = (spawnSync('cmd', ['/c', `netstat -aon | findstr :${port} | findstr LISTENING`], { encoding: 'utf8' }).stdout || '');
   const pids = new Set();
   out.split(/\r?\n/).forEach((l) => { const p = l.trim().split(/\s+/).pop(); if (/^\d+$/.test(p)) pids.add(p); });
   pids.forEach((p) => { try { spawnSync('taskkill', ['/f', '/pid', p], { shell: true, stdio: 'ignore' }); } catch (e) {} });
 }
-function killExisting() {
-  try { spawnSync('taskkill', ['/f', '/im', 'pocketbase.exe'], { shell: true, stdio: 'ignore' }); } catch (e) {}
-  [3001, 8080, 8082, 8090].forEach(killPort);
-}
+function killExisting() { PORTS.forEach(killPort); }
+
 // Alinha o clone ao remoto (resiste a force-push / historico divergente).
 function syncRepo() {
   shShell('git', ['fetch', 'origin'], ROOT);
@@ -91,14 +92,12 @@ function setEnvVar(file, key, val) {
   if (!found) lines.push(key + '=' + val);
   fs.writeFileSync(file, lines.join('\r\n'));
 }
-// Gera segredos JWT aleatorios na 1a vez (nunca usa o placeholder publico).
 function ensureSecrets(file) {
   const env = readEnv();
   const fraco = (v) => !v || v.includes('defina') || v.includes('teste') || v.includes('TROQUE');
   if (fraco(env.JWT_SECRET)) setEnvVar(file, 'JWT_SECRET', require('crypto').randomBytes(48).toString('hex'));
   if (fraco(env.JWT_REFRESH_SECRET)) setEnvVar(file, 'JWT_REFRESH_SECRET', require('crypto').randomBytes(48).toString('hex'));
 }
-// Na 1a vez (ou se faltar), pergunta o login/senha do admin do banco e grava no .env.
 function promptCredsIfNeeded(done) {
   const file = path.join(BACKEND, '.env');
   if (!fs.existsSync(file)) fs.copyFileSync(path.join(BACKEND, '.env.example'), file);
@@ -166,7 +165,7 @@ function ensureSuperuser() {
 }
 
 function waitForPB(cb, tries = 0) {
-  http.get('http://127.0.0.1:8090/api/health', () => cb(true)).on('error', () => {
+  http.get(`http://127.0.0.1:${PB_PORT}/api/health`, () => cb(true)).on('error', () => {
     if (tries > 20) return cb(false);
     setTimeout(() => waitForPB(cb, tries + 1), 1000);
   });
@@ -184,7 +183,7 @@ function startBackend() {
   startProc('server', process.execPath, [path.join(BACKEND, 'server.js')], BACKEND, 32);
 }
 function startPocketBase() {
-  startProc('pocketbase', PBEXE, ['serve', '--http=0.0.0.0:8090'], PBDIR, 33);
+  startProc('pocketbase', PBEXE, ['serve', `--http=0.0.0.0:${PB_PORT}`], PBDIR, 33);
 }
 
 function localIP() {
@@ -198,7 +197,7 @@ function bannerPronto() {
   console.log('\x1b[1m\x1b[32m   ATMLog NO AR\x1b[0m');
   console.log(`   Front Publico : http://${ip}:8080`);
   console.log(`   Painel Admin  : http://${ip}:8082   (admin@comau.com / admin123)`);
-  console.log(`   PocketBase    : http://${ip}:8090/_/`);
+  console.log(`   PocketBase    : http://${ip}:${PB_PORT}/_/`);
   hr();
   log(`Vigiando o GitHub a cada ${POLL_MS / 1000}s por novos commits...`);
   mostrarControles();
@@ -206,7 +205,8 @@ function bannerPronto() {
 
 // ----------------- controles de teclado -----------------
 function mostrarControles() {
-  console.log('\x1b[1m  Teclas:\x1b[0m  [R]=reiniciar   [U]=atualizar agora   [Q]=parar e sair   [H]=ajuda');
+  console.log('\x1b[1m\x1b[33m  >>> Teclas:  [R]=reiniciar   [U]=atualizar agora   [Q]=parar e sair   [H]=ajuda  <<<\x1b[0m');
+  console.log('\x1b[90m      (use Q para parar - no Windows o Ctrl+C nem sempre encerra os processos)\x1b[0m');
 }
 function pararTudo() {
   console.log('');
@@ -224,12 +224,13 @@ function reiniciar() {
 }
 function setupControls() {
   if (!process.stdin.isTTY) return;
+  process.stdin.removeAllListeners('data');
   try { process.stdin.setRawMode(true); } catch (e) {}
   process.stdin.resume();
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', (key) => {
     const k = (key || '').toLowerCase();
-    if (key === '' || k === 'q' || k === 's' || (key && key.charCodeAt(0) === 3)) return pararTudo();
+    if (k === 'q' || k === 's' || (key && key.charCodeAt(0) === 3)) return pararTudo();
     if (k === 'r') return reiniciar();
     if (k === 'u') { log('Verificando atualizacao agora...'); return verificarAtualizacao(); }
     if (k === 'h') return mostrarControles();
@@ -287,7 +288,7 @@ function main() {
   console.log('\x1b[1m  ATMLog - AUTO-DEPLOY\x1b[0m');
   hr();
 
-  log('Encerrando instancias antigas e liberando as portas...');
+  log('Encerrando instancias antigas e liberando as portas do ATMLog...');
   killExisting();
   log('Sincronizando o codigo com o GitHub...');
   syncRepo();
@@ -303,7 +304,7 @@ function main() {
     if (!fs.existsSync(path.join(CLIENT, 'dist', 'index.html'))) buildFront(CLIENT, 'Client');
     if (!fs.existsSync(path.join(ADMIN, 'dist', 'index.html'))) buildFront(ADMIN, 'Admin');
 
-    log('Iniciando PocketBase (porta 8090)...');
+    log(`Iniciando PocketBase (porta ${PB_PORT})...`);
     startPocketBase();
     waitForPB((up) => {
       if (up) ok('PocketBase rodando'); else warn('PocketBase nao respondeu a tempo (seguindo mesmo assim).');

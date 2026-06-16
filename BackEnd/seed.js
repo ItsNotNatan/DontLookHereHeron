@@ -11,7 +11,7 @@ const path = require('path');
 const PB = require('pocketbase/cjs');
 const PocketBase = PB.default || PB;
 
-const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8090');
+const pb = new PocketBase(process.env.PB_URL || 'http://127.0.0.1:8091');
 pb.autoCancellation(false);
 
 const readJson = (f) => JSON.parse(fs.readFileSync(path.join(__dirname, 'seed', f), 'utf8'));

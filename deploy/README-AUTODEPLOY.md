@@ -46,7 +46,7 @@ tenta instalar **Node** e **Git** sozinho via winget se faltarem.)
 4. Quando aparecer **"ATMLog NO AR"**, acesse:
    - Público: `http://<IP>:8080`
    - Admin: `http://<IP>:8082` (admin@comau.com / admin123)
-   - PocketBase: `http://<IP>:8090/_/` (o e-mail/senha que você digitou no passo 3)
+   - PocketBase: `http://<IP>:8091/_/` (o e-mail/senha que você digitou no passo 3)
 
 A partir daí, **deixe esse terminal aberto** — é ele que vigia e atualiza.
 

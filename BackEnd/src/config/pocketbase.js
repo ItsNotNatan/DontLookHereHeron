@@ -6,7 +6,7 @@ require('dotenv').config();
 const PB = require('pocketbase/cjs');
 const PocketBase = PB.default || PB;
 
-const PB_URL = process.env.PB_URL || 'http://127.0.0.1:8090';
+const PB_URL = process.env.PB_URL || 'http://127.0.0.1:8091';
 
 const pb = new PocketBase(PB_URL);
 pb.autoCancellation(false); // backend: nunca cancelar requisicoes em paralelo
