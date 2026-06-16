@@ -1,9 +1,11 @@
 /* =====================================================================
    ATMLog - AUTO-DEPLOY (vigia)
-   - Faz o setup inicial (PocketBase, .env, npm install, build, seed)
+   - Setup inicial (PocketBase, .env, npm install, build, seed)
+   - Pergunta o login/senha do admin do banco na 1a vez (grava no .env)
    - Sobe PocketBase + Backend (que serve os 2 frontends)
-   - Vigia o GitHub a cada POLL_MS; commit novo -> git pull -> rebuild do
-     que mudou -> reinicia o necessario -> mostra tudo no terminal.
+   - Vigia o GitHub; commit novo -> fetch+reset -> rebuild do que mudou ->
+     reinicia o necessario -> tudo no terminal.
+   - Teclas de controle: [R] reiniciar  [U] atualizar agora  [Q] parar e sair
    Uso:  node deploy/auto-deploy.js     (rodado pelo INICIAR-ATMLOG.bat)
    ===================================================================== */
 const { spawn, spawnSync } = require('child_process');
@@ -70,7 +72,7 @@ function startProc(name, exe, args, cwd, color) {
   procs[name] = p;
 }
 
-// ----------------- .env minimo -----------------
+// ----------------- .env -----------------
 function readEnv() {
   const f = path.join(BACKEND, '.env');
   const out = {};
@@ -81,6 +83,48 @@ function readEnv() {
     }
   }
   return out;
+}
+function setEnvVar(file, key, val) {
+  let lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  let found = false;
+  lines = lines.map((l) => { if (l.startsWith(key + '=')) { found = true; return key + '=' + val; } return l; });
+  if (!found) lines.push(key + '=' + val);
+  fs.writeFileSync(file, lines.join('\r\n'));
+}
+// Gera segredos JWT aleatorios na 1a vez (nunca usa o placeholder publico).
+function ensureSecrets(file) {
+  const env = readEnv();
+  const fraco = (v) => !v || v.includes('defina') || v.includes('teste') || v.includes('TROQUE');
+  if (fraco(env.JWT_SECRET)) setEnvVar(file, 'JWT_SECRET', require('crypto').randomBytes(48).toString('hex'));
+  if (fraco(env.JWT_REFRESH_SECRET)) setEnvVar(file, 'JWT_REFRESH_SECRET', require('crypto').randomBytes(48).toString('hex'));
+}
+// Na 1a vez (ou se faltar), pergunta o login/senha do admin do banco e grava no .env.
+function promptCredsIfNeeded(done) {
+  const file = path.join(BACKEND, '.env');
+  if (!fs.existsSync(file)) fs.copyFileSync(path.join(BACKEND, '.env.example'), file);
+  ensureSecrets(file);
+  const env = readEnv();
+  if (env.PB_ADMIN_EMAIL && env.PB_ADMIN_PASSWORD && env.PB_ADMIN_PASSWORD.length >= 8) {
+    ok(`.env ja configurado (admin do banco: ${env.PB_ADMIN_EMAIL})`);
+    return done();
+  }
+  hr();
+  console.log('\x1b[1m  CONFIGURACAO INICIAL - Conta de ADMINISTRADOR do banco (PocketBase)\x1b[0m');
+  console.log('  (fica salvo so nesta maquina em BackEnd\\.env - NAO vai pro GitHub)');
+  hr();
+  const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
+  const perguntar = () => rl.question('  E-mail do admin: ', (email) => {
+    rl.question('  Senha (minimo 8 caracteres): ', (senha) => {
+      email = (email || '').trim(); senha = (senha || '').trim();
+      if (!email || senha.length < 8) { console.log('  \x1b[33m[!] E-mail vazio ou senha < 8. Tente de novo.\x1b[0m'); return perguntar(); }
+      setEnvVar(file, 'PB_ADMIN_EMAIL', email);
+      setEnvVar(file, 'PB_ADMIN_PASSWORD', senha);
+      rl.close();
+      ok('Credenciais salvas no .env (so nesta maquina).');
+      done();
+    });
+  });
+  perguntar();
 }
 
 // ----------------- setup inicial -----------------
@@ -94,14 +138,6 @@ function ensurePocketBase() {
   spawnSync('powershell', ['-NoProfile', '-Command', ps], { stdio: 'inherit' });
   if (fs.existsSync(PBEXE)) { ok('PocketBase baixado'); return true; }
   err('Falha ao baixar o PocketBase (verifique a internet).'); return false;
-}
-
-function ensureEnv() {
-  const env = path.join(BACKEND, '.env');
-  if (!fs.existsSync(env)) {
-    fs.copyFileSync(path.join(BACKEND, '.env.example'), env);
-    warn('.env criado a partir do .env.example (troque as senhas/segredos depois).');
-  } else ok('.env encontrado');
 }
 
 function npmInstallIfNeeded(dir, nome) {
@@ -165,6 +201,39 @@ function bannerPronto() {
   console.log(`   PocketBase    : http://${ip}:8090/_/`);
   hr();
   log(`Vigiando o GitHub a cada ${POLL_MS / 1000}s por novos commits...`);
+  mostrarControles();
+}
+
+// ----------------- controles de teclado -----------------
+function mostrarControles() {
+  console.log('\x1b[1m  Teclas:\x1b[0m  [R]=reiniciar   [U]=atualizar agora   [Q]=parar e sair   [H]=ajuda');
+}
+function pararTudo() {
+  console.log('');
+  log('Parando tudo (Backend + PocketBase)...');
+  stopProc('server'); stopProc('pocketbase');
+  killExisting();
+  ok('Tudo encerrado. Ate logo!');
+  process.exit(0);
+}
+function reiniciar() {
+  log('Reiniciando os servidores...');
+  killExisting();
+  startPocketBase();
+  waitForPB(() => { startBackend(); setTimeout(() => { ok('Reiniciado.'); mostrarControles(); }, 1500); });
+}
+function setupControls() {
+  if (!process.stdin.isTTY) return;
+  try { process.stdin.setRawMode(true); } catch (e) {}
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (key) => {
+    const k = (key || '').toLowerCase();
+    if (key === '' || k === 'q' || k === 's' || (key && key.charCodeAt(0) === 3)) return pararTudo();
+    if (k === 'r') return reiniciar();
+    if (k === 'u') { log('Verificando atualizacao agora...'); return verificarAtualizacao(); }
+    if (k === 'h') return mostrarControles();
+  });
 }
 
 // ----------------- ciclo de atualizacao -----------------
@@ -186,13 +255,9 @@ function verificarAtualizacao() {
   const tocou = (pref) => mudou.some(f => f.startsWith(pref));
   log('Arquivos alterados:'); mudou.slice(0, 20).forEach(f => console.log('   ~ ' + f));
 
-  // Backend
-  if (tocou('BackEnd/')) {
-    if (tocou('BackEnd/package')) shShell('npm', ['install', '--no-audit', '--no-fund'], BACKEND);
-  }
-  // Frontends (rebuild; o server serve o dist direto do disco, nao precisa reiniciar)
+  if (tocou('BackEnd/') && tocou('BackEnd/package')) shShell('npm', ['install', '--no-audit', '--no-fund'], BACKEND);
   if (tocou('TransportViewerClient/')) {
-    if (tocou('TransportViewerClient/package')) npmInstallIfNeeded(CLIENT, 'Client') || shShell('npm', ['install', '--no-audit', '--no-fund'], CLIENT);
+    if (tocou('TransportViewerClient/package')) shShell('npm', ['install', '--no-audit', '--no-fund'], CLIENT);
     buildFront(CLIENT, 'Client');
   }
   if (tocou('TransportViewAdm/')) {
@@ -203,19 +268,14 @@ function verificarAtualizacao() {
   const finalizar = () => {
     if (tocou('BackEnd/')) { log('Reiniciando o backend...'); startBackend(); }
     ok('Atualizacao aplicada.');
-    hr();
+    hr(); mostrarControles();
     atualizando = false;
   };
 
-  // PocketBase / migrations
   if (tocou('pocketbase/pb_migrations')) {
     log('Migrations mudaram - reiniciando o PocketBase e re-seedando...');
     startPocketBase();
-    waitForPB((up) => {
-      if (!up) warn('PocketBase demorou a responder.');
-      ensureSuperuser();
-      runSeed(finalizar);
-    });
+    waitForPB((up) => { if (!up) warn('PocketBase demorou a responder.'); ensureSuperuser(); runSeed(finalizar); });
   } else {
     finalizar();
   }
@@ -224,7 +284,7 @@ function verificarAtualizacao() {
 // ----------------- main -----------------
 function main() {
   hr();
-  console.log('\x1b[1m  ATMLog - AUTO-DEPLOY\x1b[0m   (Ctrl+C para encerrar)');
+  console.log('\x1b[1m  ATMLog - AUTO-DEPLOY\x1b[0m');
   hr();
 
   log('Encerrando instancias antigas e liberando as portas...');
@@ -233,28 +293,30 @@ function main() {
   syncRepo();
 
   if (!ensurePocketBase()) process.exit(1);
-  ensureEnv();
-  if (!npmInstallIfNeeded(BACKEND, 'Backend')) process.exit(1);
-  npmInstallIfNeeded(CLIENT, 'Client');
-  npmInstallIfNeeded(ADMIN, 'Admin');
-  ensureSuperuser();
 
-  // build inicial se faltar dist
-  if (!fs.existsSync(path.join(CLIENT, 'dist', 'index.html'))) buildFront(CLIENT, 'Client');
-  if (!fs.existsSync(path.join(ADMIN, 'dist', 'index.html'))) buildFront(ADMIN, 'Admin');
+  promptCredsIfNeeded(() => {
+    if (!npmInstallIfNeeded(BACKEND, 'Backend')) process.exit(1);
+    npmInstallIfNeeded(CLIENT, 'Client');
+    npmInstallIfNeeded(ADMIN, 'Admin');
+    ensureSuperuser();
 
-  log('Iniciando PocketBase (porta 8090)...');
-  startPocketBase();
-  waitForPB((up) => {
-    if (up) ok('PocketBase rodando'); else warn('PocketBase nao respondeu a tempo (seguindo mesmo assim).');
-    runSeed(() => {
-      log('Iniciando o Backend (API 3001 + fronts 8080/8082)...');
-      startBackend();
-      setTimeout(bannerPronto, 2500);
-      setInterval(verificarAtualizacao, POLL_MS);
+    if (!fs.existsSync(path.join(CLIENT, 'dist', 'index.html'))) buildFront(CLIENT, 'Client');
+    if (!fs.existsSync(path.join(ADMIN, 'dist', 'index.html'))) buildFront(ADMIN, 'Admin');
+
+    log('Iniciando PocketBase (porta 8090)...');
+    startPocketBase();
+    waitForPB((up) => {
+      if (up) ok('PocketBase rodando'); else warn('PocketBase nao respondeu a tempo (seguindo mesmo assim).');
+      runSeed(() => {
+        log('Iniciando o Backend (API 3001 + fronts 8080/8082)...');
+        startBackend();
+        setTimeout(bannerPronto, 2500);
+        setInterval(verificarAtualizacao, POLL_MS);
+        setupControls();
+      });
     });
   });
 }
 
-process.on('SIGINT', () => { log('Encerrando...'); stopProc('server'); stopProc('pocketbase'); process.exit(0); });
+process.on('SIGINT', () => pararTudo());
 main();

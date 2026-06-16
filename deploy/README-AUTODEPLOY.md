@@ -41,12 +41,20 @@ tenta instalar **Node** e **Git** sozinho via winget se faltarem.)
 2. Botão direito no **`INICIAR-ATMLOG.bat`** → **Executar como administrador**.
 3. Ele instala Node/Git (se faltar), cria o firewall, **clona o repositório** e liga o auto-deploy.
    - A 1ª vez baixa o PocketBase, roda `npm install` e builda os fronts (alguns minutos).
+   - **Na 1ª vez ele PERGUNTA o e-mail e a senha do admin do banco (PocketBase)** — digite e ele salva
+     no `BackEnd\.env` (fica só na máquina, não vai pro GitHub). Os segredos JWT são gerados sozinhos.
 4. Quando aparecer **"ATMLog NO AR"**, acesse:
    - Público: `http://<IP>:8080`
    - Admin: `http://<IP>:8082` (admin@comau.com / admin123)
-   - PocketBase: `http://<IP>:8090/_/`
+   - PocketBase: `http://<IP>:8090/_/` (o e-mail/senha que você digitou no passo 3)
 
 A partir daí, **deixe esse terminal aberto** — é ele que vigia e atualiza.
+
+### Teclas de controle (no terminal do auto-deploy)
+- **R** = reiniciar os servidores (PocketBase + Backend)
+- **U** = verificar/atualizar agora (sem esperar os 30s)
+- **Q** = parar tudo e sair  (use isto em vez do Ctrl+C, que nem sempre encerra os processos)
+- **H** = mostrar as teclas
 
 ## Manutenção (o dia a dia)
 **Você (Heron/Natan) NÃO mexe mais na máquina remota.** Só:
@@ -63,8 +71,8 @@ O auto-deploy é inteligente:
 Todo o banco fica em **`pocketbase/pb_data/`**. Pare o auto-deploy (Ctrl+C) e copie essa pasta.
 
 ## Parar / reiniciar
-- **Parar:** no terminal do auto-deploy, aperte **Ctrl+C** (ou feche a janela).
-- **Reiniciar:** rode o `INICIAR-ATMLOG.bat` de novo (ele reaproveita o clone existente).
+- **Parar:** no terminal do auto-deploy, aperte **Q** (encerra Backend + PocketBase de verdade).
+- **Reiniciar:** aperte **R** no terminal (ou rode o `INICIAR-ATMLOG.bat` de novo).
 
 ## Dúvidas comuns
 - **"node/git nao encontrado":** instale Node (nodejs.org) e Git (git-scm.com), reinicie a máquina.
