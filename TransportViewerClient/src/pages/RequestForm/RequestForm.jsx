@@ -14,7 +14,7 @@ import { io } from 'socket.io-client';
 
 // 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou nuvem)
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
+const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : `http://${window.location.hostname}:3001`;
 const socket = io(SOCKET_URL);
 
 export default function RequestForm() {

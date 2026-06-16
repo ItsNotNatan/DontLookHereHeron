@@ -1,0 +1,21 @@
+# Dependencias
+node_modules/
+
+# Builds dos frontends (gerados pelo auto-deploy na maquina)
+dist/
+
+# Variaveis de ambiente / segredos
+.env
+**/.env
+
+# PocketBase (binario baixado + dados gerados na maquina)
+pocketbase/pocketbase.exe
+pocketbase/pb_data/
+pocketbase/CHANGELOG.md
+pocketbase/LICENSE.md
+
+# Logs
+*.log
+deploy-log.txt
+diagnostico.txt
+auto-deploy.log

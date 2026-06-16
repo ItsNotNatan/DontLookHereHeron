@@ -1,79 +1,63 @@
-const supabase = require('../config/supabase');
+// src/controllers/veiculoController.js  (PocketBase)
+const { pb, withAuth } = require('../config/pocketbase');
 
 const veiculoController = {
-  // Listar todos os veículos (Ativos e inativos)
   listarVeiculos: async (req, res) => {
     try {
-      const { data, error } = await supabase
-        .from('veiculos')
-        .select('*')
-        .order('comprimento', { ascending: true }); // Ordena do menor pro maior
-
-      if (error) throw error;
+      const data = await withAuth(() => pb.collection('veiculos').getFullList({ sort: '+comprimento' }));
       res.json(data);
     } catch (error) {
-      console.error("Erro ao listar veículos:", error);
-      res.status(500).json({ error: "Erro interno ao buscar veículos" });
+      console.error('Erro ao listar veiculos:', error);
+      res.status(500).json({ error: 'Erro interno ao buscar veiculos' });
     }
   },
 
-  // Criar um novo veículo
   criarVeiculo: async (req, res) => {
     try {
       const { nome, comprimento, largura, altura, ativo } = req.body;
-      
-      const { data, error } = await supabase
-        .from('veiculos')
-        .insert([{ nome, comprimento, largura, altura, ativo }])
-        .select();
-
-      if (error) throw error;
-      res.status(201).json(data[0]);
+      const data = await withAuth(() => pb.collection('veiculos').create({
+        nome,
+        comprimento: parseFloat(comprimento),
+        largura: parseFloat(largura),
+        altura: parseFloat(altura),
+        ativo: ativo === undefined ? true : !!ativo,
+      }));
+      res.status(201).json(data);
     } catch (error) {
-      console.error("Erro ao criar veículo:", error);
-      res.status(500).json({ error: "Erro interno ao criar veículo" });
+      console.error('Erro ao criar veiculo:', error);
+      res.status(500).json({ error: 'Erro interno ao criar veiculo' });
     }
   },
 
-  // Atualizar um veículo existente
   atualizarVeiculo: async (req, res) => {
     try {
       const { id } = req.params;
       const { nome, comprimento, largura, altura, ativo } = req.body;
-
-      const { data, error } = await supabase
-        .from('veiculos')
-        .update({ nome, comprimento, largura, altura, ativo })
-        .eq('id', id)
-        .select();
-
-      if (error) throw error;
-      if (data.length === 0) return res.status(404).json({ error: "Veículo não encontrado" });
-      
-      res.json(data[0]);
+      const data = await withAuth(() => pb.collection('veiculos').update(id, {
+        nome,
+        comprimento: parseFloat(comprimento),
+        largura: parseFloat(largura),
+        altura: parseFloat(altura),
+        ativo: ativo === undefined ? true : !!ativo,
+      }));
+      res.json(data);
     } catch (error) {
-      console.error("Erro ao atualizar veículo:", error);
-      res.status(500).json({ error: "Erro interno ao atualizar veículo" });
+      if (error && error.status === 404) return res.status(404).json({ error: 'Veiculo nao encontrado' });
+      console.error('Erro ao atualizar veiculo:', error);
+      res.status(500).json({ error: 'Erro interno ao atualizar veiculo' });
     }
   },
 
-  // Excluir um veículo
   excluirVeiculo: async (req, res) => {
     try {
       const { id } = req.params;
-
-      const { error } = await supabase
-        .from('veiculos')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      res.status(204).send(); // 204 = No Content (Sucesso sem corpo de resposta)
+      await withAuth(() => pb.collection('veiculos').delete(id));
+      res.status(204).send();
     } catch (error) {
-      console.error("Erro ao excluir veículo:", error);
-      res.status(500).json({ error: "Erro interno ao excluir veículo" });
+      console.error('Erro ao excluir veiculo:', error);
+      res.status(500).json({ error: 'Erro interno ao excluir veiculo' });
     }
-  }
+  },
 };
 
 module.exports = veiculoController;

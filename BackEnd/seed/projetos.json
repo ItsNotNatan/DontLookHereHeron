@@ -1,0 +1,90 @@
+[
+  {
+    "wbs": "STELLANTIS - GOI - STLA J3U/J1U - BRBCBBB44",
+    "ativo": true
+  },
+  {
+    "wbs": "PSA - PTR - JJ Avenger - BRBCBBB21",
+    "ativo": true
+  },
+  {
+    "wbs": "RENAULT - CRT - XDF - BRBCBBB29",
+    "ativo": true
+  },
+  {
+    "wbs": "VOLKSWAGEN - SBC - SAGA/A-SUV - BRBCBBB38",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - GOI - J3U - BRBCBBB44",
+    "ativo": true
+  },
+  {
+    "wbs": "COMAU - BRASIL - ROBÓTICA - BRBRRCY21",
+    "ativo": true
+  },
+  {
+    "wbs": "COMAU - BRASIL - LOGÍSTICA - 08Z22002",
+    "ativo": true
+  },
+  {
+    "wbs": "COMAU - BRASIL - MFG - 08A22001",
+    "ativo": true
+  },
+  {
+    "wbs": "COMAU - BRASIL - T.I  - 09S19001",
+    "ativo": true
+  },
+  {
+    "wbs": "COMAU - BRASIL - RH - 09P19001",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - SP - MAIN LINE CVT - BRBCABA04",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - SP - REMONTAGEM ASSY LINE - BRBCABA10",
+    "ativo": true
+  },
+  {
+    "wbs": "VOLKSWAGEM - SBDC - Montagem Short Block - BRBCABA13",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - BET - Suspensão F1H/F2U - BRBCABA16",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - GOI - Retooling GSE J4U - BRBCABA17",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - BET - FAMILIA B - BRBCABA19",
+    "ativo": true
+  },
+  {
+    "wbs": "PSA - PRTR - JJ SUSPENSION LINE - BRBCABA20",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - BET - RETOOLING TURBO II N3 - BRBCABA21",
+    "ativo": true
+  },
+  {
+    "wbs": "STELLANTIS - GOI - ASSISTENCIA PE - BRBRRBA18",
+    "ativo": true
+  },
+  {
+    "wbs": "COMAU - BET - MFG - BRBRRBA42",
+    "ativo": true
+  },
+  {
+    "wbs": "GM - SCSU - JBQC - BRBCBBA98",
+    "ativo": true
+  },
+  {
+    "wbs": "GM - GRVT - General Activities - BRBCBBA86",
+    "ativo": true
+  }
+]

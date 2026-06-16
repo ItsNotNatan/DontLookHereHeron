@@ -1,83 +1,73 @@
-// src/controllers/transporteController.js
-const supabase = require('../config/supabase');
+// src/controllers/transporteController.js  (PocketBase)
+const { pb, withAuth } = require('../config/pocketbase');
 const { formatarProBanco } = require('../utils/formatters');
+
+const num = (val) => (val === '' || val === undefined || val === null ? null : parseFloat(val));
+const str = (val) => (val === '' || val === undefined || val === null ? null : String(val));
+
+// Resolve o nome de uma transportadora para o id (relation). Retorna undefined se nao achar.
+async function idTransportadoraPorNome(nome) {
+  if (!nome) return null; // limpa relacao
+  try {
+    const t = await withAuth(() =>
+      pb.collection('transportadoras').getFirstListItem(pb.filter('nome = {:n}', { n: nome }))
+    );
+    return t.id;
+  } catch (e) {
+    return undefined; // nao encontrada -> nao altera
+  }
+}
 
 const criarTransporte = async (req, res) => {
   const dados = req.body;
-
   try {
-    // 1. INSERE O LOCAL DE COLETA (Na tabela de Histórico)
-    const { data: localColeta, error: erroColeta } = await supabase
-      .from('enderecos_pedido')
-      .insert([{
-        nome_local: dados.empresaColeta,
-        municipio: dados.cidadeColeta,
-        uf: dados.ufColeta,
-        cep: dados.cepColeta || null,
-        logradouro: dados.logradouroColeta || null,
-        numero: dados.numeroColeta || null,
-        bairro: dados.bairroColeta || null
-      }])
-      .select('id');
+    const localColeta = await withAuth(() => pb.collection('enderecos_pedido').create({
+      nome_local: dados.empresaColeta || '',
+      municipio: dados.cidadeColeta || '',
+      uf: dados.ufColeta || '',
+      cep: dados.cepColeta || '',
+      logradouro: dados.logradouroColeta || '',
+      numero: dados.numeroColeta || '',
+      bairro: dados.bairroColeta || '',
+    }));
 
-    if (erroColeta) throw new Error('Erro Coleta: ' + erroColeta.message);
+    const localEntrega = await withAuth(() => pb.collection('enderecos_pedido').create({
+      nome_local: dados.empresaEntrega || 'Destinatario',
+      municipio: dados.cidadeEntrega || '',
+      uf: dados.ufEntrega || '',
+      cep: dados.cepEntrega || '',
+      logradouro: dados.logradouroEntrega || '',
+      numero: dados.numeroEntrega || '',
+      bairro: dados.bairroEntrega || '',
+    }));
 
-    // 2. INSERE O LOCAL DE ENTREGA (Na tabela de Histórico)
-    const { data: localEntrega, error: erroEntrega } = await supabase
-      .from('enderecos_pedido')
-      .insert([{
-        nome_local: dados.empresaEntrega || 'Destinatário',
-        municipio: dados.cidadeEntrega,
-        uf: dados.ufEntrega,
-        cep: dados.cepEntrega || null,
-        logradouro: dados.logradouroEntrega || null,
-        numero: dados.numeroEntrega || null,
-        bairro: dados.bairroEntrega || null
-      }])
-      .select('id');
+    const pedido = await withAuth(() => pb.collection('pedidos_atm').create({
+      data_solicitacao: formatarProBanco(dados.dataSolicitacao),
+      tipo_operacao: dados.tipo_operacao,
+      pedido_compra: dados.pedidoCompra,
+      nf: dados.nf || '',
+      valor_nf: dados.valor_nf ? parseFloat(dados.valor_nf) : null,
+      wbs: dados.wbs,
+      contato_coleta: dados.nomeContatoColeta || '',
+      telefone_coleta: dados.telefoneColeta || '',
+      contato_entrega: dados.nomeContatoEntrega || '',
+      telefone_entrega: dados.telefoneEntrega || '',
+      numero_reserva: dados.numeroReserva || '',
+      id_origem: localColeta.id,
+      id_destino: localEntrega.id,
+      tipo_frete: dados.frete,
+      solicitacao: dados.solicitante,
+      veiculo: dados.veiculo,
+      lista_cargas: dados.listaCargas ? JSON.parse(dados.listaCargas) : null,
+      quantidade_volumes: parseInt(dados.quantidadeVolumes) || 0,
+      peso: parseFloat(dados.pesoTotal) || 0,
+      volume: 0,
+      data_entrega: formatarProBanco(dados.dataEntrega),
+      status: 'Aguardando Aprovação',
+      observacoes: dados.obs || '',
+    }));
 
-    if (erroEntrega) throw new Error('Erro Entrega: ' + erroEntrega.message);
-
-    // 3. INSERE O PEDIDO ATM
-    const { data: pedidoAtm, error: erroAtm } = await supabase
-      .from('pedidos_atm')
-      .insert([{
-        data_solicitacao: formatarProBanco(dados.dataSolicitacao),
-        tipo_operacao: dados.tipo_operacao,
-        pedido_compra: dados.pedidoCompra,
-        nf: dados.nf || null,
-        valor_nf: dados.valor_nf ? parseFloat(dados.valor_nf) : null,
-        wbs: dados.wbs,
-
-        contato_coleta: dados.nomeContatoColeta || null,
-        telefone_coleta: dados.telefoneColeta || null,
-        contato_entrega: dados.nomeContatoEntrega || null,
-        telefone_entrega: dados.telefoneEntrega || null,
-        numero_reserva: dados.numeroReserva || null,
-
-        id_origem: localColeta[0].id,
-        id_destino: localEntrega[0].id,
-        tipo_frete: dados.frete,
-        solicitacao: dados.solicitante,
-        veiculo: dados.veiculo,
-
-        lista_cargas: dados.listaCargas ? JSON.parse(dados.listaCargas) : null,
-        quantidade_volumes: parseInt(dados.quantidadeVolumes) || 0,
-        peso: parseFloat(dados.pesoTotal) || 0,
-        volume: 0,
-
-        data_entrega: formatarProBanco(dados.dataEntrega),
-        status: 'Aguardando Aprovação',
-        observacoes: dados.obs || null
-      }])
-      .select('id');
-
-    if (erroAtm) throw new Error('Erro ATM: ' + erroAtm.message);
-
-    // 🟢 AVISA O FRONT-END QUE UM NOVO PEDIDO FOI CRIADO!
-    req.app.get('io').emit('transportes_atualizados');
-
-    res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedidoAtm[0].id });
+    res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedido.id });
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
@@ -85,26 +75,26 @@ const criarTransporte = async (req, res) => {
 
 const listarTransportesAdmin = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('pedidos_atm')
-      .select(`
-        *,
-        origem:id_origem (nome_local, logradouro, numero, bairro, municipio, uf, cep),
-        destino:id_destino (nome_local, logradouro, numero, bairro, municipio, uf, cep),
-        transportadora:id_transportadora (nome),
-        faturamento:faturamento_atm (*) 
-      `)
-      .order('created_at', { ascending: false });
+    const pedidos = await withAuth(() =>
+      pb.collection('pedidos_atm').getFullList({
+        sort: '-created_at',
+        expand: 'id_origem,id_destino,id_transportadora',
+      })
+    );
 
-    if (error) throw new Error(error.message);
+    const faturamentos = await withAuth(() => pb.collection('faturamento_atm').getFullList());
+    const fatMap = {};
+    for (const f of faturamentos) fatMap[f.id_atm] = f;
 
-    // 🟢 CORREÇÃO: Trata a formatação corretamente quer o Supabase devolva um Array ou um Objeto
-    const dadosFormatados = data.map(item => ({
-      ...item,
-      faturamento: Array.isArray(item.faturamento) ? item.faturamento[0] : (item.faturamento || null)
+    const dados = pedidos.map((p) => ({
+      ...p,
+      origem: (p.expand && p.expand.id_origem) || null,
+      destino: (p.expand && p.expand.id_destino) || null,
+      transportadora: (p.expand && p.expand.id_transportadora) || null,
+      faturamento: fatMap[p.id] || null,
     }));
 
-    res.json(dadosFormatados);
+    res.json(dados);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
   }
@@ -115,10 +105,7 @@ const atualizarTransporteAdmin = async (req, res) => {
   const d = req.body;
 
   try {
-    const num = (val) => (val === "" || val === undefined || val === null ? null : parseFloat(val));
-    const str = (val) => (val === "" || val === undefined || val === null ? null : String(val));
-
-    // 1. ATUALIZAR TABELA PRINCIPAL (Somente o que for enviado)
+    // 1. Tabela principal
     const updateAtm = {};
     if (d.status !== undefined) updateAtm.status = str(d.status);
     if (d.tipo_operacao !== undefined) updateAtm.tipo_operacao = str(d.tipo_operacao);
@@ -148,42 +135,41 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
 
-    const { data: pedido, error: erroPedido } = await supabase
-      .from('pedidos_atm')
-      .update(updateAtm)
-      .eq('id', id)
-      .select('id_origem, id_destino')
-      .single();
+    // Transportadora por nome -> id (melhoria: faz o campo do form realmente salvar)
+    if (d.nome_transportadora !== undefined) {
+      const tid = await idTransportadoraPorNome(str(d.nome_transportadora));
+      if (tid !== undefined) updateAtm.id_transportadora = tid || '';
+    }
 
-    if (erroPedido) throw new Error('Erro Pedido: ' + erroPedido.message);
+    const pedido = await withAuth(() => pb.collection('pedidos_atm').getOne(id));
+    if (Object.keys(updateAtm).length > 0) {
+      await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
+    }
 
-    // 2. ATUALIZAR ENDEREÇOS
+    // 2. Enderecos (origem/destino)
     if (pedido.id_origem && d.origem) {
-      await supabase.from('enderecos_pedido').update({
+      await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_origem, {
         logradouro: str(d.origem.logradouro),
         numero: str(d.origem.numero),
         municipio: str(d.origem.municipio),
-        uf: str(d.origem.uf)
-      }).eq('id', pedido.id_origem);
+        uf: str(d.origem.uf),
+      }));
     }
-
     if (pedido.id_destino && d.destino) {
-      await supabase.from('enderecos_pedido').update({
+      await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_destino, {
         logradouro: str(d.destino.logradouro),
         numero: str(d.destino.numero),
         municipio: str(d.destino.municipio),
-        uf: str(d.destino.uf)
-      }).eq('id', pedido.id_destino);
+        uf: str(d.destino.uf),
+      }));
     }
 
-    // 3. 🟢 ATUALIZAR FATURAMENTO COM O NOVO NOME (valor_previsto)
+    // 3. Faturamento (upsert)
     const fatData = {};
     if (d.tipo_documento !== undefined) fatData.tipo_documento = str(d.tipo_documento);
     if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null;
     if (d.fatura_cte !== undefined) fatData.fatura_cte = str(d.fatura_cte);
-
-    if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto); // 🟢 O NOME NOVO
-
+    if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto);
     if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : null;
     if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : null;
     if (d.wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.wbs);
@@ -191,27 +177,23 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.registrado_sap !== undefined) fatData.registrado_sap = str(d.registrado_sap);
 
     if (Object.keys(fatData).length > 0) {
-      // 🟢 CORREÇÃO: Usar .maybeSingle() em vez de .single()
-      const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).maybeSingle();
+      let existingFat = null;
+      try {
+        existingFat = await withAuth(() =>
+          pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:a}', { a: id }))
+        );
+      } catch (e) { existingFat = null; }
 
       if (existingFat) {
-        // Se já existe, atualiza
-        const { error: erroFat } = await supabase.from('faturamento_atm').update(fatData).eq('id_atm', id);
-        if (erroFat) throw new Error('Erro Financeiro Update: ' + erroFat.message);
+        await withAuth(() => pb.collection('faturamento_atm').update(existingFat.id, fatData));
       } else {
-        // Se não existe, cria
-        const { error: erroFat } = await supabase.from('faturamento_atm').insert([{ ...fatData, id_atm: id }]);
-        if (erroFat) throw new Error('Erro Financeiro Insert: ' + erroFat.message);
+        await withAuth(() => pb.collection('faturamento_atm').create({ ...fatData, id_atm: id }));
       }
     }
 
-    // 🟢 AVISA O FRONT-END QUE UM PEDIDO FOI ATUALIZADO!
-    req.app.get('io').emit('transportes_atualizados');
-
-    res.json({ mensagem: '✅ Pedido, Endereços e Faturamento atualizados!' });
-
+    res.json({ mensagem: '✅ Pedido, Enderecos e Faturamento atualizados!' });
   } catch (erro) {
-    console.error("Erro completo no Update:", erro);
+    console.error('Erro completo no Update:', erro);
     res.status(400).json({ erro: erro.message });
   }
 };
@@ -220,18 +202,13 @@ const atualizarLoteAdmin = async (req, res) => {
   const { ids, dados } = req.body;
 
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ erro: 'Nenhum ID fornecido para edição em lote.' });
+    return res.status(400).json({ erro: 'Nenhum ID fornecido para edicao em lote.' });
   }
-
   if (!dados || Object.keys(dados).length === 0) {
     return res.status(400).json({ erro: 'Nenhum dado fornecido para atualizar.' });
   }
 
   try {
-    const num = (val) => (val === "" || val === undefined || val === null ? null : parseFloat(val));
-    const str = (val) => (val === "" || val === undefined ? null : val);
-
-    // 1. SEPARA OS DADOS QUE VÃO PARA A TABELA 'pedidos_atm'
     const updateAtm = {};
     if (dados.status !== undefined) updateAtm.status = str(dados.status);
     if (dados.tipo_operacao !== undefined) updateAtm.tipo_operacao = str(dados.tipo_operacao);
@@ -245,13 +222,11 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.valor_nf !== undefined) updateAtm.valor_nf = num(dados.valor_nf);
     if (dados.valor_realizado !== undefined) updateAtm.valor_realizado = num(dados.valor_realizado);
     if (dados.cotacao_bid !== undefined) updateAtm.cotacao_bid = str(dados.cotacao_bid);
-
     if (dados.veiculo !== undefined) updateAtm.veiculo = str(dados.veiculo);
     if (dados.tipo_frete !== undefined) updateAtm.tipo_frete = str(dados.tipo_frete);
     if (dados.peso !== undefined) updateAtm.peso = num(dados.peso);
     if (dados.volume !== undefined) updateAtm.volume = num(dados.volume);
     if (dados.medidas !== undefined) updateAtm.medidas = str(dados.medidas);
-
     if (dados.link_rastreio !== undefined) updateAtm.link_rastreio = str(dados.link_rastreio);
     if (dados.observacoes !== undefined) updateAtm.observacoes = str(dados.observacoes);
     if (dados.data_coleta !== undefined) updateAtm.data_coleta = formatarProBanco(dados.data_coleta);
@@ -261,82 +236,72 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
 
-    // 2. SEPARA OS DADOS QUE VÃO PARA A TABELA 'faturamento_atm'
+    if (dados.nome_transportadora !== undefined || dados.transportadora !== undefined) {
+      const nome = str(dados.nome_transportadora !== undefined ? dados.nome_transportadora : dados.transportadora);
+      const tid = await idTransportadoraPorNome(nome);
+      if (tid !== undefined) updateAtm.id_transportadora = tid || '';
+    }
+
     const updateFat = {};
     if (dados.tipo_documento !== undefined) updateFat.tipo_documento = str(dados.tipo_documento);
     if (dados.fatura_cte !== undefined) updateFat.fatura_cte = str(dados.fatura_cte);
     if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = formatarProBanco(dados.data_mapeamento);
     if (dados.data_emissao !== undefined) updateFat.data_emissao = formatarProBanco(dados.data_emissao);
     if (dados.vencimento !== undefined) updateFat.vencimento = formatarProBanco(dados.vencimento);
-
-    if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); // 🟢 O NOME NOVO NO LOTE
-
+    if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto);
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
     if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs);
 
-    // 3. EXECUTA A ATUALIZAÇÃO PARA CADA ID SELECIONADO
-    const promessas = ids.map(async (id) => {
+    for (const id of ids) {
       if (Object.keys(updateAtm).length > 0) {
-        await supabase.from('pedidos_atm').update(updateAtm).eq('id', id);
+        await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
       }
-
       if (Object.keys(updateFat).length > 0) {
-        // 🟢 CORREÇÃO: Usar .maybeSingle() também na edição em lote
-        const { data: existingFat } = await supabase.from('faturamento_atm').select('id').eq('id_atm', id).maybeSingle();
-
-        if (existingFat) {
-          await supabase.from('faturamento_atm').update(updateFat).eq('id_atm', id);
-        } else {
-          await supabase.from('faturamento_atm').insert([{ ...updateFat, id_atm: id }]);
-        }
+        let ex = null;
+        try { ex = await withAuth(() => pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:a}', { a: id }))); } catch (e) { ex = null; }
+        if (ex) await withAuth(() => pb.collection('faturamento_atm').update(ex.id, updateFat));
+        else await withAuth(() => pb.collection('faturamento_atm').create({ ...updateFat, id_atm: id }));
       }
-
       if (dados.origem !== undefined || dados.destino !== undefined) {
-        const { data: atm } = await supabase.from('pedidos_atm').select('id_origem, id_destino').eq('id', id).single();
-        if (atm) {
-          if (dados.origem !== undefined && atm.id_origem) {
-            await supabase.from('enderecos_pedido').update({ nome_local: str(dados.origem) }).eq('id', atm.id_origem);
-          }
-          if (dados.destino !== undefined && atm.id_destino) {
-            await supabase.from('enderecos_pedido').update({ nome_local: str(dados.destino) }).eq('id', atm.id_destino);
-          }
+        const atm = await withAuth(() => pb.collection('pedidos_atm').getOne(id));
+        if (dados.origem !== undefined && atm.id_origem) {
+          await withAuth(() => pb.collection('enderecos_pedido').update(atm.id_origem, { nome_local: str(dados.origem) }));
+        }
+        if (dados.destino !== undefined && atm.id_destino) {
+          await withAuth(() => pb.collection('enderecos_pedido').update(atm.id_destino, { nome_local: str(dados.destino) }));
         }
       }
-    });
-
-    await Promise.all(promessas);
-
-    // 🟢 AVISA O FRONT-END QUE UM LOTE DE PEDIDOS FOI ATUALIZADO!
-    req.app.get('io').emit('transportes_atualizados');
+    }
 
     res.json({ mensagem: `✅ Lote de ${ids.length} pedidos atualizado com sucesso!` });
-
   } catch (erro) {
-    console.error("Erro na edição em lote:", erro);
+    console.error('Erro na edicao em lote:', erro);
     res.status(500).json({ erro: erro.message });
   }
 };
 
 const rastrearPedidoPublico = async (req, res) => {
   const { codigo } = req.params;
-
   try {
-    const { data, error } = await supabase
-      .from('pedidos_atm')
-      .select(`
-        *,
-        origem:id_origem (nome_local, municipio, uf),
-        destino:id_destino (nome_local, municipio, uf)
-      `)
-      .or(`numero_atm.eq.${codigo},id.ilike.${codigo}%`)
-      .single();
+    let pedido = null;
+    try {
+      pedido = await withAuth(() =>
+        pb.collection('pedidos_atm').getFirstListItem(
+          pb.filter('numero_atm = {:c} || id = {:c}', { c: codigo }),
+          { expand: 'id_origem,id_destino' }
+        )
+      );
+    } catch (e) { pedido = null; }
 
-    if (error || !data) {
-      return res.status(404).json({ erro: 'Pedido não encontrado.' });
-    }
+    if (!pedido) return res.status(404).json({ erro: 'Pedido nao encontrado.' });
 
-    res.json(data);
+    const out = {
+      ...pedido,
+      origem: (pedido.expand && pedido.expand.id_origem) || null,
+      destino: (pedido.expand && pedido.expand.id_destino) || null,
+    };
+    res.json(out);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
   }
@@ -347,5 +312,5 @@ module.exports = {
   listarTransportesAdmin,
   atualizarTransporteAdmin,
   atualizarLoteAdmin,
-  rastrearPedidoPublico
+  rastrearPedidoPublico,
 };

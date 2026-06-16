@@ -1,13 +1,11 @@
-const supabase = require('../config/supabase');
+// src/controllers/usuarioController.js  (PocketBase)
+const { pb, withAuth } = require('../config/pocketbase');
 
 const listarUsuarios = async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select('id, nome, email, perfil, ativo, created_at')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
+    const recs = await withAuth(() => pb.collection('usuarios').getFullList({ sort: '-created_at' }));
+    // Nao expor a senha
+    const data = recs.map(({ id, nome, email, perfil, ativo, created_at }) => ({ id, nome, email, perfil, ativo, created_at }));
     res.json(data);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
@@ -17,18 +15,9 @@ const listarUsuarios = async (req, res) => {
 const criarUsuario = async (req, res) => {
   try {
     const { nome, email, senha, perfil } = req.body;
-    
-    const { data, error } = await supabase
-      .from('usuarios')
-      .insert([{ nome, email, senha, perfil, ativo: true }])
-      .select();
-
-    if (error) throw error;
-
-    // 🟢 AVISA O FRONT-END
-    req.app.get('io').emit('usuarios_atualizados');
-
-    res.status(201).json(data[0]);
+    const data = await withAuth(() => pb.collection('usuarios').create({ nome, email, senha, perfil, ativo: true }));
+    const { senha: _omit, ...safe } = data;
+    res.status(201).json(safe);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
@@ -38,24 +27,11 @@ const atualizarUsuario = async (req, res) => {
   try {
     const { id } = req.params;
     const { nome, email, senha, perfil } = req.body;
-
     const atualizacao = { nome, email, perfil };
-    if (senha) {
-      atualizacao.senha = senha;
-    }
-
-    const { data, error } = await supabase
-      .from('usuarios')
-      .update(atualizacao)
-      .eq('id', id)
-      .select();
-
-    if (error) throw error;
-
-    // 🟢 AVISA O FRONT-END
-    req.app.get('io').emit('usuarios_atualizados');
-
-    res.json(data[0]);
+    if (senha) atualizacao.senha = senha; // so muda a senha se enviada
+    const data = await withAuth(() => pb.collection('usuarios').update(id, atualizacao));
+    const { senha: _omit, ...safe } = data;
+    res.json(safe);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
@@ -64,13 +40,7 @@ const atualizarUsuario = async (req, res) => {
 const excluirUsuario = async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabase.from('usuarios').delete().eq('id', id);
-    
-    if (error) throw error;
-
-    // 🟢 AVISA O FRONT-END
-    req.app.get('io').emit('usuarios_atualizados');
-
+    await withAuth(() => pb.collection('usuarios').delete(id));
     res.status(204).send();
   } catch (erro) {
     res.status(500).json({ erro: erro.message });

@@ -1,10 +1,9 @@
-// src/controllers/projetoController.js
-const supabase = require('../config/supabase');
+// src/controllers/projetoController.js  (PocketBase)
+const { pb, withAuth } = require('../config/pocketbase');
 
 const listarProjetos = async (req, res) => {
   try {
-    const { data, error } = await supabase.from('projetos').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
+    const data = await withAuth(() => pb.collection('projetos').getFullList({ sort: '-created_at' }));
     res.json(data);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
@@ -14,14 +13,8 @@ const listarProjetos = async (req, res) => {
 const criarProjeto = async (req, res) => {
   try {
     const { descricao } = req.body;
-    const { data, error } = await supabase.from('projetos').insert([{ wbs: descricao }]).select();
-    
-    if (error) throw error;
-
-    // 🟢 AVISA O FRONT-END
-    req.app.get('io').emit('projetos_atualizados');
-
-    res.status(201).json(data[0]);
+    const data = await withAuth(() => pb.collection('projetos').create({ wbs: descricao, ativo: true }));
+    res.status(201).json(data);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
@@ -31,15 +24,8 @@ const atualizarProjeto = async (req, res) => {
   try {
     const { id } = req.params;
     const { descricao } = req.body;
-    
-    const { data, error } = await supabase.from('projetos').update({ wbs: descricao }).eq('id', id).select();
-    
-    if (error) throw error;
-
-    // 🟢 AVISA O FRONT-END
-    req.app.get('io').emit('projetos_atualizados');
-
-    res.json(data[0]);
+    const data = await withAuth(() => pb.collection('projetos').update(id, { wbs: descricao }));
+    res.json(data);
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
@@ -48,12 +34,7 @@ const atualizarProjeto = async (req, res) => {
 const excluirProjeto = async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabase.from('projetos').delete().eq('id', id);
-    if (error) throw error;
-
-    // 🟢 AVISA O FRONT-END
-    req.app.get('io').emit('projetos_atualizados');
-
+    await withAuth(() => pb.collection('projetos').delete(id));
     res.status(204).send();
   } catch (erro) {
     res.status(500).json({ erro: erro.message });

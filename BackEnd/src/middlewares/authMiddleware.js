@@ -1,35 +1,33 @@
 const jwt = require('jsonwebtoken');
 
-// 1. Verifica se o usuário tem um token válido
+// 1. Verifica se o usuario tem um token valido
 const verificarToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ erro: 'Acesso negado! Faça login.' });
+    return res.status(401).json({ erro: 'Acesso negado! Faca login.' });
   }
 
   try {
     const decodificado = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = decodificado; // Guarda { id, nome, perfil } no request
+    req.usuario = decodificado; // { id, nome, perfil }
     next();
   } catch (erro) {
-    res.status(403).json({ erro: 'Token expirado ou inválido.' });
+    res.status(403).json({ erro: 'Token expirado ou invalido.' });
   }
 };
 
-// 🟢 2. NOVO: Verifica se o perfil do usuário logado está na lista de permitidos
+// 2. Verifica se o perfil do usuario esta na lista de permitidos
 const permitirPerfis = (perfisPermitidos) => {
   return (req, res, next) => {
     if (!req.usuario || !req.usuario.perfil) {
-      return res.status(403).json({ erro: 'Perfil não identificado no token.' });
+      return res.status(403).json({ erro: 'Perfil nao identificado no token.' });
     }
-
     if (!perfisPermitidos.includes(req.usuario.perfil)) {
-      return res.status(403).json({ erro: 'Acesso negado! Seu perfil não tem permissão para realizar esta ação.' });
+      return res.status(403).json({ erro: 'Acesso negado! Seu perfil nao tem permissao para esta acao.' });
     }
-
-    next(); // Se tiver permissão, deixa a rota prosseguir
+    next();
   };
 };
 
