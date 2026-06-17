@@ -345,8 +345,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             <label className="card-editavel__label">Status Atual</label>
             <select name="status" defaultValue={atm.status} className="card-editavel__select card-editavel__select--highlight">
               <option value="Aguardando Aprovação">Aguardando Aprovação</option>
-              <option value="Pendente">Pendente</option>
-              <option value="Aguardando Coleta">Aguardando Coleta</option>
               <option value="Em Trânsito">Em Trânsito</option>
               <option value="Entregue">Entregue</option>
               <option value="Frete morto">Frete morto</option>

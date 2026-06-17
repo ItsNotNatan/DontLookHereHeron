@@ -64,7 +64,7 @@ export default function Dashboard({ atms, carregando, onOpenAtm }) {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`http://${window.location.hostname}:3001/api/admin/transportes/lote/editar`, {
+      const response = await fetch('http://localhost:3001/api/admin/transportes/lote/editar', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

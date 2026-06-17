@@ -17,9 +17,8 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
   const [modoDataMap, setModoDataMap] = useState('lote');
   const [modoDataEmi, setModoDataEmi] = useState('lote');
   const [modoDataVenc, setModoDataVenc] = useState('lote');
-  const [modoData, setModoData] = useState('lote');
 
-  // Função auxiliar para transformar YYYY-MM-DD em DD/MM/YYYY no Select
+  // Função auxiliar para formatar Datas
   const formatarDataParaBR = (dataStr) => {
     if (!dataStr) return '';
     if (dataStr.includes('/')) return dataStr;
@@ -27,6 +26,9 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
     return `${dia}/${mes}/${ano}`;
   };
 
+  // ==========================================
+  // O SEGREDO ESTÁ AQUI: Extração Segura de Dados
+  // ==========================================
   const opcoesFiltro = useMemo(() => {
     const faturas = new Set();
     const peps = new Set();
@@ -37,23 +39,43 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
     const datasVenc = new Set();
 
     atms.forEach(atm => {
-      if (atm.fatura_cte) faturas.add(atm.fatura_cte.trim());
-      if (atm.elemento_pep_cc_wbs) peps.add(atm.elemento_pep_cc_wbs.trim());
-      else if (atm.wbs) peps.add(atm.wbs.trim());
-      if (atm.tipo_documento) tiposDoc.add(atm.tipo_documento.trim());
-      if (atm.validacao_pep) validacoes.add(atm.validacao_pep.trim());
+      // Tenta achar o faturamento na raiz ou dentro de Arrays
+      let fat = atm.faturamento || atm.faturamento_atm || {};
+      if (Array.isArray(fat)) fat = fat[0] || {}; 
 
-      if (atm.data_mapeamento) datasMap.add(atm.data_mapeamento.split('T')[0]);
-      if (atm.data_emissao) datasEmi.add(atm.data_emissao.split('T')[0]);
-      if (atm.vencimento) datasVenc.add(atm.vencimento.split('T')[0]);
+      // 1. Faturas
+      const faturaVal = fat.fatura_cte || atm.fatura_cte;
+      if (faturaVal) faturas.add(String(faturaVal).trim());
+
+      // 2. Elemento PEP
+      const pepVal = fat.elemento_pep_cc_wbs || atm.elemento_pep_cc_wbs || atm.wbs;
+      if (pepVal) peps.add(String(pepVal).trim());
+
+      // 3. Tipo Documento e Validação
+      const tipoDocVal = fat.tipo_documento || atm.tipo_documento;
+      if (tipoDocVal) tiposDoc.add(String(tipoDocVal).trim());
+
+      const validacaoVal = fat.validacao_pep || atm.validacao_pep;
+      if (validacaoVal) validacoes.add(String(validacaoVal).trim());
+
+      // 4. DATAS! (Cortando a sujeira do Timezone com split('T')[0])
+      const dMap = fat.data_mapeamento || atm.data_mapeamento;
+      if (dMap) datasMap.add(String(dMap).split('T')[0]);
+
+      const dEmi = fat.data_emissao || atm.data_emissao;
+      if (dEmi) datasEmi.add(String(dEmi).split('T')[0]);
+
+      const dVenc = fat.vencimento || atm.vencimento;
+      if (dVenc) datasVenc.add(String(dVenc).split('T')[0]);
     });
 
-    
     const formatarOpcoes = (set) => Array.from(set).filter(Boolean).sort().map(item => ({ value: item, label: item }));
 
     const formatarData = (set) => Array.from(set).filter(Boolean).sort().map(d => {
-      const [ano, mes, dia] = d.split('-');
-      return { value: d, label: `${dia}/${mes}/${ano}` };
+      const partes = d.split('-');
+      // Evita bugar se a data vier num formato esquisito
+      if(partes.length === 3) return { value: d, label: `${partes[2]}/${partes[1]}/${partes[0]}` };
+      return { value: d, label: d };
     });
 
     return {
@@ -63,8 +85,7 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
       validacoes: formatarOpcoes(validacoes),
       datasMap: formatarData(datasMap),
       datasEmi: formatarData(datasEmi),
-      datasVenc: formatarData(datasVenc),
-      datas: formatarData(datasEmi) // Adicionado para o Período da Solicitação
+      datasVenc: formatarData(datasVenc)
     };
   }, [atms]);
 
@@ -73,8 +94,7 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
     filtros.tipo_documento, filtros.validacao_pep,
     filtros.data_map_inicio, filtros.data_map_fim, filtros.data_map_especifica,
     filtros.data_emissao_inicio, filtros.data_emissao_fim, filtros.data_emi_especifica,
-    filtros.data_venc_inicio, filtros.data_venc_fim, filtros.data_venc_especifica,
-    filtros.data_inicio, filtros.data_fim, filtros.data_especifica
+    filtros.data_venc_inicio, filtros.data_venc_fim, filtros.data_venc_especifica
   ].some(valor => valor !== '' && valor !== undefined);
 
   const alternarModo = (campo, modo) => {
@@ -83,7 +103,6 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
     if (campo === 'data_map') { setModoDataMap(modo); onFiltroChange({ target: { name: 'data_map_inicio', value: '' } }); onFiltroChange({ target: { name: 'data_map_fim', value: '' } }); onFiltroChange({ target: { name: 'data_map_especifica', value: '' } }); }
     if (campo === 'data_emi') { setModoDataEmi(modo); onFiltroChange({ target: { name: 'data_emissao_inicio', value: '' } }); onFiltroChange({ target: { name: 'data_emissao_fim', value: '' } }); onFiltroChange({ target: { name: 'data_emi_especifica', value: '' } }); }
     if (campo === 'data_venc') { setModoDataVenc(modo); onFiltroChange({ target: { name: 'data_venc_inicio', value: '' } }); onFiltroChange({ target: { name: 'data_venc_fim', value: '' } }); onFiltroChange({ target: { name: 'data_venc_especifica', value: '' } }); }
-    if (campo === 'data') { setModoData(modo); onFiltroChange({ target: { name: 'data_inicio', value: '' } }); onFiltroChange({ target: { name: 'data_fim', value: '' } }); onFiltroChange({ target: { name: 'data_especifica', value: '' } }); }
   };
 
   const handleMultiSelectChange = (name, selectedOptions) => {
@@ -109,8 +128,12 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
   const getMultiValueData = (str) => {
     if (!str) return [];
     return str.split(',').filter(Boolean).map(v => {
-      const [ano, mes, dia] = v.trim().split('-');
-      return { value: v.trim(), label: `${dia}/${mes}/${ano}` };
+      const val = v.trim();
+      if(val.includes('-')) {
+          const [ano, mes, dia] = val.split('-');
+          return { value: val, label: `${dia}/${mes}/${ano}` };
+      }
+      return { value: val, label: val };
     });
   };
 
@@ -242,24 +265,24 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
               )}
             </div>
 
-            {/* BLOCO: PERÍODO DA SOLICITAÇÃO */}
+            {/* 🟢 DATA EMISSÃO FATURA */}
             <div className="filtro-block">
               <div className="filtro-block__header">
-                <label className="filtro-block__label">Período da Solicitação</label>
+                <label className="filtro-block__label">Data Emissão Fatura</label>
                 <div className="filtro-block__btn-group">
-                  <button type="button" onClick={() => alternarModo('data', 'especifico')} className={`filtro-block__btn-mode ${modoData === 'especifico' ? 'filtro-block__btn-mode--active' : ''}`}>Específicos</button>
-                  <button type="button" onClick={() => alternarModo('data', 'lote')} className={`filtro-block__btn-mode ${modoData === 'lote' ? 'filtro-block__btn-mode--active' : ''}`}>Intervalo</button>
+                  <button type="button" onClick={() => alternarModo('data_emi', 'especifico')} className={`filtro-block__btn-mode ${modoDataEmi === 'especifico' ? 'filtro-block__btn-mode--active' : ''}`}>Específicos</button>
+                  <button type="button" onClick={() => alternarModo('data_emi', 'lote')} className={`filtro-block__btn-mode ${modoDataEmi === 'lote' ? 'filtro-block__btn-mode--active' : ''}`}>Intervalo</button>
                 </div>
               </div>
-              {modoData === 'especifico' ? (
-                <Select isMulti options={opcoesFiltro.datas} value={getMultiValueData(filtros.data_especifica)} onChange={(opts) => handleMultiSelectChange('data_especifica', opts)} placeholder="Selecionar dias..." styles={selectStyles} noOptionsMessage={() => "Nenhuma data encontrada"} />
+              {modoDataEmi === 'especifico' ? (
+                <Select isMulti options={opcoesFiltro.datasEmi} value={getMultiValueData(filtros.data_emi_especifica)} onChange={(opts) => handleMultiSelectChange('data_emi_especifica', opts)} placeholder="Selecionar dias..." styles={selectStyles} noOptionsMessage={() => "Nenhuma data encontrada"} />
               ) : (
                 <div className="filtro-block__range-container">
                   <div className="filtro-block__range-item">
                     <Select
-                      options={opcoesFiltro.datas}
-                      value={filtros.data_inicio ? { value: filtros.data_inicio, label: formatarDataParaBR(filtros.data_inicio) } : null}
-                      onChange={(opt) => onFiltroChange({ target: { name: 'data_inicio', value: opt ? opt.value : '' } })}
+                      options={opcoesFiltro.datasEmi}
+                      value={filtros.data_emissao_inicio ? { value: filtros.data_emissao_inicio, label: formatarDataParaBR(filtros.data_emissao_inicio) } : null}
+                      onChange={(opt) => onFiltroChange({ target: { name: 'data_emissao_inicio', value: opt ? opt.value : '' } })}
                       placeholder="De (Data)"
                       styles={selectStyles}
                       isClearable
@@ -268,9 +291,9 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
                   <span className="filtro-block__range-sep">até</span>
                   <div className="filtro-block__range-item">
                     <Select
-                      options={opcoesFiltro.datas}
-                      value={filtros.data_fim ? { value: filtros.data_fim, label: formatarDataParaBR(filtros.data_fim) } : null}
-                      onChange={(opt) => onFiltroChange({ target: { name: 'data_fim', value: opt ? opt.value : '' } })}
+                      options={opcoesFiltro.datasEmi}
+                      value={filtros.data_emissao_fim ? { value: filtros.data_emissao_fim, label: formatarDataParaBR(filtros.data_emissao_fim) } : null}
+                      onChange={(opt) => onFiltroChange({ target: { name: 'data_emissao_fim', value: opt ? opt.value : '' } })}
                       placeholder="Até (Data)"
                       styles={selectStyles}
                       isClearable
@@ -318,7 +341,7 @@ export default function FiltroFat({ atms, filtros, onFiltroChange, onLimpar, abe
               )}
             </div>
 
-            {/* 🟢 NOVO BLOCO: REGISTRADO SAP USANDO REACT-SELECT */}
+            {/* BLOCO: REGISTRADO SAP */}
             <div className="filtro-block">
               <label className="filtro-block__label filtro-block__label--block">Registrado SAP?</label>
               <Select
