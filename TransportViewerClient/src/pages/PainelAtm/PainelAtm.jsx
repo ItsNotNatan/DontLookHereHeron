@@ -90,10 +90,13 @@ export default function PainelAtm() {
     
     try {
       const resposta = await api.get('/admin/transportes'); 
-      setAtms(resposta.data);
+      // 👇 BLINDAGEM 1: Só seta se for array
+      setAtms(Array.isArray(resposta.data) ? resposta.data : []);
     } catch (erro) {
       console.error("Erro detalhado:", erro.response || erro);
       alert("Erro ao puxar dados.");
+      // 👇 BLINDAGEM 2: Em caso de erro, joga array vazio para não quebrar a tela
+      setAtms([]);
     } finally {
       setCarregando(false);
     }
@@ -128,7 +131,10 @@ export default function PainelAtm() {
     setFiltros({ status: '', solicitante: '', veiculo: '', transportadora: '' });
   };
 
-  const atmsFiltrados = atms.filter((atm) => {
+  // 👇 BLINDAGEM 3: Garante que a variável a ser filtrada seja sempre um Array
+  const atmsSeguros = Array.isArray(atms) ? atms : [];
+
+  const atmsFiltrados = atmsSeguros.filter((atm) => {
     if (filtros.status && !filtros.status.split(',').includes(atm.status)) return false;
     if (filtros.solicitante && !filtros.solicitante.split(',').includes(atm.solicitacao)) return false;
     if (filtros.veiculo && !filtros.veiculo.split(',').includes(atm.veiculo)) return false;
