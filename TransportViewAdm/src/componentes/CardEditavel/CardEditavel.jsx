@@ -257,16 +257,21 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
       : '';
 
     const dadosParaEnviar = {
-      // DADOS DE OPERAÇÃO
+      // DADOS DA OPERAÇÃO ESPELHADOS DA TABELA
       status: d.status,
       tipo_operacao: d.tipo_operacao,
-      solicitacao: d.solicitacao,
-      data_solicitacao: d.data_solicitacao,
-      numero_reserva: d.numero_reserva,
       wbs: d.wbs,
+      solicitacao: d.solicitacao,
+      pedido_compra: d.pedido_compra,
+      nf: d.nf,
       nome_transportadora: d.transportadora,
-      veiculo: d.veiculo,
+      valor_previsto: extrairNumeroMoeda(maskValorPrevisto),
+      valor_nf: extrairNumeroMoeda(maskValorNf),
       tipo_frete: d.tipo_frete,
+      veiculo: d.veiculo,
+      
+      // RESTANTE DA OPERAÇÃO
+      data_solicitacao: d.data_solicitacao,
       peso: d.peso,
       volume: d.volume,
       medidas: medidasCombinadas,
@@ -287,20 +292,18 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
         logradouro: d.destino_rua, numero: d.destino_num, municipio: d.destino_cidade, uf: d.destino_uf
       },
 
-      // DADOS DE FATURAMENTO
-      pedido_compra: d.pedido_compra,
-      nf: d.nf,
-      valor_nf: extrairNumeroMoeda(maskValorNf),
-      valor_previsto: extrairNumeroMoeda(maskValorPrevisto),
-      valor_realizado: extrairNumeroMoeda(maskValorRealizado),
-      cotacao_bid: d.cotacao_bid,
+      // DADOS DE FATURAMENTO / SAP
       tipo_documento: d.tipo_documento,
-      fatura_cte: d.fatura_cte,
       data_mapeamento: d.data_mapeamento,
+      fatura_cte: d.fatura_cte,
+      valor_realizado: extrairNumeroMoeda(maskValorRealizado),
       data_emissao: d.data_emissao,
       vencimento: d.vencimento,
+      elemento_pep_cc_wbs: d.elemento_pep_cc_wbs,
       validacao_pep: d.validacao_pep,
-      registrado_sap: d.registrado_sap
+      registrado_sap: d.registrado_sap,
+      numero_reserva: d.numero_reserva,
+      cotacao_bid: d.cotacao_bid
     };
 
     try {
@@ -331,7 +334,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               marginBottom: '-2px'
             }}
           >
-            📦 Dados de Operação
+            📦 Dados da Operação
           </button>
           <button 
             type="button" 
@@ -352,9 +355,31 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
         {/* ==================================================== */}
         <div style={{ display: abaAtiva === 'operacao' ? 'block' : 'none' }}>
           
-          <h4 className="card-editavel__section-title" style={{ marginTop: 0 }}>Informações Gerais</h4>
+          <h4 className="card-editavel__section-title" style={{ marginTop: 0 }}>Espelho da Tabela</h4>
           <div className="card-editavel__grid card-editavel__grid--cols-4">
-            <div className="card-editavel__grid-item--span-2">
+            
+            {/* LINHA 1 DA TABELA */}
+            <div>
+              <label className="card-editavel__label">Tipo Operação</label>
+              <select name="tipo_operacao" defaultValue={atm.tipo_operacao} className="card-editavel__select">
+                <option value="Nacional">NACIONALIZADO</option>
+                <option value="Importação">IMPORTAÇÃO</option>
+              </select>
+            </div>
+            <div style={{ position: 'relative' }}>
+              <label className="card-editavel__label">Projeto / WBS</label>
+              <input type="hidden" name="wbs" value={wbsSelecionada} />
+              <Select
+                options={opcoesWbs} value={opcoesWbs.find(opt => opt.value === wbsSelecionada) || (wbsSelecionada ? { value: wbsSelecionada, label: wbsSelecionada } : null)}
+                onChange={(selecionado) => setWbsSelecionada(selecionado ? selecionado.value : '')}
+                placeholder="Buscar WBS..." isSearchable isClearable styles={reactSelectStyles}
+              />
+            </div>
+            <div>
+              <label className="card-editavel__label">Solicitante</label>
+              <input type="text" name="solicitacao" defaultValue={atm.solicitacao} className="card-editavel__input" />
+            </div>
+            <div>
               <label className="card-editavel__label">Status Atual</label>
               <select name="status" defaultValue={atm.status} className="card-editavel__select card-editavel__select--highlight">
                 <option value="Aguardando Aprovação">Aguardando Aprovação</option>
@@ -364,39 +389,69 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                 <option value="Recusado">Recusado</option>
               </select>
             </div>
+
+            {/* LINHA 2 DA TABELA */}
+            <div>
+              <label className="card-editavel__label">Pedido Compra</label>
+              <input type="text" name="pedido_compra" defaultValue={atm.pedido_compra} className="card-editavel__input" />
+            </div>
+            <div>
+              <label className="card-editavel__label">Nota Fiscal (NF)</label>
+              <input type="text" name="nf" defaultValue={atm.nf} className="card-editavel__input" />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <label className="card-editavel__label">Transportadora</label>
+              <input type="hidden" name="transportadora" value={transportadoraSelecionada} />
+              <Select
+                options={opcoesTransportadoras} value={opcoesTransportadoras.find(opt => opt.value === transportadoraSelecionada) || (transportadoraSelecionada ? { value: transportadoraSelecionada, label: transportadoraSelecionada } : null)}
+                onChange={(selecionado) => setTransportadoraSelecionada(selecionado ? selecionado.value : '')}
+                placeholder="Buscar transportadora..." isSearchable isClearable styles={reactSelectStyles}
+              />
+            </div>
+            <div>
+              <label className="card-editavel__label">Tipo de Frete</label>
+              <select name="tipo_frete" defaultValue={atm.tipo_frete} className="card-editavel__select">
+                <option value="">Selecione...</option>
+                <option value="DEDICADO">DEDICADO</option>
+                <option value="FRACIONADO">FRACIONADO</option>
+                <option value="REDESPACHO/FRACIONADO">REDESPACHO/FRACIONADO</option>
+                <option value="DIÁRIA/VIAGEM">DIÁRIA/VIAGEM</option>
+                <option value="DEDICADO/FRACIONADO">DEDICADO/FRACIONADO</option>
+              </select>
+            </div>
+
+            {/* LINHA 3 DA TABELA */}
+            <div>
+              <label className="card-editavel__label">Valor Previsto (R$)</label>
+              <input type="text" name="valor_previsto_mask" className="card-editavel__input" placeholder="0,00" value={maskValorPrevisto} onChange={(e) => setMaskValorPrevisto(aplicarMascaraMoeda(e.target.value))} />
+            </div>
+            <div>
+              <label className="card-editavel__label">Valor NF (R$)</label>
+              <input type="text" name="valor_nf_mask" className="card-editavel__input" placeholder="0,00" value={maskValorNf} onChange={(e) => setMaskValorNf(aplicarMascaraMoeda(e.target.value))} />
+            </div>
+            <div>
+              <label className="card-editavel__label">Veículo Sugerido</label>
+              <select name="veiculo" defaultValue={atm.veiculo?.toUpperCase() || ''} className="card-editavel__select">
+                <option value="">Selecione...</option>
+                <option value="FIORINO">FIORINO</option>
+                <option value="VAN">VAN</option>
+                <option value="CAMINHÃO VUC">CAMINHÃO VUC</option>
+                <option value="CAMINHÃO 3/4">CAMINHÃO 3/4</option>
+                <option value="TRUCK">TRUCK</option>
+                <option value="CARRETA">CARRETA</option>
+                <option value="DOUBLE DECK">DOUBLE DECK</option>
+                <option value="CARRETA SIDER">CARRETA SIDER</option>
+                <option value="AÉREO">AÉREO</option>
+              </select>
+            </div>
             <div>
               <label className="card-editavel__label">Data Solicitação</label>
               <input type="date" name="data_solicitacao" defaultValue={dataSolFormatada} className="card-editavel__input" />
             </div>
-            <div>
-              <label className="card-editavel__label">Solicitante</label>
-              <input type="text" name="solicitacao" defaultValue={atm.solicitacao} className="card-editavel__input" />
-            </div>
-
-            <div className="card-editavel__grid-item--span-2">
-              <label className="card-editavel__label">Tipo de Operação</label>
-              <select name="tipo_operacao" defaultValue={atm.tipo_operacao} className="card-editavel__select">
-                <option value="Nacional">NACIONALIZADO</option>
-                <option value="Importação">IMPORTAÇÃO</option>
-              </select>
-            </div>
-            
-            <div className="card-editavel__grid-item--span-2">
-              <label className="card-editavel__label">Projeto / WBS</label>
-              <input type="hidden" name="wbs" value={wbsSelecionada} />
-              <Select
-                options={opcoesWbs}
-                value={opcoesWbs.find(opt => opt.value === wbsSelecionada) || (wbsSelecionada ? { value: wbsSelecionada, label: wbsSelecionada } : null)}
-                onChange={(selecionado) => setWbsSelecionada(selecionado ? selecionado.value : '')}
-                placeholder={opcoesWbs.length === 0 ? "Carregando..." : "Busque pelo WBS..."}
-                isSearchable isClearable styles={reactSelectStyles}
-              />
-            </div>
           </div>
 
-          <h4 className="card-editavel__section-title">Rota e Contatos</h4>
+          <h4 className="card-editavel__section-title">Rota (Origem e Destino)</h4>
           <div className="card-editavel__grid card-editavel__grid--cols-2">
-            
             {/* Origem */}
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
@@ -450,7 +505,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
           </div>
 
-          <h4 className="card-editavel__section-title">Itens da Carga</h4>
+          <h4 className="card-editavel__section-title">Itens da Carga e Totais</h4>
           <div style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
             <div className="card-editavel__grid card-editavel__grid--cols-4">
               <div className="card-editavel__grid-item--span-2">
@@ -537,60 +592,23 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                 ))}
               </div>
             )}
-          </div>
-
-          <h4 className="card-editavel__section-title">Totais e Logística</h4>
-          <div className="card-editavel__grid card-editavel__grid--cols-4">
-            <div className="card-editavel__grid-item--span-2" style={{ position: 'relative' }}>
-              <label className="card-editavel__label">Transportadora</label>
-              <input type="hidden" name="transportadora" value={transportadoraSelecionada} />
-              <Select
-                options={opcoesTransportadoras} value={opcoesTransportadoras.find(opt => opt.value === transportadoraSelecionada) || (transportadoraSelecionada ? { value: transportadoraSelecionada, label: transportadoraSelecionada } : null)}
-                onChange={(selecionado) => setTransportadoraSelecionada(selecionado ? selecionado.value : '')}
-                placeholder="Buscar transportadora..." isSearchable isClearable styles={reactSelectStyles}
-              />
-            </div>
-            <div>
-              <label className="card-editavel__label">Tipo de Frete</label>
-              <select name="tipo_frete" defaultValue={atm.tipo_frete} className="card-editavel__select">
-                <option value="">Selecione...</option>
-                <option value="DEDICADO">DEDICADO</option>
-                <option value="FRACIONADO">FRACIONADO</option>
-                <option value="REDESPACHO/FRACIONADO">REDESPACHO/FRACIONADO</option>
-                <option value="DIÁRIA/VIAGEM">DIÁRIA/VIAGEM</option>
-                <option value="DEDICADO/FRACIONADO">DEDICADO/FRACIONADO</option>
-              </select>
-            </div>
-            <div>
-              <label className="card-editavel__label">Veículo Sugerido</label>
-              <select name="veiculo" defaultValue={atm.veiculo?.toUpperCase() || ''} className="card-editavel__select">
-                <option value="">Selecione...</option>
-                <option value="FIORINO">FIORINO</option>
-                <option value="VAN">VAN</option>
-                <option value="CAMINHÃO VUC">CAMINHÃO VUC</option>
-                <option value="CAMINHÃO 3/4">CAMINHÃO 3/4</option>
-                <option value="TRUCK">TRUCK</option>
-                <option value="CARRETA">CARRETA</option>
-                <option value="DOUBLE DECK">DOUBLE DECK</option>
-                <option value="CARRETA SIDER">CARRETA SIDER</option>
-                <option value="AÉREO">AÉREO</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="card-editavel__label">Peso Total (kg)</label>
-              <input type="number" step="0.01" name="peso" defaultValue={atm.peso} className="card-editavel__input" placeholder="0.00" />
-            </div>
-            <div>
-              <label className="card-editavel__label">Volume Total (m³)</label>
-              <input type="number" step="0.01" name="volume" defaultValue={atm.volume} className="card-editavel__input" placeholder="0.00" />
-            </div>
-            <div className="card-editavel__grid-item--span-2">
-              <label className="card-editavel__label" style={{ marginBottom: '4px' }}>Medidas Totais (C x L x A) m</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" step="0.01" min="0" name="medida_c" defaultValue={compAtual} className="card-editavel__input" placeholder="C" style={{ textAlign: 'center' }} />
-                <input type="number" step="0.01" min="0" name="medida_l" defaultValue={largAtual} className="card-editavel__input" placeholder="L" style={{ textAlign: 'center' }} />
-                <input type="number" step="0.01" min="0" name="medida_a" defaultValue={altAtual} className="card-editavel__input" placeholder="A" style={{ textAlign: 'center' }} />
+            
+            <div className="card-editavel__grid card-editavel__grid--cols-4" style={{ marginTop: '20px' }}>
+              <div>
+                <label className="card-editavel__label">Peso Total (kg)</label>
+                <input type="number" step="0.01" name="peso" defaultValue={atm.peso} className="card-editavel__input" placeholder="0.00" />
+              </div>
+              <div>
+                <label className="card-editavel__label">Volume Total (m³)</label>
+                <input type="number" step="0.01" name="volume" defaultValue={atm.volume} className="card-editavel__input" placeholder="0.00" />
+              </div>
+              <div className="card-editavel__grid-item--span-2">
+                <label className="card-editavel__label" style={{ marginBottom: '4px' }}>Medidas Totais (C x L x A) m</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="number" step="0.01" min="0" name="medida_c" defaultValue={compAtual} className="card-editavel__input" placeholder="C" style={{ textAlign: 'center' }} />
+                  <input type="number" step="0.01" min="0" name="medida_l" defaultValue={largAtual} className="card-editavel__input" placeholder="L" style={{ textAlign: 'center' }} />
+                  <input type="number" step="0.01" min="0" name="medida_a" defaultValue={altAtual} className="card-editavel__input" placeholder="A" style={{ textAlign: 'center' }} />
+                </div>
               </div>
             </div>
           </div>
@@ -624,50 +642,29 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
         {/* ==================================================== */}
         <div style={{ display: abaAtiva === 'faturamento' ? 'block' : 'none' }}>
           
-          <h4 className="card-editavel__section-title" style={{ marginTop: 0, color: '#059669', borderColor: '#d1fae5' }}>Controle Financeiro</h4>
+          <h4 className="card-editavel__section-title" style={{ marginTop: 0, color: '#059669', borderColor: '#d1fae5' }}>Integração Fiscal e SAP</h4>
           
           <div className="card-editavel__grid card-editavel__grid--cols-4">
+            
+            {/* LINHA 1 FATURAMENTO */}
             <div>
-              <label className="card-editavel__label">Pedido Compra (PC)</label>
-              <input type="text" name="pedido_compra" defaultValue={atm.pedido_compra} className="card-editavel__input" />
-            </div>
-            <div>
-              <label className="card-editavel__label">Nota Fiscal (NF)</label>
-              <input type="text" name="nf" defaultValue={atm.nf} className="card-editavel__input" />
-            </div>
-            <div className="card-editavel__grid-item--span-2">
-              <label className="card-editavel__label">Nº Reserva</label>
-              <input type="text" name="numero_reserva" defaultValue={atm.numero_reserva} className="card-editavel__input" />
-            </div>
-
-            <div>
-              <label className="card-editavel__label">Valor Previsto (R$)</label>
-              <input type="text" name="valor_previsto_mask" className="card-editavel__input" placeholder="0,00" value={maskValorPrevisto} onChange={(e) => setMaskValorPrevisto(aplicarMascaraMoeda(e.target.value))} />
+              <label className="card-editavel__label">Tipo Documento</label>
+              <input type="text" name="tipo_documento" defaultValue={atm.faturamento?.tipo_documento || atm.tipo_documento} className="card-editavel__input" placeholder="Ex: NFSe" />
             </div>
             <div>
-              <label className="card-editavel__label">Valor Realizado (R$)</label>
-              <input type="text" name="valor_realizado_mask" className="card-editavel__input" placeholder="0,00" value={maskValorRealizado} onChange={(e) => setMaskValorRealizado(aplicarMascaraMoeda(e.target.value))} />
+              <label className="card-editavel__label">Data Mapeamento</label>
+              <input type="date" name="data_mapeamento" defaultValue={dataMapFormatada} className="card-editavel__input" />
             </div>
-            <div>
-              <label className="card-editavel__label">Valor NF (R$)</label>
-              <input type="text" name="valor_nf_mask" className="card-editavel__input" placeholder="0,00" value={maskValorNf} onChange={(e) => setMaskValorNf(aplicarMascaraMoeda(e.target.value))} />
-            </div>
-            <div>
-              <label className="card-editavel__label">Cotação / BID</label>
-              <input type="text" name="cotacao_bid" defaultValue={atm.cotacao_bid} className="card-editavel__input" />
-            </div>
-          </div>
-
-          <h4 className="card-editavel__section-title" style={{ color: '#059669', borderColor: '#d1fae5' }}>Dados Fiscais e Integração SAP</h4>
-          <div className="card-editavel__grid card-editavel__grid--cols-4">
             <div>
               <label className="card-editavel__label">Fatura (CT-e)</label>
               <input type="text" name="fatura_cte" defaultValue={atm.faturamento?.fatura_cte || atm.fatura_cte} className="card-editavel__input" />
             </div>
             <div>
-              <label className="card-editavel__label">Tipo Documento</label>
-              <input type="text" name="tipo_documento" defaultValue={atm.faturamento?.tipo_documento || atm.tipo_documento} className="card-editavel__input" placeholder="Ex: NFSe" />
+              <label className="card-editavel__label">Valor Realizado (R$)</label>
+              <input type="text" name="valor_realizado_mask" className="card-editavel__input" placeholder="0,00" value={maskValorRealizado} onChange={(e) => setMaskValorRealizado(aplicarMascaraMoeda(e.target.value))} />
             </div>
+
+            {/* LINHA 2 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Data Emissão Fatura</label>
               <input type="date" name="data_emissao" defaultValue={dataEmiFormatada} className="card-editavel__input" />
@@ -676,16 +673,17 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               <label className="card-editavel__label">Vencimento Fatura</label>
               <input type="date" name="vencimento" defaultValue={dataVencFormatada} className="card-editavel__input" />
             </div>
-
             <div>
-              <label className="card-editavel__label">Data Mapeamento</label>
-              <input type="date" name="data_mapeamento" defaultValue={dataMapFormatada} className="card-editavel__input" />
+              <label className="card-editavel__label">Elemento PEP / CC</label>
+              <input type="text" name="elemento_pep_cc_wbs" defaultValue={atm.faturamento?.elemento_pep_cc_wbs || atm.elemento_pep_cc_wbs || ''} className="card-editavel__input" placeholder="Ex: P-123456" />
             </div>
             <div>
               <label className="card-editavel__label">Validação PEP</label>
               <input type="text" name="validacao_pep" defaultValue={atm.faturamento?.validacao_pep || atm.validacao_pep} className="card-editavel__input" placeholder="OK/Erro..." />
             </div>
-            <div className="card-editavel__grid-item--span-2">
+
+            {/* LINHA 3 FATURAMENTO */}
+            <div>
               <label className="card-editavel__label">Registrado SAP?</label>
               <select name="registrado_sap" defaultValue={atm.faturamento?.registrado_sap || atm.registrado_sap || ''} className="card-editavel__select">
                 <option value="">Não Especificado</option>
@@ -693,8 +691,16 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                 <option value="NÃO">NÃO (Pendente)</option>
               </select>
             </div>
-          </div>
+            <div>
+              <label className="card-editavel__label">Nº Reserva</label>
+              <input type="text" name="numero_reserva" defaultValue={atm.numero_reserva} className="card-editavel__input" />
+            </div>
+            <div className="card-editavel__grid-item--span-2">
+              <label className="card-editavel__label">Cotação / BID</label>
+              <input type="text" name="cotacao_bid" defaultValue={atm.cotacao_bid} className="card-editavel__input" />
+            </div>
 
+          </div>
         </div>
         {/* FIM DA ABA FATURAMENTO */}
         
