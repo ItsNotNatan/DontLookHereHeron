@@ -176,15 +176,21 @@ export default function AcompFinan() {
     const motivosMap = {};
 
     atmsDoProjeto.forEach(atm => {
-      const previstoVal = Number(atm.cotacao_bid) || 0;
-      const realizadoVal = Number(atm.faturamento?.valor) || Number(atm.valor_nf) || 0;
+      const previstoVal = Number(atm.faturamento?.valor_previsto) || Number(atm.valor_previsto) || Number(atm.valor_nf) || 0;
+      const realizadoVal = Number(atm.valor_realizado) || 0;
       
       const valorEfetivo = realizadoVal > 0 ? realizadoVal : previstoVal;
       tGasto += valorEfetivo;
 
-      const dataStr = atm.data_solicitacao || atm.created_at;
+      const dataStr = atm.faturamento?.data_emissao || atm.data_emissao || atm.data_solicitacao || atm.created_at;
       if (dataStr) {
-        const mesIndex = parseInt(dataStr.split('-')[1], 10);
+        let mesIndex;
+        if (dataStr.includes('-')) {
+          mesIndex = parseInt(dataStr.split('-')[1], 10);
+        } else if (dataStr.includes('/')) {
+          mesIndex = parseInt(dataStr.split('/')[1], 10);
+        }
+
         if (mesesMap[mesIndex]) {
           mesesMap[mesIndex].total += valorEfetivo;
           mesesMap[mesIndex].count += 1;
@@ -225,12 +231,10 @@ export default function AcompFinan() {
       }); 
 
     const dData = Object.values(mesesMap).map(m => {
-      const pK = m.previstoTotal / 1000;
-      const rK = m.realizadoTotal / 1000;
       return {
         mes: m.mes,
-        previsto: pK,
-        realizado: rK
+        previsto: m.previstoTotal,
+        realizado: m.realizadoTotal
       };
     });
 
@@ -348,17 +352,21 @@ export default function AcompFinan() {
                     <ComposedChart data={desvioMensalData} margin={{ top: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={BLUE_PALE} vertical={false} />
                       <XAxis dataKey="mes" tick={{ fontSize: 11, fill: GRAY_MED }} />
-                      <YAxis tickFormatter={v => `R$ ${v.toFixed(0)}K`} tick={{ fontSize: 10, fill: GRAY_MED }} />
+                      <YAxis tickFormatter={v => `R$ ${(v/1000).toFixed(0)}K`} tick={{ fontSize: 10, fill: GRAY_MED }} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
                       
                       <Bar dataKey="realizado" name="Gasto Realizado" barSize={40}>
-                        {desvioMensalData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.realizado > entry.previsto ? ACCENT : SUCCESS} 
-                          />
-                        ))}
+                        {desvioMensalData.map((entry, index) => {
+                          // Se o realizado for maior que o previsto, aplica laranja, senão azul
+                          const corBarra = entry.realizado > entry.previsto ? ACCENT : BLUE_LIGHT;
+                          return (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={corBarra} 
+                            />
+                          );
+                        })}
                       </Bar>
                       
                       <Line type="monotone" dataKey="previsto" name="Orçamento Previsto" stroke={BLUE_MAIN} strokeWidth={3} dot={{ r: 5, fill: BLUE_MAIN }} />
@@ -369,8 +377,8 @@ export default function AcompFinan() {
                     data={desvioMensalData} 
                     categoryKey="mes" 
                     series={[
-                      { key: 'previsto', name: 'Previsto', color: BLUE_MAIN, formatter: v => `R$ ${v.toFixed(0)}K` },
-                      { key: 'realizado', name: 'Realizado', color: GRAY_MED, formatter: v => `R$ ${v.toFixed(0)}K` }
+                      { key: 'previsto', name: 'Previsto', color: BLUE_MAIN, formatter: fmt },
+                      { key: 'realizado', name: 'Realizado', color: BLUE_LIGHT, formatter: fmt }
                     ]} 
                   />
                 </div>
@@ -381,7 +389,6 @@ export default function AcompFinan() {
             {activeTab === "eficiencia" && (
               <div className="acomp-layout-col">
                 
-                {/* 🟢 GRÁFICO UNIFICADO: ROTAS */}
                 <SectionHeader title="Eficiência de Rotas" subtitle="Comparativo Unificado: Volume de Viagens vs Ticket Médio" />
                 <div className="acomp-card" style={{ marginBottom: '20px' }}>
                   <ResponsiveContainer width="100%" height={350}>
@@ -411,7 +418,6 @@ export default function AcompFinan() {
                   />
                 </div>
 
-                {/* 🟢 GRÁFICO UNIFICADO: TRANSPORTADORAS */}
                 <SectionHeader title="Eficiência de Transportadoras" subtitle="Comparativo Unificado: Volume de Viagens vs Ticket Médio" />
                 <div className="acomp-card" style={{ marginBottom: '20px' }}>
                   <ResponsiveContainer width="100%" height={350}>
@@ -441,7 +447,6 @@ export default function AcompFinan() {
                   />
                 </div>
 
-                {/* 🟢 GRÁFICO UNIFICADO: MOTIVOS / DIVERGÊNCIAS */}
                 {motivosData && motivosData.length > 0 && (
                   <>
                     <SectionHeader title="Análise de Motivos e Divergências" subtitle="Impacto financeiro e volume por tipo de ocorrência" />
