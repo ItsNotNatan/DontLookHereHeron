@@ -125,10 +125,15 @@ export default function AcompFinan() {
           api.get('/admin/projetos')
         ]);
         
-        setAtms(respostaAtms.data);
-        setProjetosOficiais(respostaProjetos.data);
+        // 👇 BLINDAGEM 1: Garante que os dados do estado sejam sempre Arrays (mesmo que a API falhe)
+        setAtms(Array.isArray(respostaAtms.data) ? respostaAtms.data : []);
+        setProjetosOficiais(Array.isArray(respostaProjetos.data) ? respostaProjetos.data : []);
+
       } catch (erro) {
         console.error("Erro ao buscar dados financeiros:", erro);
+        // Garante que, em caso de erro na API, o state fique como array vazio para não quebrar os hooks abaixo
+        setAtms([]);
+        setProjetosOficiais([]);
       } finally {
         setCarregando(false);
       }
@@ -137,7 +142,10 @@ export default function AcompFinan() {
   }, []);
 
   const opcoesProjeto = useMemo(() => {
-    const opcoes = projetosOficiais.map(p => {
+    // 👇 BLINDAGEM 2: Mais uma camada de segurança no map
+    const projetosSeguros = Array.isArray(projetosOficiais) ? projetosOficiais : [];
+
+    const opcoes = projetosSeguros.map(p => {
       const nomeProjeto = p.descricao || p.nome_projeto || p.wbs || 'Projeto Sem Nome';
       return { value: nomeProjeto.toUpperCase().trim(), label: nomeProjeto };
     });
@@ -149,9 +157,12 @@ export default function AcompFinan() {
   }, [projetosOficiais]);
 
   const atmsDoProjeto = useMemo(() => {
-    if (!projetoAtivo || projetoAtivo === 'TODOS') return atms;
+    // 👇 BLINDAGEM 3: Previne que o ".filter" quebre
+    const atmsSeguros = Array.isArray(atms) ? atms : [];
+
+    if (!projetoAtivo || projetoAtivo === 'TODOS') return atmsSeguros;
     
-    return atms.filter(atm => {
+    return atmsSeguros.filter(atm => {
       const pepLogistica = (atm.wbs || '').toUpperCase().trim();
       const pepFinanceiro = (atm.faturamento?.elemento_pep_cc_wbs || '').toUpperCase().trim(); 
       
@@ -160,7 +171,7 @@ export default function AcompFinan() {
   }, [atms, projetoAtivo]);
 
   const { totalGasto, totalFretes, mediaCusto, monthlyData, transportadorasData, rotasData, desvioMensalData, motivosData } = useMemo(() => {
-    if (atmsDoProjeto.length === 0) {
+    if (!Array.isArray(atmsDoProjeto) || atmsDoProjeto.length === 0) {
       return { totalGasto: 0, totalFretes: 0, mediaCusto: 0, monthlyData: [], transportadorasData: [], rotasData: [], desvioMensalData: [], motivosData: [] };
     }
 
@@ -331,7 +342,7 @@ export default function AcompFinan() {
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }}/>
                       <Bar yAxisId="left" dataKey="total" name="Gasto no Mês" fill={BLUE_MAIN} barSize={40}>
-                         <LabelList dataKey="total" position="top" formatter={(val) => fmtK(val)} style={{ fontSize: 11, fill: GRAY_DARK, fontWeight: 'bold' }} />
+                          <LabelList dataKey="total" position="top" formatter={(val) => fmtK(val)} style={{ fontSize: 11, fill: GRAY_DARK, fontWeight: 'bold' }} />
                       </Bar>
                       <Line yAxisId="right" type="monotone" dataKey="acumulado" name="Total Acumulado" stroke={ACCENT} strokeWidth={3} dot={{ r: 5, fill: ACCENT }} />
                     </ComposedChart>
@@ -358,7 +369,6 @@ export default function AcompFinan() {
                       
                       <Bar dataKey="realizado" name="Gasto Realizado" barSize={40}>
                         {desvioMensalData.map((entry, index) => {
-                          // Se o realizado for maior que o previsto, aplica laranja, senão azul
                           const corBarra = entry.realizado > entry.previsto ? ACCENT : BLUE_LIGHT;
                           return (
                             <Cell 
