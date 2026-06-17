@@ -10,8 +10,9 @@ import FiltroAtm from '../../components/FiltroATM/FiltroAtm';
 // 🟢 1. IMPORTA O SOCKET
 import { io } from 'socket.io-client';
 
-// 🟢 2. CONFIGURA A URL DO SOCKET (Puxa dinamicamente do .env configurado pelo Vite)
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+// 🟢 2. CONFIGURA A URL DO SOCKET
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
 const socket = io(SOCKET_URL);
 
 // --- Ícones SVG embutidos ---
@@ -35,39 +36,25 @@ export default function PainelAtm() {
   const [atms, setAtms] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
-  // Estados para o link de rastreio direto no Modal
   const [linkRastreio, setLinkRastreio] = useState('');
   const [salvandoLink, setSalvandoLink] = useState(false);
 
-  // ==========================================
-  // ESTADOS DE BUSCA E FILTROS
-  // ==========================================
   const [termoBusca, setTermoBusca] = useState('');
-  
   const [filtroAberto, setFiltroAberto] = useState(false);
   const [filtros, setFiltros] = useState({
-    status: '',
-    solicitante: '',
-    veiculo: '',
-    transportadora: ''
+    status: '', solicitante: '', veiculo: '', transportadora: ''
   });
 
-  // ==========================================
-  // ESTADOS DE PAGINAÇÃO
-  // ==========================================
   const [paginaAtual, setPaginaAtual] = useState(1);
   const itensPorPagina = 12;
 
   useEffect(() => {
     buscarPedidos();
 
-    // 🟢 3. ESCUTA O EVENTO DO BACKEND
     socket.on('transportes_atualizados', () => {
-      console.log('🔄 Atualização de transportes recebida via Socket. Recarregando tabela...');
       buscarPedidos();
     });
 
-    // 🟢 4. DESLIGA O EVENTO QUANDO SAIR DA TELA
     return () => {
       socket.off('transportes_atualizados');
     };
@@ -77,7 +64,6 @@ export default function PainelAtm() {
     setPaginaAtual(1);
   }, [termoBusca, filtros]);
 
-  // Atualiza o link local sempre que o modal for aberto com uma nova ATM
   useEffect(() => {
     if (selectedAtm) {
       setLinkRastreio(selectedAtm.link_rastreio || '');
@@ -85,43 +71,18 @@ export default function PainelAtm() {
   }, [selectedAtm]);
 
   const buscarPedidos = async () => {
-    // Para não piscar a tela no real-time, só ativa o loading visual se a lista estiver vazia
     if (atms.length === 0) setCarregando(true);
-    
     try {
       const resposta = await api.get('/admin/transportes'); 
-      // 👇 BLINDAGEM 1: Só seta se for array
       setAtms(Array.isArray(resposta.data) ? resposta.data : []);
     } catch (erro) {
       console.error("Erro detalhado:", erro.response || erro);
-      alert("Erro ao puxar dados.");
-      // 👇 BLINDAGEM 2: Em caso de erro, joga array vazio para não quebrar a tela
       setAtms([]);
     } finally {
       setCarregando(false);
     }
   };
 
-  const lidarComSalvarLink = async () => {
-    setSalvandoLink(true);
-    try {
-      await api.put(`/admin/transportes/${selectedAtm.id}`, { link_rastreio: linkRastreio });
-      alert("✅ Link de rastreamento salvo com sucesso!");
-      
-      buscarPedidos(); 
-      setSelectedAtm(prev => ({ ...prev, link_rastreio: linkRastreio }));
-      
-    } catch (erro) {
-      console.error(erro);
-      alert("❌ Erro ao salvar o link de rastreamento.");
-    } finally {
-      setSalvandoLink(false);
-    }
-  };
-
-  // ==========================================
-  // LÓGICA DE FILTRAGEM COMBINADA
-  // ==========================================
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
     setFiltros(prev => ({ ...prev, [name]: value }));
@@ -131,7 +92,6 @@ export default function PainelAtm() {
     setFiltros({ status: '', solicitante: '', veiculo: '', transportadora: '' });
   };
 
-  // 👇 BLINDAGEM 3: Garante que a variável a ser filtrada seja sempre um Array
   const atmsSeguros = Array.isArray(atms) ? atms : [];
 
   const atmsFiltrados = atmsSeguros.filter((atm) => {
@@ -160,10 +120,8 @@ export default function PainelAtm() {
         ${atm.destino?.nome_local || ''}
         ${atm.destino?.uf || ''}
       `.toLowerCase();
-      
       if (!textoDoAtm.includes(buscaTratada)) return false;
     }
-
     return true; 
   });
 
@@ -190,15 +148,16 @@ export default function PainelAtm() {
   };
 
   const formatarMoeda = (valor) => {
-    if (!valor) return '-';
+    if (!valor && valor !== 0) return '-';
     return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   const renderDesvioCusto = (atm) => {
-    const previstoRaw = atm.valor || atm.valor_nf;
+    // 🟢 CORREÇÃO: Lê o valor previsto da tabela de faturamento e o nf/realizado da tabela atual
+    const previstoRaw = atm.faturamento?.valor_previsto || atm.valor_nf;
     const realizadoRaw = atm.valor_realizado;
 
-    if (!previstoRaw && !realizadoRaw) {
+    if (!previstoRaw && !realizadoRaw && previstoRaw !== 0 && realizadoRaw !== 0) {
       return (
         <span className="led-status led-cinza" title="Nenhum valor financeiro informado"></span>
       );
@@ -221,9 +180,7 @@ export default function PainelAtm() {
     <>
       <section className="painel-atm u-fade-in">
         
-        {/* BARRA SUPERIOR: BUSCA, FILTROS E EXPORTAÇÃO */}
         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
-          
           <div style={{ flex: 1, maxWidth: '400px' }}>
             <SearchBar termoBusca={termoBusca} setTermoBusca={setTermoBusca} placeholder="Buscar por ID, cidade, status..." />
           </div>
@@ -234,18 +191,15 @@ export default function PainelAtm() {
               onClick={() => setFiltroAberto(true)}
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: '#fff', border: '1px solid #cbd5e1' }}
             >
-              <FilterIcon size={16} /> 
-              Filtros Avançados
+              <FilterIcon size={16} /> Filtros Avançados
               {Object.values(filtros).some(v => v !== '') && (
                 <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563eb', marginLeft: '4px' }}></span>
               )}
             </button>
             <BtnExcel atmsFiltrados={atmsFiltrados} />
           </div>
-
         </div>
 
-        {/* TABELA DE DADOS */}
         <div className="painel-table-wrapper">
           <table className="painel-table" style={{ fontSize: '0.8rem' }}>
             <thead className="painel-table__head">
@@ -257,10 +211,7 @@ export default function PainelAtm() {
                 <th className="painel-table__header-cell">Rota (Remetente ➔ Destinatário)</th>
                 <th className="painel-table__header-cell">Veículo</th>
                 <th className="painel-table__header-cell">Transportadora</th>
-                
-                {/* 🟢 NOVA COLUNA: Substitui Valor Previsto e Realizado */}
                 <th className="painel-table__header-cell painel-table__header-cell--center">Desvio de Custo</th>
-                
                 <th className="painel-table__header-cell">Status</th>
                 <th className="painel-table__header-cell painel-table__header-cell--center">Rastreio</th>
                 <th className="painel-table__header-cell painel-table__header-cell--center">Ações</th>
@@ -306,7 +257,6 @@ export default function PainelAtm() {
                     {atm.transportadora?.nome || <span className="painel-table__cell--muted">A Definir</span>}
                   </td>
                   
-                  {/* 🟢 CELULA NOVA: Renderiza o LED de acordo com os valores */}
                   <td className="painel-table__cell painel-table__cell--center">
                     {renderDesvioCusto(atm)}
                   </td>
@@ -318,10 +268,7 @@ export default function PainelAtm() {
                   <td className="painel-table__cell painel-table__cell--center">
                     {atm.link_rastreio ? (
                       <a 
-                        href={atm.link_rastreio} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="painel-btn"
+                        href={atm.link_rastreio} target="_blank" rel="noopener noreferrer" className="painel-btn"
                         style={{ color: '#2563eb', display: 'inline-flex', padding: '4px', borderRadius: '4px', transition: 'transform 0.2s' }}
                         title="Link de rastreio disponível! Clique para abrir."
                         onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
@@ -330,10 +277,7 @@ export default function PainelAtm() {
                         <ExternalLink size={18} />
                       </a>
                     ) : (
-                      <span 
-                        style={{ color: '#cbd5e1', display: 'inline-flex', padding: '4px', cursor: 'not-allowed' }} 
-                        title="Nenhum link de rastreio anexado pela operação."
-                      >
+                      <span style={{ color: '#cbd5e1', display: 'inline-flex', padding: '4px', cursor: 'not-allowed' }} title="Nenhum link de rastreio anexado pela operação.">
                         <ExternalLink size={18} />
                       </span>
                     )}
@@ -349,7 +293,6 @@ export default function PainelAtm() {
             </tbody>
           </table>
 
-          {/* CONTROLES DE PAGINAÇÃO */}
           {!carregando && totalPaginas > 1 && (
             <div className="painel-pagination">
               <span className="painel-pagination__info">
@@ -357,20 +300,12 @@ export default function PainelAtm() {
               </span>
               <div className="painel-pagination__controls">
                 <button 
-                  className="painel-pagination__btn"
-                  onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))}
-                  disabled={paginaAtual === 1}
-                >
+                  className="painel-pagination__btn" onClick={() => setPaginaAtual(prev => Math.max(prev - 1, 1))} disabled={paginaAtual === 1}>
                   Anterior
                 </button>
-                <span className="painel-pagination__current">
-                  Página {paginaAtual} de {totalPaginas}
-                </span>
+                <span className="painel-pagination__current">Página {paginaAtual} de {totalPaginas}</span>
                 <button 
-                  className="painel-pagination__btn"
-                  onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))}
-                  disabled={paginaAtual === totalPaginas}
-                >
+                  className="painel-pagination__btn" onClick={() => setPaginaAtual(prev => Math.min(prev + 1, totalPaginas))} disabled={paginaAtual === totalPaginas}>
                   Próxima
                 </button>
               </div>
@@ -379,17 +314,8 @@ export default function PainelAtm() {
         </div>
       </section>
 
-      {/* COMPONENTE DO FILTRO AVANÇADO */}
-      <FiltroAtm 
-        atms={atms} 
-        filtros={filtros} 
-        onFiltroChange={handleFiltroChange} 
-        onLimpar={limparFiltros} 
-        aberto={filtroAberto} 
-        onClose={() => setFiltroAberto(false)} 
-      />
+      <FiltroAtm atms={atms} filtros={filtros} onFiltroChange={handleFiltroChange} onLimpar={limparFiltros} aberto={filtroAberto} onClose={() => setFiltroAberto(false)} />
 
-      {/* MODAL DE DETALHES DO PEDIDO */}
       {selectedAtm && createPortal(
         <div className="painel-modal__overlay">
           <div className="painel-modal__content u-fade-in">
@@ -407,61 +333,27 @@ export default function PainelAtm() {
                 <div className="painel-modal__section">
                   <h4>Identificação</h4>
                   <ul className="painel-modal__list">
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Solicitante:</span> 
-                      <span className="painel-modal__value">{selectedAtm.solicitacao || 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Pedido Compra:</span> 
-                      <span className="painel-modal__value">{selectedAtm.pedido_compra || 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Nota Fiscal:</span> 
-                      <span className="painel-modal__value">{selectedAtm.nf || 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Centro de Custo (WBS):</span> 
-                      <span className="painel-modal__value">{selectedAtm.wbs || 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Data da Solicitação:</span> 
-                      <span className="painel-modal__value">{formatarData(selectedAtm.data_solicitacao || selectedAtm.created_at)}</span>
-                    </li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Solicitante:</span> <span className="painel-modal__value">{selectedAtm.solicitacao || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Pedido Compra:</span> <span className="painel-modal__value">{selectedAtm.pedido_compra || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Nota Fiscal:</span> <span className="painel-modal__value">{selectedAtm.nf || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Centro de Custo (WBS):</span> <span className="painel-modal__value">{selectedAtm.wbs || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Data da Solicitação:</span> <span className="painel-modal__value">{formatarData(selectedAtm.data_solicitacao || selectedAtm.created_at)}</span></li>
                   </ul>
                 </div>
 
                 <div className="painel-modal__section">
                   <h4>Carga e Logística</h4>
                   <ul className="painel-modal__list">
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Transportadora:</span> 
-                      <span className="painel-modal__value">{selectedAtm.transportadora?.nome || 'A Definir'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Valor Previsto:</span> 
-                      <span className="painel-modal__value painel-modal__value--success">{formatarMoeda(selectedAtm.valor || selectedAtm.valor_nf)}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Valor Realizado:</span> 
-                      {/* 🟢 Adicionado a variável correta para exibir no modal detalhado */}
-                      <span className="painel-modal__value">{formatarMoeda(selectedAtm.valor_realizado)}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Tipo de Veículo:</span> 
-                      <span className="painel-modal__value">{selectedAtm.veiculo || 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Tipo de Frete:</span> 
-                      <span className="painel-modal__value">{selectedAtm.tipo_frete || 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Peso Estimado:</span> 
-                      <span className="painel-modal__value">{selectedAtm.peso ? `${selectedAtm.peso} kg` : 'Não informado'}</span>
-                    </li>
-                    <li className="painel-modal__list-item">
-                      <span className="painel-modal__label">Volume Total:</span> 
-                      <span className="painel-modal__value">{selectedAtm.volume ? `${selectedAtm.volume} m³` : 'Não informado'}</span>
-                    </li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Transportadora:</span> <span className="painel-modal__value">{selectedAtm.transportadora?.nome || 'A Definir'}</span></li>
+                    
+                    {/* 🟢 CORREÇÃO: Valor Previsto vindo do Faturamento */}
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Previsto:</span> <span className="painel-modal__value painel-modal__value--success">{formatarMoeda(selectedAtm.faturamento?.valor_previsto || selectedAtm.valor_nf)}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Realizado:</span> <span className="painel-modal__value">{formatarMoeda(selectedAtm.valor_realizado)}</span></li>
+                    
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Tipo de Veículo:</span> <span className="painel-modal__value">{selectedAtm.veiculo || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Tipo de Frete:</span> <span className="painel-modal__value">{selectedAtm.tipo_frete || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Peso Estimado:</span> <span className="painel-modal__value">{selectedAtm.peso ? `${selectedAtm.peso} kg` : 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Volume Total:</span> <span className="painel-modal__value">{selectedAtm.volume ? `${selectedAtm.volume} m³` : 'Não informado'}</span></li>
                   </ul>
                 </div>
 
@@ -486,21 +378,11 @@ export default function PainelAtm() {
 
                   <div className="painel-modal__tracking-box">
                     {selectedAtm.link_rastreio ? (
-                      <a 
-                        href={selectedAtm.link_rastreio} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="painel-btn painel-btn--track-active"
-                        title="Abrir o link de acompanhamento no navegador"
-                      >
+                      <a href={selectedAtm.link_rastreio} target="_blank" rel="noopener noreferrer" className="painel-btn painel-btn--track-active" title="Abrir o link de acompanhamento no navegador">
                         <ExternalLink size={18} /> Acompanhar Transporte
                       </a>
                     ) : (
-                      <button 
-                        className="painel-btn painel-btn--track-disabled"
-                        disabled
-                        title="O link de rastreio ainda não foi disponibilizado pela operação."
-                      >
+                      <button className="painel-btn painel-btn--track-disabled" disabled title="O link de rastreio ainda não foi disponibilizado pela operação.">
                         <ExternalLink size={18} /> Rastreio Indisponível
                       </button>
                     )}
@@ -509,29 +391,14 @@ export default function PainelAtm() {
 
                 <div className="painel-modal__section" style={{ gridColumn: 'span 2' }}>
                   <h4>Status, Motivos e Observações</h4>
-                  
                   <ul className="painel-modal__list" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                    <li className="painel-modal__list-item" style={{ borderBottom: 'none' }}>
-                      <span className="painel-modal__label">Status Atual:</span> 
-                      <span className={`painel-badge ${getStatusClass(selectedAtm.status)}`}>{selectedAtm.status}</span>
-                    </li>
-                    
-                    <li className="painel-modal__list-item" style={{ borderBottom: 'none' }}>
-                      <span className="painel-modal__label">Motivo (Divergência):</span> 
-                      <span 
-                        className="painel-modal__value" 
-                        style={{ color: selectedAtm.motivo ? '#dc2626' : '#6b7280', fontWeight: selectedAtm.motivo ? 'bold' : 'normal' }}
-                      >
-                        {selectedAtm.motivo || 'Nenhum motivo registrado'}
-                      </span>
-                    </li>
+                    <li className="painel-modal__list-item" style={{ borderBottom: 'none' }}><span className="painel-modal__label">Status Atual:</span> <span className={`painel-badge ${getStatusClass(selectedAtm.status)}`}>{selectedAtm.status}</span></li>
+                    <li className="painel-modal__list-item" style={{ borderBottom: 'none' }}><span className="painel-modal__label">Motivo (Divergência):</span> <span className="painel-modal__value" style={{ color: selectedAtm.motivo ? '#dc2626' : '#6b7280', fontWeight: selectedAtm.motivo ? 'bold' : 'normal' }}>{selectedAtm.motivo || 'Nenhum motivo registrado'}</span></li>
                   </ul>
                   
                   <div className="painel-modal__obs-box">
                     <span className="painel-modal__obs-title">Observações do Pedido:</span>
-                    <p className="painel-modal__obs-text">
-                      {selectedAtm.observacoes || 'Nenhuma observação registrada pelo solicitante para este pedido.'}
-                    </p>
+                    <p className="painel-modal__obs-text">{selectedAtm.observacoes || 'Nenhuma observação registrada pelo solicitante para este pedido.'}</p>
                   </div>
                 </div>
 
