@@ -14,9 +14,8 @@ export default function BtnExcel({ atmsFiltrados }) {
   
   const shortId = (id) => id ? id.substring(0, 8).toUpperCase() : 'N/A';
 
-  // 🟢 HELPER: Transforma texto em Número Real para o Excel permitir fazer Somas/Fórmulas
   const parseValor = (val) => {
-    if (!val) return '';
+    if (val === null || val === undefined || val === '') return '';
     const num = Number(val);
     return isNaN(num) ? val : num;
   };
@@ -31,7 +30,6 @@ export default function BtnExcel({ atmsFiltrados }) {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('ATM');
 
-      // Títulos superiores
       worksheet.getCell('AA1').value = 'Controle de Ctes/ Nfe de Serviço';
       worksheet.getCell('Z1').font = { bold: true, size: 14 };
       worksheet.getCell('Z1').alignment = { horizontal: 'center' };
@@ -39,77 +37,38 @@ export default function BtnExcel({ atmsFiltrados }) {
       worksheet.getCell('D2').value = 'Gestão de Fretes';
       worksheet.getCell('D2').font = { bold: true, size: 16 };
       
-      // ============================================================
-      // INSERÇÃO DA IMAGEM NO EXCEL (COM PROPORÇÃO AUTOMÁTICA)
-      // ============================================================
       const response = await fetch(logoComau);
       const bufferImage = await response.arrayBuffer();
 
       const img = new Image();
       img.src = logoComau;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      
+      await new Promise((resolve) => { img.onload = resolve; });
+
       const alturaDesejada = 80; 
       const larguraProporcional = (img.width / img.height) * alturaDesejada;
 
-      const logoId = workbook.addImage({
-        buffer: bufferImage,
-        extension: 'png', 
-      });
+      const logoId = workbook.addImage({ buffer: bufferImage, extension: 'png' });
+      worksheet.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: larguraProporcional, height: alturaDesejada } });
 
-      worksheet.addImage(logoId, {
-        tl: { col: 0, row: 0 }, 
-        ext: { width: larguraProporcional, height: alturaDesejada } 
-      });
-      // ============================================================
-
-      // Configuração das Colunas (Atualizado)
       worksheet.columns = [
-        { key: 'data_sol', width: 22 },
-        { key: 'atm', width: 12 },
-        { key: 'pedido', width: 20 },
-        { key: 'nf', width: 15 },
-        { key: 'wbs', width: 15 },
-        { key: 'uf1', width: 6 },
-        { key: 'mun1', width: 20 },
-        { key: 'coleta', width: 30 },
-        { key: 'x', width: 4 },
-        { key: 'entrega', width: 30 },
-        { key: 'uf2', width: 6 },
-        { key: 'mun2', width: 20 },
-        { key: 'tipo_frete', width: 22 },
-        { key: 'solicitacao', width: 20 },
-        { key: 'veiculo', width: 20 },
-        { key: 'transportadora', width: 25 },
-        { key: 'cotacao', width: 15 },
-        { key: 'valor_nf', width: 15 },
-        { key: 'volume', width: 12 },
-        { key: 'peso', width: 12 },
-        { key: 'valor_previsto', width: 22 },
-        { key: 'status', width: 15 },
-        { key: 'obs', width: 35 },
-        { key: 'separador_preto', width: 3 }, 
-        { key: 'tipo_doc', width: 15 },
-        { key: 'data_map', width: 18 },
-        { key: 'fatura', width: 15 },
-        { key: 'valor_realizado', width: 20 }, // 🟢 SUBSTITUÍDO "valor" POR "valor_realizado"
-        { key: 'data_emissao', width: 15 },
-        { key: 'vencimento', width: 15 },
-        { key: 'elemento_pep', width: 25 },
-        { key: 'validacao_pep', width: 25 },
-        { key: 'lancamento_v360', width: 20 },
-        { key: 'id_v360', width: 15 },
-        { key: 'registrado_sap', width: 22 }
+        { key: 'data_sol', width: 22 }, { key: 'atm', width: 12 }, { key: 'pedido', width: 20 },
+        { key: 'nf', width: 15 }, { key: 'wbs', width: 15 }, { key: 'uf1', width: 6 },
+        { key: 'mun1', width: 20 }, { key: 'coleta', width: 30 }, { key: 'x', width: 4 },
+        { key: 'entrega', width: 30 }, { key: 'uf2', width: 6 }, { key: 'mun2', width: 20 },
+        { key: 'tipo_frete', width: 22 }, { key: 'solicitacao', width: 20 }, { key: 'veiculo', width: 20 },
+        { key: 'transportadora', width: 25 }, { key: 'cotacao', width: 15 }, { key: 'valor_nf', width: 15 },
+        { key: 'volume', width: 12 }, { key: 'peso', width: 12 }, { key: 'valor_previsto', width: 22 },
+        { key: 'status', width: 15 }, { key: 'obs', width: 35 }, { key: 'separador_preto', width: 3 }, 
+        { key: 'tipo_doc', width: 15 }, { key: 'data_map', width: 18 }, { key: 'fatura', width: 15 },
+        { key: 'valor_realizado', width: 20 }, { key: 'data_emissao', width: 15 }, { key: 'vencimento', width: 15 },
+        { key: 'elemento_pep', width: 25 }, { key: 'validacao_pep', width: 25 }, { key: 'lancamento_v360', width: 20 },
+        { key: 'id_v360', width: 15 }, { key: 'registrado_sap', width: 22 }
       ];
 
-      // Títulos do Cabeçalho (Atualizado)
       const titulos = [
         "DATA DA SOLICITAÇÃO", "ATM", "PEDIDO DE COMPRA", "NF", "WBS", "UF", "MUNICIPIO", "LOCAL DE COLETA", "X", 
         "LOCAL DA ENTREGA", "UF 2", "MUNICIPIO 2", "Fracionado/Dedicado", "SOLICITAÇÃO", "VEÍCULO", "TRANSPORTADORA", 
-        "COTAÇÃO/BID", "VALOR NF", "VOLUME", "PESO", "VALOR PREVISTO", "STATUS", "OBSERVAÇÕES", 
-        "", // Título vazio para a coluna preta
+        "COTAÇÃO/BID", "VALOR NF", "VOLUME", "PESO", "VALOR PREVISTO", "STATUS", "OBSERVAÇÕES", "", 
         "TIPO", "DATA MAPEAMENTO", "FATURA", "VALOR REALIZADO", "DATA EMISSÃO", "VENCIMENTO", "ELEMENTO PEP - CC / WBS", 
         "VALIDAÇÃO PEP - CC /WBS", "Lançamento V360", "Id V360", "Registrado SAP (S/N)"
       ];
@@ -129,7 +88,6 @@ export default function BtnExcel({ atmsFiltrados }) {
       });
       linhaCabecalho.height = 35;
 
-      // Inserção dos dados
       atmsFiltrados.forEach(atm => {
         const row = worksheet.addRow({
           data_sol: atm.data_solicitacao ? atm.data_solicitacao.split('T')[0] : '-',
@@ -152,14 +110,16 @@ export default function BtnExcel({ atmsFiltrados }) {
           valor_nf: parseValor(atm.valor_nf),
           volume: atm.volume || '',
           peso: atm.peso || '',
-          valor_previsto: parseValor(atm.valor || atm.valor_nf || atm.valor_bid_dedicado), 
+          
+          // 🟢 CORREÇÃO CRÍTICA EXCEL: Lê o valor previsto da tabela de faturamento!
+          valor_previsto: parseValor(atm.faturamento?.valor_previsto || atm.valor_nf), 
+          
           status: atm.status || '-',
           obs: atm.observacoes || '-',
           separador_preto: '', 
           tipo_doc: atm.tipo_documento || '-',
           data_map: atm.data_mapeamento ? atm.data_mapeamento.split('T')[0] : '-',
           fatura: atm.fatura_cte || '-',
-          // 🟢 MAPEADO PARA "valor_realizado" NO LUGAR DO "valor"
           valor_realizado: parseValor(atm.valor_realizado),
           data_emissao: atm.data_emissao ? atm.data_emissao.split('T')[0] : '-',
           vencimento: atm.vencimento ? atm.vencimento.split('T')[0] : '-',
@@ -171,7 +131,6 @@ export default function BtnExcel({ atmsFiltrados }) {
         });
 
         row.eachCell((cell, colNumber) => {
-          // Pinta a célula de preto se for a coluna separadora
           if (worksheet.getColumn(colNumber).key === 'separador_preto') {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
           } else {
@@ -181,7 +140,6 @@ export default function BtnExcel({ atmsFiltrados }) {
         });
       });
 
-      // 🟢 Formata as colunas financeiras como Moeda do Brasil nativamente no Excel
       ['valor_nf', 'valor_previsto', 'valor_realizado'].forEach(key => {
         worksheet.getColumn(key).numFmt = '"R$ "#,##0.00';
       });
