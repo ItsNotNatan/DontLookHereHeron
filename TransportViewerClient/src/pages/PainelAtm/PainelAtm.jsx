@@ -11,8 +11,7 @@ import FiltroAtm from '../../components/FiltroATM/FiltroAtm';
 import { io } from 'socket.io-client';
 
 // 🟢 2. CONFIGURA A URL DO SOCKET
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
+const SOCKET_URL = `http://${window.location.hostname}:3001`;
 const socket = io(SOCKET_URL);
 
 // --- Ícones SVG embutidos ---
@@ -154,7 +153,7 @@ export default function PainelAtm() {
 
   const renderDesvioCusto = (atm) => {
     // 🟢 CORREÇÃO: Lê o valor previsto da tabela de faturamento e o nf/realizado da tabela atual
-    const previstoRaw = atm.faturamento?.valor_previsto || atm.valor_nf;
+    const previstoRaw = atm.faturamento?.valor_previsto;
     const realizadoRaw = atm.valor_realizado;
 
     if (!previstoRaw && !realizadoRaw && previstoRaw !== 0 && realizadoRaw !== 0) {
@@ -347,7 +346,7 @@ export default function PainelAtm() {
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Transportadora:</span> <span className="painel-modal__value">{selectedAtm.transportadora?.nome || 'A Definir'}</span></li>
                     
                     {/* 🟢 CORREÇÃO: Valor Previsto vindo do Faturamento */}
-                    <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Previsto:</span> <span className="painel-modal__value painel-modal__value--success">{formatarMoeda(selectedAtm.faturamento?.valor_previsto || selectedAtm.valor_nf)}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Previsto:</span> <span className="painel-modal__value painel-modal__value--success">{formatarMoeda(selectedAtm.faturamento?.valor_previsto)}</span></li>
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Realizado:</span> <span className="painel-modal__value">{formatarMoeda(selectedAtm.valor_realizado)}</span></li>
                     
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Tipo de Veículo:</span> <span className="painel-modal__value">{selectedAtm.veiculo || 'Não informado'}</span></li>

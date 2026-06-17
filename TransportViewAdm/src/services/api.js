@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 1. Criamos a variável mágica no topo para usar em todo o arquivo
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001/api`;
 
 const api = axios.create({
   baseURL: API_URL

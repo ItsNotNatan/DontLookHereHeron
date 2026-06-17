@@ -13,8 +13,7 @@ import { useCargasContext } from '../../components/context/CargasContext.jsx';
 import { io } from 'socket.io-client';
 
 // 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou nuvem)
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
+const SOCKET_URL = `http://${window.location.hostname}:3001`;
 const socket = io(SOCKET_URL);
 
 export default function RequestForm() {
@@ -747,12 +746,11 @@ export default function RequestForm() {
             </div>
 
             <div className="input-group">
-              <label>Valor da NF (R$) *</label>
-              <input 
-                type="text" 
-                required 
-                className="input-control" 
-                placeholder="0,00" 
+              <label>Valor da NF (R$)</label>
+              <input
+                type="text"
+                className="input-control"
+                placeholder="0,00 (opcional)"
                 value={valorNfMask}
                 onChange={(e) => setValorNfMask(aplicarMascaraMoeda(e.target.value))}
               />

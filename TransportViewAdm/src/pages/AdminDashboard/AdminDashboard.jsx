@@ -7,8 +7,8 @@ import DashboardComponent from '../../componentes/Dashboard/Dashboard';
 // 🟢 1. IMPORTA O SOCKET
 import { io } from 'socket.io-client';
 
-// 🟢 2. CONECTA AO SEU BACK-END (Como os dois rodam localmente, fica localhost:3001)
-const socket = io('http://localhost:3001');
+// 🟢 2. CONECTA AO BACK-END (mesmo host que abriu a pagina, porta 3001 - self-hosted)
+const socket = io(`http://${window.location.hostname}:3001`);
 
 export default function AdminDashboard() {
   const [selectedAtm, setSelectedAtm] = useState(null);

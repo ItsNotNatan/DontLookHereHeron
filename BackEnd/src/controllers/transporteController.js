@@ -74,6 +74,34 @@ async function gerarProximoNumeroATM() {
   }
 }
 
+// Detecta erro de violacao do indice UNICO de numero_atm (corrida entre 2 pedidos).
+function isConflitoNumeroAtm(e) {
+  try {
+    const data = (e && e.response && e.response.data) || (e && e.data) || {};
+    if (data.numero_atm) return true;
+    const txt = JSON.stringify((e && e.response) || (e && e.message) || '');
+    return /not_unique|unique|numero_atm/i.test(txt);
+  } catch (_) {
+    return false;
+  }
+}
+
+// Cria o pedido atribuindo o numero do ATM de forma SEGURA para uso simultaneo:
+// se 2 pedidos pegarem o mesmo numero ao mesmo tempo, o indice UNICO rejeita o
+// duplicado e tentamos o proximo numero (em vez de a solicitacao do usuario falhar).
+async function criarPedidoComNumeroAtm(dadosPedido) {
+  for (let tentativa = 0; tentativa < 15; tentativa++) {
+    const numero_atm = await gerarProximoNumeroATM();
+    try {
+      return await withAuth(() => pb.collection('pedidos_atm').create({ ...dadosPedido, numero_atm }));
+    } catch (e) {
+      if (isConflitoNumeroAtm(e) && tentativa < 14) continue; // outro pedido pegou esse numero
+      throw e;
+    }
+  }
+  throw new Error('Nao foi possivel gerar um numero de ATM unico apos varias tentativas.');
+}
+
 // ============================================================================
 // FUNÇÕES DO CONTROLLER
 // ============================================================================
@@ -82,8 +110,6 @@ const criarTransporte = async (req, res) => {
   const dados = req.body;
 
   try {
-    const novoNumeroAtm = await gerarProximoNumeroATM();
-
     const localColeta = await withAuth(() => pb.collection('enderecos_pedido').create({
       nome_local: str(dados.empresaColeta),
       municipio: str(dados.cidadeColeta),
@@ -104,8 +130,8 @@ const criarTransporte = async (req, res) => {
       bairro: str(dados.bairroEntrega)
     }));
 
-    const pedidoAtm = await withAuth(() => pb.collection('pedidos_atm').create({
-      numero_atm: novoNumeroAtm,
+    // numero_atm e' atribuido dentro de criarPedidoComNumeroAtm (seguro p/ uso simultaneo)
+    const pedidoAtm = await criarPedidoComNumeroAtm({
       data_solicitacao: dados.dataSolicitacao ? formatarProBanco(dados.dataSolicitacao) : null,
       tipo_operacao: str(dados.tipo_operacao),
       pedido_compra: str(dados.pedidoCompra),
@@ -129,10 +155,10 @@ const criarTransporte = async (req, res) => {
       data_entrega: dados.dataEntrega ? formatarProBanco(dados.dataEntrega) : null,
       status: 'Aguardando Aprovação',
       observacoes: str(dados.obs)
-    }));
+    });
 
     req.app.get('io').emit('transportes_atualizados');
-    res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedidoAtm.id });
+    res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedidoAtm.id, numero_atm: pedidoAtm.numero_atm });
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
@@ -144,7 +170,6 @@ const receberWebhookGoogleForms = async (req, res) => {
     console.log("🔔 [WEBHOOK] Novo formulário recebido do Google!");
 
     const dataSolLimpa = dados.dataSolicitacao ? dados.dataSolicitacao.split(' ')[0] : null;
-    const novoNumeroAtm = await gerarProximoNumeroATM();
 
     const endColeta = enderecosComau[dados.empresaColeta] || {
         nome_local: dados.empresaColeta || 'Coleta Não Especificada',
@@ -179,8 +204,7 @@ const receberWebhookGoogleForms = async (req, res) => {
       detalhes_adicionais: dados.obs || ''
     }];
 
-    const pedidoAtm = await withAuth(() => pb.collection('pedidos_atm').create({
-      numero_atm: novoNumeroAtm,
+    const pedidoAtm = await criarPedidoComNumeroAtm({
       tipo_operacao: 'Nacional',
       data_solicitacao: dataSolLimpa ? formatarProBanco(dataSolLimpa) : null,
       pedido_compra: str(dados.pedidoCompra),
@@ -201,7 +225,7 @@ const receberWebhookGoogleForms = async (req, res) => {
       volume: 0,
       status: 'Pendente',
       observacoes: str(dados.obs)
-    }));
+    });
 
     console.log(`✅ [WEBHOOK] Sucesso! Pedido de ${dados.solicitante} integrado com operação Nacional.`);
     req.app.get('io').emit('transportes_atualizados');

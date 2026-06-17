@@ -1,8 +1,8 @@
 // src/services/api.js
 import axios from 'axios';
 
-// 🔴 URL fixa apontando exatamente para o IP e porta do seu backend em produção
-const API_URL = 'http://172.18.151.31:3001/api'; 
+// URL dinamica: usa o mesmo host que abriu a pagina, na porta 3001 (self-hosted, qualquer maquina da rede)
+const API_URL = `http://${window.location.hostname}:3001/api`;
 
 const api = axios.create({
   baseURL: API_URL

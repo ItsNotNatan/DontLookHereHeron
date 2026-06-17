@@ -111,8 +111,8 @@ export default function BtnExcel({ atmsFiltrados }) {
           volume: atm.volume || '',
           peso: atm.peso || '',
           
-          // 🟢 CORREÇÃO CRÍTICA EXCEL: Lê o valor previsto da tabela de faturamento!
-          valor_previsto: parseValor(atm.faturamento?.valor_previsto || atm.valor_nf), 
+          // Valor previsto vem SOMENTE do faturamento (nunca cai no valor da NF)
+          valor_previsto: parseValor(atm.faturamento?.valor_previsto),
           
           status: atm.status || '-',
           obs: atm.observacoes || '-',
