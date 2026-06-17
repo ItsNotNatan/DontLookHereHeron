@@ -187,7 +187,9 @@ export default function AcompFinan() {
     const motivosMap = {};
 
     atmsDoProjeto.forEach(atm => {
-      const previstoVal = Number(atm.faturamento?.valor_previsto) || Number(atm.valor_previsto) || Number(atm.valor_nf) || 0;
+      // Custo de frete vem de faturamento.valor_previsto (orcamento) - NUNCA do valor_nf,
+      // que e' o valor da mercadoria e nao tem relacao com o custo do transporte.
+      const previstoVal = Number(atm.faturamento?.valor_previsto) || Number(atm.valor_previsto) || 0;
       const realizadoVal = Number(atm.valor_realizado) || 0;
       
       const valorEfetivo = realizadoVal > 0 ? realizadoVal : previstoVal;
