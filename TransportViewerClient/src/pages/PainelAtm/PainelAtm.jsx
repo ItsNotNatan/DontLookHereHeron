@@ -335,6 +335,7 @@ export default function PainelAtm() {
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Solicitante:</span> <span className="painel-modal__value">{selectedAtm.solicitacao || 'Não informado'}</span></li>
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Pedido Compra:</span> <span className="painel-modal__value">{selectedAtm.pedido_compra || 'Não informado'}</span></li>
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Nota Fiscal:</span> <span className="painel-modal__value">{selectedAtm.nf || 'Não informado'}</span></li>
+                    <li className="painel-modal__list-item"><span className="painel-modal__label">Valor da NF:</span> <span className="painel-modal__value">{formatarMoeda(selectedAtm.valor_nf)}</span></li>
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Centro de Custo (WBS):</span> <span className="painel-modal__value">{selectedAtm.wbs || 'Não informado'}</span></li>
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Data da Solicitação:</span> <span className="painel-modal__value">{formatarData(selectedAtm.data_solicitacao || selectedAtm.created_at)}</span></li>
                   </ul>

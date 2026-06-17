@@ -329,6 +329,7 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
                     <li className="card-expandido__list-item"><span className="card-expandido__label">Data Solicitação:</span> <strong className="card-expandido__value">{formatarData(atm.data_solicitacao || atm.created_at?.split('T')[0])}</strong></li>
                     <li className="card-expandido__list-item"><span className="card-expandido__label">Pedido de Compra:</span> <strong className="card-expandido__value">{atm.pedido_compra || 'Não informado'}</strong></li>
                     <li className="card-expandido__list-item"><span className="card-expandido__label">Nota Fiscal:</span> <strong className="card-expandido__value">{atm.nf || 'Não informado'}</strong></li>
+                    <li className="card-expandido__list-item"><span className="card-expandido__label">Valor da NF:</span> <strong className="card-expandido__value">{formatarMoeda(atm.valor_nf)}</strong></li>
                     <li className="card-expandido__list-item"><span className="card-expandido__label">WBS / C. Custo:</span> <strong className="card-expandido__value">{atm.wbs || 'Não informado'}</strong></li>
                   </ul>
                 </div>
