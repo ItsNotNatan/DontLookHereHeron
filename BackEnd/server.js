@@ -12,6 +12,15 @@ const fs = require('fs');
 const http = require('http');
 const { Server } = require('socket.io');
 
+// Rede de seguranca: um erro isolado NAO deve derrubar o processo (API + os 2
+// frontends rodam todos aqui). Logamos e seguimos servindo.
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException] erro nao tratado (servico continua):', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[unhandledRejection] promise sem catch (servico continua):', err);
+});
+
 const ROOT = path.join(__dirname, '..'); // raiz do repositorio
 const PORT_API = process.env.PORT_API || 3001;
 const PORT_CLIENT = process.env.PORT_CLIENT || 8080;
@@ -63,6 +72,12 @@ app.use('/api/admin/transportadoras', require('./src/routes/transportadoraRoutes
 
 app.get('/api/health', (req, res) => res.json({ ok: true, servico: 'ATMLog API', hora: new Date().toISOString() }));
 
+// Tratador de erro da API (4 args): responde 500 em vez de pendurar/derrubar a requisicao.
+app.use((err, req, res, next) => {
+  console.error('[API] erro nao tratado na requisicao:', err);
+  if (!res.headersSent) res.status(500).json({ erro: 'Erro interno no servidor.' });
+});
+
 httpServer.listen(PORT_API, '0.0.0.0', () => console.log(`🚀 API + WebSocket rodando na porta ${PORT_API}`));
 
 // ===================== 2. Servir os Frontends (SPA) =====================
@@ -78,7 +93,11 @@ function servirSPA(nome, distDir, porta) {
     return;
   }
   spa.use(express.static(distDir));
-  spa.use((req, res) => res.sendFile(indexPath)); // fallback SPA
+  // fallback SPA com callback de erro: o index.html pode sumir por ~1s durante um rebuild
+  // do auto-deploy; sem o callback, esse erro derrubaria o processo.
+  spa.use((req, res) => res.sendFile(indexPath, (err) => {
+    if (err && !res.headersSent) res.status(503).send(`${nome}: build sendo atualizado, tente novamente em instantes.`);
+  }));
   spa.listen(porta, '0.0.0.0', () => console.log(`🌐 ${nome} rodando na porta ${porta}`));
 }
 
