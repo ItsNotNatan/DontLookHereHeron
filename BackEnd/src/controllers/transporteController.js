@@ -1,100 +1,243 @@
-// src/controllers/transporteController.js  (PocketBase)
+// src/controllers/transporteController.js
 const { pb, withAuth } = require('../config/pocketbase');
 const { formatarProBanco } = require('../utils/formatters');
 
-const num = (val) => (val === '' || val === undefined || val === null ? null : parseFloat(val));
-const str = (val) => (val === '' || val === undefined || val === null ? null : String(val));
+// ============================================================================
+// DICIONÁRIO DE ENDEREÇOS AUTOMATIZADOS
+// As chaves devem ser idênticas às opções do Google Forms
+// ============================================================================
+const enderecosComau = {
+  "COMAU BETIM - GALPÃO 57 BR01": {
+    nome_local: "COMAU BETIM, GALPÃO 57 BR01",
+    logradouro: "Av. do Contorno",
+    numero: "3455",
+    bairro: "Paulo Camilo",
+    municipio: "Betim",
+    uf: "MG",
+    cep: "32669-185"
+  },
+  "COMAU BETIM - TIJOLINHO BR06": {
+    nome_local: "COMAU BETIM, TIJOLINHO BR06",
+    logradouro: "Av. do Contorno",
+    numero: "3455",
+    bairro: "Paulo Camilo",
+    municipio: "Betim",
+    uf: "MG",
+    cep: "32669-185"
+  },
+  "COMAU GOIANA - PE": {
+    nome_local: "COMAU GOIANA",
+    logradouro: "Rodovia PE-075, km 114, Parte A",
+    numero: null,
+    bairro: null,
+    municipio: "Goiana",
+    uf: "PE",
+    cep: "55900-000"
+  },
+  "COMAU SANTO ANDRÉ - SP": {
+    nome_local: "COMAU SANTO ANDRÉ",
+    logradouro: "Avenida Alexandre de Gusmão",
+    numero: "1395",
+    bairro: "Vila Homero Thon",
+    municipio: "Santo André",
+    uf: "SP",
+    cep: "09111-310"
+  }
+};
 
-// Resolve o nome de uma transportadora para o id (relation). Retorna undefined se nao achar.
-async function idTransportadoraPorNome(nome) {
-  if (!nome) return null; // limpa relacao
+// ============================================================================
+// FUNÇÕES AUXILIARES
+// ============================================================================
+const num = (val) => (val === "" || val === undefined || val === null ? null : parseFloat(val));
+const str = (val) => (val === "" || val === undefined || val === null ? null : String(val));
+
+// Busca o último número de ATM no banco e soma 1
+async function gerarProximoNumeroATM() {
   try {
-    const t = await withAuth(() =>
-      pb.collection('transportadoras').getFirstListItem(pb.filter('nome = {:n}', { n: nome }))
+    const records = await withAuth(() =>
+      pb.collection('pedidos_atm').getList(1, 1, {
+        sort: '-numero_atm',
+        fields: 'numero_atm'
+      })
     );
-    return t.id;
-  } catch (e) {
-    return undefined; // nao encontrada -> nao altera
+
+    if (records.items.length > 0 && records.items[0].numero_atm) {
+      const ultimoNumero = parseInt(records.items[0].numero_atm, 10);
+      if (!isNaN(ultimoNumero)) {
+        return String(ultimoNumero + 1);
+      }
+    }
+    return '10005';
+  } catch (error) {
+    console.error('Erro ao buscar a sequencia do ATM:', error);
+    return '10005';
   }
 }
 
+// ============================================================================
+// FUNÇÕES DO CONTROLLER
+// ============================================================================
+
 const criarTransporte = async (req, res) => {
   const dados = req.body;
+
   try {
+    const novoNumeroAtm = await gerarProximoNumeroATM();
+
     const localColeta = await withAuth(() => pb.collection('enderecos_pedido').create({
-      nome_local: dados.empresaColeta || '',
-      municipio: dados.cidadeColeta || '',
-      uf: dados.ufColeta || '',
-      cep: dados.cepColeta || '',
-      logradouro: dados.logradouroColeta || '',
-      numero: dados.numeroColeta || '',
-      bairro: dados.bairroColeta || '',
+      nome_local: str(dados.empresaColeta),
+      municipio: str(dados.cidadeColeta),
+      uf: str(dados.ufColeta),
+      cep: str(dados.cepColeta),
+      logradouro: str(dados.logradouroColeta),
+      numero: str(dados.numeroColeta),
+      bairro: str(dados.bairroColeta)
     }));
 
     const localEntrega = await withAuth(() => pb.collection('enderecos_pedido').create({
-      nome_local: dados.empresaEntrega || 'Destinatario',
-      municipio: dados.cidadeEntrega || '',
-      uf: dados.ufEntrega || '',
-      cep: dados.cepEntrega || '',
-      logradouro: dados.logradouroEntrega || '',
-      numero: dados.numeroEntrega || '',
-      bairro: dados.bairroEntrega || '',
+      nome_local: str(dados.empresaEntrega) || 'Destinatário',
+      municipio: str(dados.cidadeEntrega),
+      uf: str(dados.ufEntrega),
+      cep: str(dados.cepEntrega),
+      logradouro: str(dados.logradouroEntrega),
+      numero: str(dados.numeroEntrega),
+      bairro: str(dados.bairroEntrega)
     }));
 
-    const pedido = await withAuth(() => pb.collection('pedidos_atm').create({
-      data_solicitacao: formatarProBanco(dados.dataSolicitacao),
-      tipo_operacao: dados.tipo_operacao,
-      pedido_compra: dados.pedidoCompra,
-      nf: dados.nf || '',
-      valor_nf: dados.valor_nf ? parseFloat(dados.valor_nf) : null,
-      wbs: dados.wbs,
-      contato_coleta: dados.nomeContatoColeta || '',
-      telefone_coleta: dados.telefoneColeta || '',
-      contato_entrega: dados.nomeContatoEntrega || '',
-      telefone_entrega: dados.telefoneEntrega || '',
-      numero_reserva: dados.numeroReserva || '',
+    const pedidoAtm = await withAuth(() => pb.collection('pedidos_atm').create({
+      numero_atm: novoNumeroAtm,
+      data_solicitacao: dados.dataSolicitacao ? formatarProBanco(dados.dataSolicitacao) : null,
+      tipo_operacao: str(dados.tipo_operacao),
+      pedido_compra: str(dados.pedidoCompra),
+      nf: str(dados.nf),
+      valor_nf: num(dados.valor_nf),
+      wbs: str(dados.wbs),
+      contato_coleta: str(dados.nomeContatoColeta),
+      telefone_coleta: str(dados.telefoneColeta),
+      contato_entrega: str(dados.nomeContatoEntrega),
+      telefone_entrega: str(dados.telefoneEntrega),
+      numero_reserva: str(dados.numeroReserva),
       id_origem: localColeta.id,
       id_destino: localEntrega.id,
-      tipo_frete: dados.frete,
-      solicitacao: dados.solicitante,
-      veiculo: dados.veiculo,
+      tipo_frete: str(dados.frete),
+      solicitacao: str(dados.solicitante),
+      veiculo: str(dados.veiculo),
       lista_cargas: dados.listaCargas ? JSON.parse(dados.listaCargas) : null,
       quantidade_volumes: parseInt(dados.quantidadeVolumes) || 0,
-      peso: parseFloat(dados.pesoTotal) || 0,
+      peso: num(dados.pesoTotal) || 0,
       volume: 0,
-      data_entrega: formatarProBanco(dados.dataEntrega),
+      data_entrega: dados.dataEntrega ? formatarProBanco(dados.dataEntrega) : null,
       status: 'Aguardando Aprovação',
-      observacoes: dados.obs || '',
+      observacoes: str(dados.obs)
     }));
 
-    res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedido.id });
+    req.app.get('io').emit('transportes_atualizados');
+    res.status(201).json({ mensagem: 'Sucesso!', id_gerado: pedidoAtm.id });
   } catch (erro) {
     res.status(400).json({ erro: erro.message });
   }
 };
 
-const listarTransportesAdmin = async (req, res) => {
+const receberWebhookGoogleForms = async (req, res) => {
   try {
-    const pedidos = await withAuth(() =>
-      pb.collection('pedidos_atm').getFullList({
-        sort: '-created_at',
-        expand: 'id_origem,id_destino,id_transportadora',
-      })
-    );
+    const dados = req.body;
+    console.log("🔔 [WEBHOOK] Novo formulário recebido do Google!");
 
-    const faturamentos = await withAuth(() => pb.collection('faturamento_atm').getFullList());
-    const fatMap = {};
-    for (const f of faturamentos) fatMap[f.id_atm] = f;
+    const dataSolLimpa = dados.dataSolicitacao ? dados.dataSolicitacao.split(' ')[0] : null;
+    const novoNumeroAtm = await gerarProximoNumeroATM();
 
-    const dados = pedidos.map((p) => ({
-      ...p,
-      origem: (p.expand && p.expand.id_origem) || null,
-      destino: (p.expand && p.expand.id_destino) || null,
-      transportadora: (p.expand && p.expand.id_transportadora) || null,
-      faturamento: fatMap[p.id] || null,
+    const endColeta = enderecosComau[dados.empresaColeta] || {
+        nome_local: dados.empresaColeta || 'Coleta Não Especificada',
+        municipio: dados.cidadeColeta || null,
+        uf: dados.ufColeta || null,
+        cep: dados.cepColeta || null,
+        logradouro: dados.logradouroColeta || null,
+        numero: dados.numeroColeta || null,
+        bairro: dados.bairroColeta || null
+    };
+
+    const localColeta = await withAuth(() => pb.collection('enderecos_pedido').create(endColeta));
+
+    const endEntrega = enderecosComau[dados.empresaEntrega] || {
+        nome_local: dados.empresaEntrega || 'Destinatário Filial',
+        municipio: dados.cidadeEntrega || null,
+        uf: dados.ufEntrega || null,
+        cep: dados.cepEntrega || null,
+        logradouro: dados.logradouroEntrega || null,
+        numero: dados.numeroEntrega || null,
+        bairro: dados.bairroEntrega || null
+    };
+
+    const localEntrega = await withAuth(() => pb.collection('enderecos_pedido').create(endEntrega));
+
+    const cargaGenerica = [{
+      id: Date.now(),
+      nome: "Carga via Google Forms",
+      quantidade: parseInt(dados.quantidadeVolumes) || 1,
+      peso: parseFloat(dados.pesoTotal) || 0,
+      comprimento: '', largura: '', altura: '', cor: '#64748b',
+      detalhes_adicionais: dados.obs || ''
+    }];
+
+    const pedidoAtm = await withAuth(() => pb.collection('pedidos_atm').create({
+      numero_atm: novoNumeroAtm,
+      tipo_operacao: 'Nacional',
+      data_solicitacao: dataSolLimpa ? formatarProBanco(dataSolLimpa) : null,
+      pedido_compra: str(dados.pedidoCompra),
+      nf: str(dados.nf),
+      wbs: str(dados.wbs),
+      contato_coleta: str(dados.nomeContatoColeta),
+      telefone_coleta: str(dados.telefoneColeta),
+      contato_entrega: str(dados.nomeContatoEntrega),
+      telefone_entrega: str(dados.telefoneEntrega),
+      id_origem: localColeta.id,
+      id_destino: localEntrega.id,
+      tipo_frete: str(dados.frete),
+      solicitacao: str(dados.solicitante),
+      veiculo: str(dados.veiculo),
+      lista_cargas: cargaGenerica,
+      quantidade_volumes: parseInt(dados.quantidadeVolumes) || 1,
+      peso: num(dados.pesoTotal) || 0,
+      volume: 0,
+      status: 'Pendente',
+      observacoes: str(dados.obs)
     }));
 
-    res.json(dados);
+    console.log(`✅ [WEBHOOK] Sucesso! Pedido de ${dados.solicitante} integrado com operação Nacional.`);
+    req.app.get('io').emit('transportes_atualizados');
+    res.status(200).send("Webhook processado e salvo com sucesso!");
+  } catch (erro) {
+    console.error("❌ Erro no processamento do Webhook:", erro.message);
+    res.status(500).send("Erro interno ao processar dados do formulário.");
+  }
+};
+
+const listarTransportesAdmin = async (req, res) => {
+  try {
+    // Traz os ATMs e expande as FKs nativas (origem, destino, transportadora)
+    const registros = await withAuth(() => pb.collection('pedidos_atm').getFullList({
+      sort: '-created_at',
+      expand: 'id_origem,id_destino,id_transportadora'
+    }));
+
+    // Traz todos os faturamentos para fazer o "join" manual 
+    // (já que a FK fica na tabela filha no esquema atual)
+    const faturamentos = await withAuth(() => pb.collection('faturamento_atm').getFullList());
+    const fatMap = {};
+    faturamentos.forEach(f => fatMap[f.id_atm] = f);
+
+    const dadosFormatados = registros.map(item => {
+      const { expand, ...resto } = item;
+      return {
+        ...resto,
+        origem: expand?.id_origem || null,
+        destino: expand?.id_destino || null,
+        transportadora: expand?.id_transportadora || null,
+        faturamento: fatMap[item.id] || null
+      };
+    });
+
+    res.json(dadosFormatados);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
   }
@@ -105,7 +248,6 @@ const atualizarTransporteAdmin = async (req, res) => {
   const d = req.body;
 
   try {
-    // 1. Tabela principal
     const updateAtm = {};
     if (d.status !== undefined) updateAtm.status = str(d.status);
     if (d.tipo_operacao !== undefined) updateAtm.tipo_operacao = str(d.tipo_operacao);
@@ -135,36 +277,29 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
 
-    // Transportadora por nome -> id (melhoria: faz o campo do form realmente salvar)
-    if (d.nome_transportadora !== undefined) {
-      const tid = await idTransportadoraPorNome(str(d.nome_transportadora));
-      if (tid !== undefined) updateAtm.id_transportadora = tid || '';
-    }
+    // Atualiza ATM
+    const pedido = await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
 
-    const pedido = await withAuth(() => pb.collection('pedidos_atm').getOne(id));
-    if (Object.keys(updateAtm).length > 0) {
-      await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
-    }
-
-    // 2. Enderecos (origem/destino)
+    // Atualiza Endereços relacionados
     if (pedido.id_origem && d.origem) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_origem, {
         logradouro: str(d.origem.logradouro),
         numero: str(d.origem.numero),
         municipio: str(d.origem.municipio),
-        uf: str(d.origem.uf),
+        uf: str(d.origem.uf)
       }));
     }
+
     if (pedido.id_destino && d.destino) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_destino, {
         logradouro: str(d.destino.logradouro),
         numero: str(d.destino.numero),
         municipio: str(d.destino.municipio),
-        uf: str(d.destino.uf),
+        uf: str(d.destino.uf)
       }));
     }
 
-    // 3. Faturamento (upsert)
+    // Processa Faturamento (Upsert)
     const fatData = {};
     if (d.tipo_documento !== undefined) fatData.tipo_documento = str(d.tipo_documento);
     if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null;
@@ -179,10 +314,10 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (Object.keys(fatData).length > 0) {
       let existingFat = null;
       try {
-        existingFat = await withAuth(() =>
-          pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:a}', { a: id }))
-        );
-      } catch (e) { existingFat = null; }
+        existingFat = await withAuth(() => pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:id}', { id })));
+      } catch (e) {
+        // Nao existe, ira criar
+      }
 
       if (existingFat) {
         await withAuth(() => pb.collection('faturamento_atm').update(existingFat.id, fatData));
@@ -191,9 +326,11 @@ const atualizarTransporteAdmin = async (req, res) => {
       }
     }
 
-    res.json({ mensagem: '✅ Pedido, Enderecos e Faturamento atualizados!' });
+    req.app.get('io').emit('transportes_atualizados');
+    res.json({ mensagem: '✅ Pedido, Endereços e Faturamento atualizados!' });
+
   } catch (erro) {
-    console.error('Erro completo no Update:', erro);
+    console.error("Erro completo no Update:", erro);
     res.status(400).json({ erro: erro.message });
   }
 };
@@ -202,8 +339,9 @@ const atualizarLoteAdmin = async (req, res) => {
   const { ids, dados } = req.body;
 
   if (!ids || !Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ erro: 'Nenhum ID fornecido para edicao em lote.' });
+    return res.status(400).json({ erro: 'Nenhum ID fornecido para edição em lote.' });
   }
+
   if (!dados || Object.keys(dados).length === 0) {
     return res.status(400).json({ erro: 'Nenhum dado fornecido para atualizar.' });
   }
@@ -214,7 +352,7 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.tipo_operacao !== undefined) updateAtm.tipo_operacao = str(dados.tipo_operacao);
     if (dados.motivo !== undefined) updateAtm.motivo = str(dados.motivo);
     if (dados.solicitacao !== undefined) updateAtm.solicitacao = str(dados.solicitacao);
-    if (dados.data_solicitacao !== undefined) updateAtm.data_solicitacao = formatarProBanco(dados.data_solicitacao);
+    if (dados.data_solicitacao !== undefined) updateAtm.data_solicitacao = dados.data_solicitacao ? formatarProBanco(dados.data_solicitacao) : null;
     if (dados.pedido_compra !== undefined) updateAtm.pedido_compra = str(dados.pedido_compra);
     if (dados.numero_reserva !== undefined) updateAtm.numero_reserva = str(dados.numero_reserva);
     if (dados.wbs !== undefined) updateAtm.wbs = str(dados.wbs);
@@ -229,60 +367,70 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.medidas !== undefined) updateAtm.medidas = str(dados.medidas);
     if (dados.link_rastreio !== undefined) updateAtm.link_rastreio = str(dados.link_rastreio);
     if (dados.observacoes !== undefined) updateAtm.observacoes = str(dados.observacoes);
-    if (dados.data_coleta !== undefined) updateAtm.data_coleta = formatarProBanco(dados.data_coleta);
+    if (dados.data_coleta !== undefined) updateAtm.data_coleta = dados.data_coleta ? formatarProBanco(dados.data_coleta) : null;
     if (dados.contato_coleta !== undefined) updateAtm.contato_coleta = str(dados.contato_coleta);
     if (dados.telefone_coleta !== undefined) updateAtm.telefone_coleta = str(dados.telefone_coleta);
-    if (dados.data_entrega !== undefined) updateAtm.data_entrega = formatarProBanco(dados.data_entrega);
+    if (dados.data_entrega !== undefined) updateAtm.data_entrega = dados.data_entrega ? formatarProBanco(dados.data_entrega) : null;
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
-
-    if (dados.nome_transportadora !== undefined || dados.transportadora !== undefined) {
-      const nome = str(dados.nome_transportadora !== undefined ? dados.nome_transportadora : dados.transportadora);
-      const tid = await idTransportadoraPorNome(nome);
-      if (tid !== undefined) updateAtm.id_transportadora = tid || '';
-    }
 
     const updateFat = {};
     if (dados.tipo_documento !== undefined) updateFat.tipo_documento = str(dados.tipo_documento);
     if (dados.fatura_cte !== undefined) updateFat.fatura_cte = str(dados.fatura_cte);
-    if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = formatarProBanco(dados.data_mapeamento);
-    if (dados.data_emissao !== undefined) updateFat.data_emissao = formatarProBanco(dados.data_emissao);
-    if (dados.vencimento !== undefined) updateFat.vencimento = formatarProBanco(dados.vencimento);
-    if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto);
+    if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = dados.data_mapeamento ? formatarProBanco(dados.data_mapeamento) : null;
+    if (dados.data_emissao !== undefined) updateFat.data_emissao = dados.data_emissao ? formatarProBanco(dados.data_emissao) : null;
+    if (dados.vencimento !== undefined) updateFat.vencimento = dados.vencimento ? formatarProBanco(dados.vencimento) : null;
+    if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); 
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
     if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs);
 
-    for (const id of ids) {
+    const promessas = ids.map(async (id) => {
+      let atm = null;
+      try {
+        atm = await withAuth(() => pb.collection('pedidos_atm').getOne(id));
+      } catch (e) {
+        return; // Pula se nao achar o ATM
+      }
+
       if (Object.keys(updateAtm).length > 0) {
         await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
       }
-      if (Object.keys(updateFat).length > 0) {
-        let ex = null;
-        try { ex = await withAuth(() => pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:a}', { a: id }))); } catch (e) { ex = null; }
-        if (ex) await withAuth(() => pb.collection('faturamento_atm').update(ex.id, updateFat));
-        else await withAuth(() => pb.collection('faturamento_atm').create({ ...updateFat, id_atm: id }));
-      }
-      if (dados.origem !== undefined || dados.destino !== undefined) {
-        const atm = await withAuth(() => pb.collection('pedidos_atm').getOne(id));
-        if (dados.origem !== undefined && atm.id_origem) {
-          await withAuth(() => pb.collection('enderecos_pedido').update(atm.id_origem, { nome_local: str(dados.origem) }));
-        }
-        if (dados.destino !== undefined && atm.id_destino) {
-          await withAuth(() => pb.collection('enderecos_pedido').update(atm.id_destino, { nome_local: str(dados.destino) }));
-        }
-      }
-    }
 
-    res.json({ mensagem: `✅ Lote de ${ids.length} pedidos atualizado com sucesso!` });
+      if (Object.keys(updateFat).length > 0) {
+        let existingFat = null;
+        try {
+          existingFat = await withAuth(() => pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:id}', { id })));
+        } catch (e) { }
+
+        if (existingFat) {
+          await withAuth(() => pb.collection('faturamento_atm').update(existingFat.id, updateFat));
+        } else {
+          await withAuth(() => pb.collection('faturamento_atm').create({ ...updateFat, id_atm: id }));
+        }
+      }
+
+      if (dados.origem !== undefined && atm.id_origem) {
+        await withAuth(() => pb.collection('enderecos_pedido').update(atm.id_origem, { nome_local: str(dados.origem) }));
+      }
+      if (dados.destino !== undefined && atm.id_destino) {
+        await withAuth(() => pb.collection('enderecos_pedido').update(atm.id_destino, { nome_local: str(dados.destino) }));
+      }
+    });
+
+    await Promise.all(promessas);
+
+    req.app.get('io').emit('transportes_atualizados');
+    res.json({ transatlantic: `✅ Lote de ${ids.length} pedidos atualizado com sucesso!` });
   } catch (erro) {
-    console.error('Erro na edicao em lote:', erro);
+    console.error("Erro na edição em lote:", erro);
     res.status(500).json({ erro: erro.message });
   }
 };
 
 const rastrearPedidoPublico = async (req, res) => {
   const { codigo } = req.params;
+
   try {
     let pedido = null;
     try {
@@ -292,16 +440,22 @@ const rastrearPedidoPublico = async (req, res) => {
           { expand: 'id_origem,id_destino' }
         )
       );
-    } catch (e) { pedido = null; }
+    } catch (e) { 
+      // Se não encontrou, deixa o pedido como null
+    }
 
-    if (!pedido) return res.status(404).json({ erro: 'Pedido nao encontrado.' });
+    if (!pedido) {
+      return res.status(404).json({ erro: 'Pedido não encontrado.' });
+    }
 
-    const out = {
-      ...pedido,
-      origem: (pedido.expand && pedido.expand.id_origem) || null,
-      destino: (pedido.expand && pedido.expand.id_destino) || null,
+    const { expand, ...resto } = pedido;
+    const respostaFormatada = {
+      ...resto,
+      origem: expand?.id_origem || null,
+      destino: expand?.id_destino || null
     };
-    res.json(out);
+
+    res.json(respostaFormatada);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
   }
@@ -309,8 +463,9 @@ const rastrearPedidoPublico = async (req, res) => {
 
 module.exports = {
   criarTransporte,
+  receberWebhookGoogleForms,
   listarTransportesAdmin,
   atualizarTransporteAdmin,
   atualizarLoteAdmin,
-  rastrearPedidoPublico,
+  rastrearPedidoPublico
 };
