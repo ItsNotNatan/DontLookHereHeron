@@ -10,11 +10,9 @@ import FiltroAtm from '../../components/FiltroATM/FiltroAtm';
 // 🟢 1. IMPORTA O SOCKET
 import { io } from 'socket.io-client';
 
-// 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou para a URL do Render)
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const SOCKET_URL = isLocalhost ? 'http://localhost:3001' : 'https://backendtransportview.onrender.com';
+// 🟢 2. CONFIGURA A URL DO SOCKET (Puxa dinamicamente do .env configurado pelo Vite)
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 const socket = io(SOCKET_URL);
-
 
 // --- Ícones SVG embutidos ---
 const FolderOpen = ({ size = 24, className = "" }) => (
