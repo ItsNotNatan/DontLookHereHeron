@@ -399,7 +399,7 @@ export default function RequestForm() {
           <h4 className="section-title"><i className="fa-solid fa-user-tag"></i> Dados do Solicitante</h4>
           <div className="form-grid-4">
             <div className="input-group">
-              <label>Nome completo *</label>
+              <label>Nome e sobrenome *</label>
               <input type="text" name="solicitante" value={solicitante} onChange={e => setSolicitante(e.target.value)} required className="input-control" placeholder="Seu nome" />
             </div>
             <div className="input-group">
