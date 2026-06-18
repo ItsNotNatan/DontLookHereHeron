@@ -360,7 +360,7 @@ export default function AcompFinan() {
                 </div>
 
                 <div className="acomp-card">
-                  <SectionHeader title="Desvio Financeiro: Previsto vs Realizado" subtitle="Linha = Orçamento | Coluna = Gasto Realizado (Laranja caso ultrapasse o previsto)" />
+                  <SectionHeader title="Desvio Financeiro: Previsto vs Realizado" subtitle="Linha = Orçamento | Coluna = Gasto Realizado (Vermelho caso ultrapasse o previsto)" />
                   <ResponsiveContainer width="100%" height={300}>
                     <ComposedChart data={desvioMensalData} margin={{ top: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={BLUE_PALE} vertical={false} />
@@ -371,7 +371,7 @@ export default function AcompFinan() {
                       
                       <Bar dataKey="realizado" name="Gasto Realizado" barSize={40}>
                         {desvioMensalData.map((entry, index) => {
-                          const corBarra = entry.realizado > entry.previsto ? ACCENT : BLUE_LIGHT;
+                          const corBarra = entry.realizado > entry.previsto ? DANGER : BLUE_LIGHT;
                           return (
                             <Cell 
                               key={`cell-${index}`} 
@@ -381,7 +381,7 @@ export default function AcompFinan() {
                         })}
                       </Bar>
                       
-                      <Line type="monotone" dataKey="previsto" name="Orçamento Previsto" stroke={BLUE_MAIN} strokeWidth={3} dot={{ r: 5, fill: BLUE_MAIN }} />
+                      <Line type="monotone" dataKey="previsto" name="Orçamento Previsto" stroke={ACCENT} strokeWidth={3} dot={{ r: 5, fill: ACCENT }} />
                       
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -389,7 +389,7 @@ export default function AcompFinan() {
                     data={desvioMensalData} 
                     categoryKey="mes" 
                     series={[
-                      { key: 'previsto', name: 'Previsto', color: BLUE_MAIN, formatter: fmt },
+                      { key: 'previsto', name: 'Previsto', color: ACCENT, formatter: fmt },
                       { key: 'realizado', name: 'Realizado', color: BLUE_LIGHT, formatter: fmt }
                     ]} 
                   />
