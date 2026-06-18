@@ -1,213 +1,332 @@
-// src/componentes/BtnExcel/BtnExcel.jsx
-import React from 'react';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+// src/componentes/BtnPdf/BtnPdf.jsx
+import React, { useState } from 'react';
+import pdfMake from 'pdfmake/build/pdfmake';
+import pdfFonts from 'pdfmake/build/vfs_fonts';
+
+// Importação das imagens
+import carimbo from '../../assets/carimbo.png';
 import logoComau from '../../assets/logo-comau.png';
 
-// IMPORTANTE: Importar o ficheiro CSS recém-criado
-import './BtnExcel.css'; 
+try {
+  pdfMake.vfs = pdfFonts.pdfMake.vfs;
+} catch (e) {
+  console.error("Erro ao carregar fontes do PDF:", e);
+}
 
-const DownloadIcon = ({ size = 20, className = "" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+const FileText = ({ size = 18 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
   </svg>
 );
 
-export default function BtnExcel({ atmsFiltrados }) {
-  
-  const shortId = (id) => id ? id.substring(0, 8).toUpperCase() : 'N/A';
+export default function BtnPdf({ atm }) {
+  const [gerando, setGerando] = useState(false);
 
-  const exportarExcel = async () => {
-    if (!atmsFiltrados || atmsFiltrados.length === 0) {
-      alert("Não há dados para exportar com os filtros atuais.");
-      return;
+  if (!atm) return null;
+
+  const getBase64ImageFromURL = (url) => {
+    return new Promise((resolve, reject) => {
+      var img = new Image();
+      img.setAttribute("crossOrigin", "anonymous");
+      img.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = this.width;
+        canvas.height = this.height;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(this, 0, 0);
+        var dataURL = canvas.toDataURL("image/png");
+        resolve(dataURL);
+      };
+      img.onerror = (error) => reject(error);
+      img.src = url;
+    });
+  };
+
+  const formatarData = (dataStr) => {
+    if (!dataStr) return 'N/A';
+    const partes = dataStr.split('T')[0].split('-');
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataStr;
+  };
+
+  // 🟢 Tratamento seguro para a lista de itens da carga
+  const extrairCargas = () => {
+    if (!atm.lista_cargas) return [];
+    try {
+      return typeof atm.lista_cargas === 'string' ? JSON.parse(atm.lista_cargas) : atm.lista_cargas;
+    } catch (e) {
+      return [];
     }
+  };
+
+  const handleGerarPdf = async () => {
+    setGerando(true);
 
     try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('ATM');
+      const [logoBase64, carimboBase64] = await Promise.all([
+        getBase64ImageFromURL(logoComau),
+        getBase64ImageFromURL(carimbo)
+      ]);
 
-      // Títulos superiores
-      worksheet.getCell('AA1').value = 'Controle de Ctes/ Nfe de Serviço';
-      worksheet.getCell('Z1').font = { bold: true, size: 14 };
-      worksheet.getCell('Z1').alignment = { horizontal: 'center' };
-      worksheet.getCell('D2').value = 'Gestão de Fretes';
-      worksheet.getCell('D2').font = { bold: true, size: 16 };
+      const cargas = extrairCargas();
       
-      // ============================================================
-      // INSERÇÃO DA IMAGEM NO EXCEL (COM PROPORÇÃO AUTOMÁTICA)
-      // ============================================================
-      
-      // 1. Transforma a imagem importada em dados brutos (Buffer)
-      const response = await fetch(logoComau);
-      const bufferImage = await response.arrayBuffer();
+      // 🟢 Mapeamento da Tabela de Detalhamento da Carga
+      const linhasItens = cargas.length > 0 
+        ? cargas.map(c => [
+            { text: c.nome || c.name || '-', margin: [0, 4] },
+            { text: c.quantidade || c.qty || '-', alignment: 'center', margin: [0, 4] },
+            { text: c.peso ? `${c.peso} kg` : '-', alignment: 'center', margin: [0, 4] },
+            { text: (c.comprimento || c.l) ? `${c.comprimento || c.l} x ${c.largura || c.w} x ${c.altura || c.h} m` : '-', alignment: 'center', margin: [0, 4] }
+          ])
+        : [[{ text: 'Nenhum item detalhado na solicitação.', colSpan: 4, alignment: 'center', margin: [0, 8], color: 'gray' }, {}, {}, {}]];
 
-      const img = new Image();
-      img.src = logoComau;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      
-      // Defina aqui qual a ALTURA que você quer que a logo tenha no Excel
-      const alturaDesejada = 80; 
-      // A mágica: calcula a largura exata para não espremer!
-      const larguraProporcional = (img.width / img.height) * alturaDesejada;
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 20, 40, 25], 
+        content: [
+          // LOGO
+          {
+            image: logoBase64,
+            width: 85,
+            alignment: 'center',
+            margin: [0, 0, 0, 8] 
+          },
 
-      // 3. Registra a imagem dentro do arquivo do ExcelJS
-      const logoId = workbook.addImage({
-        buffer: bufferImage,
-        extension: 'png', 
-      });
-
-      // 4. Cola a imagem na planilha na posição desejada
-      worksheet.addImage(logoId, {
-        tl: { col: 0, row: 0 }, // col: 0 = Coluna A | row: 1 = Linha 2
-        ext: { width: larguraProporcional, height: alturaDesejada } 
-      });
-      // ============================================================
-      // ============================================================
-
-      // Configuração das Colunas
-      worksheet.columns = [
-        { key: 'data_sol', width: 22 },
-        { key: 'atm', width: 12 },
-        { key: 'pedido', width: 20 },
-        { key: 'nf', width: 15 },
-        { key: 'wbs', width: 15 },
-        { key: 'uf1', width: 6 },
-        { key: 'mun1', width: 20 },
-        { key: 'coleta', width: 30 },
-        { key: 'x', width: 4 },
-        { key: 'entrega', width: 30 },
-        { key: 'uf2', width: 6 },
-        { key: 'mun2', width: 20 },
-        { key: 'tipo_frete', width: 22 },
-        { key: 'solicitacao', width: 20 },
-        { key: 'veiculo', width: 20 },
-        { key: 'transportadora', width: 25 },
-        { key: 'cotacao', width: 15 },
-        { key: 'valor_nf', width: 15 },
-        { key: 'volume', width: 12 },
-        { key: 'peso', width: 12 },
-        { key: 'valor_previsto', width: 22 },
-        { key: 'status', width: 15 },
-        { key: 'obs', width: 35 },
-        // 👇 COLUNA SEPARADORA PRETA AQUI 👇
-        { key: 'separador_preto', width: 3 }, 
-        { key: 'tipo_doc', width: 15 },
-        { key: 'data_map', width: 18 },
-        { key: 'fatura', width: 15 },
-        { key: 'valor', width: 15 },
-        { key: 'data_emissao', width: 15 },
-        { key: 'vencimento', width: 15 },
-        { key: 'elemento_pep', width: 25 },
-        { key: 'validacao_pep', width: 25 },
-        { key: 'lancamento_v360', width: 20 },
-        { key: 'id_v360', width: 15 },
-        { key: 'registrado_sap', width: 22 }
-      ];
-
-      // Títulos do Cabeçalho
-      const titulos = [
-        "DATA DA SOLICITAÇÃO", "ATM", "PEDIDO DE COMPRA", "NF", "WBS", "UF", "MUNICIPIO", "LOCAL DE COLETA", "X", 
-        "LOCAL DA ENTREGA", "UF 2", "MUNICIPIO 2", "Fracionado/Dedicado", "SOLICITAÇÃO", "VEÍCULO", "TRANSPORTADORA", 
-        "COTAÇÃO/BID", "VALOR NF", "VOLUME", "PESO", "Valor previsto do frete", "STATUS", "OBSERVAÇÕES", 
-        "", // Título vazio para a coluna preta
-        "TIPO", "DATA MAPEAMENTO", "FATURA", "VALOR", "DATA EMISSÃO", "VENCIMENTO", "ELEMENTO PEP - CC / WBS", 
-        "VALIDAÇÃO PEP - CC /WBS", "Lançamento V360", "Id V360", "Registrado SAP (S/N)"
-      ];
-
-      const linhaCabecalho = worksheet.getRow(4);
-      linhaCabecalho.values = titulos;
-
-      linhaCabecalho.eachCell((cell, colNumber) => {
-        // Verifica se é a coluna do separador
-        if (worksheet.getColumn(colNumber).key === 'separador_preto') {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
-        } else {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
-          cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
-        }
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-      });
-      linhaCabecalho.height = 35;
-
-      // Inserção dos dados
-// Inserção dos dados
-      atmsFiltrados.forEach(atm => {
-        const row = worksheet.addRow({
-          data_sol: atm.data_solicitacao ? atm.data_solicitacao.split('T')[0] : '-',
-          atm: atm.numero_atm || shortId(atm.id),
-          pedido: atm.pedido_compra || '-',
-          nf: atm.nf || '-',
-          wbs: atm.wbs || '-',
-          uf1: atm.origem?.uf || '-',
-          mun1: atm.origem?.municipio || '-',
-          coleta: atm.origem?.nome_local || '-',
-          x: 'x',
-          entrega: atm.destino?.nome_local || '-',
-          uf2: atm.destino?.uf || '-',
-          mun2: atm.destino?.municipio || '-',
-          tipo_frete: atm.tipo_frete || '-',
-          solicitacao: atm.solicitacao || '-',
-          veiculo: atm.veiculo || atm.modal || '-',
-          transportadora: atm.transportadora?.nome || '-',
-          cotacao: atm.cotacao_bid ? "Cotação" : (atm.valor_bid ? "BID" : '-'),
-          valor_nf: atm.valor_nf || '',
-          volume: atm.volume || '',
-          peso: atm.peso || '',
+          // CABEÇALHO
+          { text: 'ATM - AUTORIZAÇÃO DE TRANSPORTE DE MERCADORIA', style: 'headerMain' },
+          { text: 'SISTEMA DE GESTÃO LOGÍSTICA', style: 'headerSub' },
+          { canvas: [{ type: 'line', x1: 0, y1: 3, x2: 515, y2: 3, lineWidth: 1.2, lineColor: '#333333' }] },
           
-          // 🟢 CORREÇÃO: Puxar o valor_previsto da tabela de faturamento (ou da raiz se existir)
-          valor_previsto: atm.faturamento?.valor_previsto || atm.valor_previsto || '',
-          
-          status: atm.status || '-',
-          obs: atm.observacoes || '-',
-          separador_preto: '', // Valor vazio para a coluna preta
-          tipo_doc: atm.tipo_documento || '-',
-          data_map: atm.data_mapeamento ? atm.data_mapeamento.split('T')[0] : '-',
-          fatura: atm.fatura_cte || '-',
-          valor: atm.valor || '',
-          data_emissao: atm.data_emissao ? atm.data_emissao.split('T')[0] : '-',
-          vencimento: atm.vencimento ? atm.vencimento.split('T')[0] : '-',
-          elemento_pep: atm.elemento_pep_cc_wbs || '-',
-          validacao_pep: atm.validacao_pep || '-',
-          lancamento_v360: '', 
-          id_v360: '', 
-          registrado_sap: atm.registrado_sap || '-'
-        });
+          // NÚMERO E TRANSPORTADORA
+          {
+            margin: [0, 15, 0, 12],
+            columns: [
+              { text: [{ text: 'Nº ATM: ', bold: true }, atm.numero_atm || (atm.id ? atm.id.substring(0,8).toUpperCase() : 'N/A')] },
+              { text: [{ text: 'Transportadora: ', bold: true }, atm.transportadora?.nome || atm.nome_transportadora || 'A DEFINIR'], alignment: 'right' }
+            ]
+          },
 
-        row.eachCell((cell, colNumber) => {
-          // Pinta a célula de preto se for a coluna separadora
-          if (worksheet.getColumn(colNumber).key === 'separador_preto') {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
-          } else {
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            cell.border = { top: { style: 'thin', color: { argb: 'FFE5E7EB' } }, bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } } };
+          // IDENTIFICAÇÃO
+          {
+            table: { widths: ['*'], body: [[{ text: 'IDENTIFICAÇÃO', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: [150, '*'],
+              body: [
+                [{ text: 'Solicitante:', bold: true, margin: [0, 4] }, { text: atm.solicitacao || 'N/A', margin: [0, 4] }],
+                [{ text: 'Data da Solicitação:', bold: true, margin: [0, 4] }, { text: formatarData(atm.data_solicitacao || atm.created_at), margin: [0, 4] }],
+                [{ text: 'Centro de Custo / WBS:', bold: true, margin: [0, 4] }, { text: atm.wbs || 'N/A', margin: [0, 4] }],
+                [{ text: 'Tipo de Operação:', bold: true, margin: [0, 4] }, { text: atm.tipo_operacao?.toUpperCase() || 'N/A', margin: [0, 4] }]
+              ]
+            },
+            margin: [0, 0, 0, 15]
+          },
+
+          // COLETA (ORIGEM) - 🟢 Totalmente Refatorado
+          {
+            table: { widths: ['*'], body: [[{ text: 'LOCAL DA COLETA (ORIGEM)', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: ['*', 140],
+              body: [
+                [
+                  { text: [{ text: 'Empresa / Local: ', bold: true }, atm.origem?.nome_local || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Data da Coleta: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] }
+                ],
+                [
+                  { 
+                    text: [{ text: 'Endereço: ', bold: true }, `${atm.origem?.logradouro || ''}, ${atm.origem?.numero || 'S/N'} - ${atm.origem?.bairro || ''}, ${atm.origem?.municipio || ''}/${atm.origem?.uf || ''} - CEP: ${atm.origem?.cep || 'N/A'}`], 
+                    colSpan: 2, 
+                    margin: [0, 5] 
+                  },
+                  {} // ColSpan exige célula vazia
+                ],
+                [
+                  { 
+                    text: [
+                      { text: 'Contato: ', bold: true }, atm.contato_coleta || atm.origem?.contato || 'N/A', 
+                      '   |   ', 
+                      { text: 'Telefone: ', bold: true }, atm.telefone_coleta || atm.origem?.telefone || 'N/A'
+                    ], 
+                    colSpan: 2, 
+                    margin: [0, 5] 
+                  },
+                  {}
+                ]
+              ]
+            },
+            margin: [0, 0, 0, 15]
+          },
+
+          // ENTREGA (DESTINO) - 🟢 Totalmente Refatorado
+          {
+            table: { widths: ['*'], body: [[{ text: 'LOCAL DA ENTREGA (DESTINO)', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: ['*', 140],
+              body: [
+                [
+                  { text: [{ text: 'Empresa / Local: ', bold: true }, atm.destino?.nome_local || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Data da Entrega: ', bold: true }, formatarData(atm.data_entrega)], alignment: 'right', margin: [0, 5] }
+                ],
+                [
+                  { 
+                    text: [{ text: 'Endereço: ', bold: true }, `${atm.destino?.logradouro || ''}, ${atm.destino?.numero || 'S/N'} - ${atm.destino?.bairro || ''}, ${atm.destino?.municipio || ''}/${atm.destino?.uf || ''} - CEP: ${atm.destino?.cep || 'N/A'}`], 
+                    colSpan: 2, 
+                    margin: [0, 5] 
+                  },
+                  {}
+                ],
+                [
+                  { 
+                    text: [
+                      { text: 'Contato: ', bold: true }, atm.contato_entrega || atm.destino?.contato || 'N/A', 
+                      '   |   ', 
+                      { text: 'Telefone: ', bold: true }, atm.telefone_entrega || atm.destino?.telefone || 'N/A'
+                    ], 
+                    colSpan: 2, 
+                    margin: [0, 5] 
+                  },
+                  {}
+                ]
+              ]
+            },
+            margin: [0, 0, 0, 15]
+          },
+
+          // DADOS LOGÍSTICOS E FRETE
+          {
+            table: { widths: ['*'], body: [[{ text: 'DADOS LOGÍSTICOS E FRETE', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: ['*', '*', '*'],
+              body: [
+                [
+                  { text: [{ text: 'Veículo Sugerido: ', bold: true }, atm.veiculo || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Tipo de Frete: ', bold: true }, atm.tipo_frete || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Peso Total: ', bold: true }, atm.peso ? `${atm.peso} kg` : 'N/A'], margin: [0, 5] }
+                ],
+                [
+                  { text: [{ text: 'Volume Total: ', bold: true }, atm.volume ? `${atm.volume} m³` : 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Medidas Totais: ', bold: true }, atm.medidas || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Pedido Compra: ', bold: true }, atm.pedido_compra || 'N/A'], margin: [0, 5] }
+                ],
+                [
+                  { 
+                    text: [
+                      { text: 'Valor da NF: ', bold: true }, 
+                      atm.valor_nf ? Number(atm.valor_nf).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A',
+                      '   |   ',
+                      { text: 'Nota Fiscal: ', bold: true }, atm.nf || 'N/A'
+                    ], 
+                    margin: [0, 5],
+                    colSpan: 3 
+                  },
+                  {},
+                  {}
+                ]
+              ]
+            },
+            margin: [0, 0, 0, 15]
+          },
+
+          // 🟢 DETALHAMENTO DA CARGA (FORMATO DE TABELA INFERIOR)
+          {
+            table: { widths: ['*'], body: [[{ text: 'DETALHAMENTO DA CARGA', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: ['*', 50, 70, 110], // Tamanho exato de cada coluna para ficar simétrico
+              headerRows: 1,
+              body: [
+                [
+                  { text: 'Descrição do Item', bold: true, fillColor: '#f8fafc', margin: [0, 4] },
+                  { text: 'Qtd.', bold: true, alignment: 'center', fillColor: '#f8fafc', margin: [0, 4] },
+                  { text: 'Peso Unit.', bold: true, alignment: 'center', fillColor: '#f8fafc', margin: [0, 4] },
+                  { text: 'Medidas (C x L x A)', bold: true, alignment: 'center', fillColor: '#f8fafc', margin: [0, 4] }
+                ],
+                ...linhasItens // 👈 Renderiza os itens calculados lá em cima!
+              ]
+            },
+            margin: [0, 0, 0, 15]
+          },
+
+          // OBSERVAÇÕES
+          {
+            table: { widths: ['*'], body: [[{ text: 'OBSERVAÇÕES', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: ['*'],
+              heights: 45, 
+              body: [[{ text: atm.observacoes || 'Nenhuma observação extra.', fontSize: 9.5, margin: [5, 4, 5, 4] }]]
+            },
+            margin: [0, 0, 0, 5]
+          },
+
+          // ASSINATURA CENTRALIZADA COM CARIMBO
+          {
+            margin: [0, 5, 0, 0], 
+            columns: [
+              { width: '*', text: '' },
+              {
+                width: 280,
+                stack: [
+                  {
+                    image: carimboBase64,
+                    width: 220, 
+                    alignment: 'center',
+                    margin: [0, 0, 0, 5] 
+                  },
+                  { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 280, y2: 0, lineWidth: 1 }] },
+                  { text: `Emissão: ${new Date().toLocaleDateString()} | Sistema ATM Log`, fontSize: 8, color: 'gray', margin: [0, 5, 0, 2]  }
+                ],
+                alignment: 'center'
+              },
+              { width: '*', text: '' }
+            ]
           }
-        });
-      });
+        ],
+        styles: {
+          headerMain: { fontSize: 17, bold: true, alignment: 'center', color: '#000000' },
+          headerSub: { fontSize: 11, alignment: 'center', margin: [0, 1, 0, 1], color: '#444444' },
+          sectionTitle: { fontSize: 10.5, bold: true, color: '#000000', margin: [5, 2, 5, 2] },
+          signatureLabel: { fontSize: 9.5, bold: true }
+        },
+        defaultStyle: { 
+          fontSize: 10.5, 
+          columnGap: 18 
+        }
+      };
 
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, "Gestao_de_Fretes.xlsx");
-
+      pdfMake.createPdf(docDefinition).download(`ATM_${atm.numero_atm || 'doc'}.pdf`);
     } catch (error) {
-      console.error("Falha ao exportar excel: ", error);
-      alert("Houve um problema ao gerar o arquivo.");
+      console.error("Erro ao gerar PDF:", error);
+      alert("Erro ao carregar imagens ou gerar PDF.");
+    } finally {
+      setGerando(false);
     }
   };
 
   return (
-    // Substituímos o 'style={...}' pela classe BEM 'btn-excel'
-    <button 
-      onClick={exportarExcel} 
-      className="btn-excel"
-      title="Baixar Tabela no Formato Original"
+    <button onClick={handleGerarPdf} disabled={gerando} 
+      style={{ 
+        display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.5rem', 
+        borderRadius: '0.5rem', border: '1px solid #fca5a5', cursor: gerando ? 'not-allowed' : 'pointer', 
+        fontWeight: 'bold', backgroundColor: '#fee2e2', color: '#ef4444', transition: 'all 0.2s',
+        opacity: gerando ? 0.7 : 1, fontSize: '1rem'
+      }}
     >
-      {/* Adicionamos a classe BEM do elemento filho ao ícone */}
-      <DownloadIcon size={18} className="btn-excel__icon" /> 
-      Exportar Gestão de Fretes
+      <FileText size={20} /> {gerando ? 'Processando...' : 'Gerar Autorização (PDF)'}
     </button>
   );
 }
