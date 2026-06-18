@@ -741,16 +741,17 @@ export default function RequestForm() {
             </div>
 
             <div className="input-group">
-              <label>Nota Fiscal *</label>
-              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} required className="input-control" placeholder="Nº da NFe" />
+              <label>Nota Fiscal</label>
+              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} className="input-control" placeholder="Nº da NFe (opcional)" />
             </div>
 
             <div className="input-group">
-              <label>Valor da NF (R$)</label>
+              <label>Valor da NF (R$) *</label>
               <input
                 type="text"
+                required
                 className="input-control"
-                placeholder="0,00 (opcional)"
+                placeholder="0,00"
                 value={valorNfMask}
                 onChange={(e) => setValorNfMask(aplicarMascaraMoeda(e.target.value))}
               />
