@@ -245,7 +245,6 @@ const listarTransportesAdmin = async (req, res) => {
     }));
 
     // Traz todos os faturamentos para fazer o "join" manual 
-    // (já que a FK fica na tabela filha no esquema atual)
     const faturamentos = await withAuth(() => pb.collection('faturamento_atm').getFullList());
     const fatMap = {};
     faturamentos.forEach(f => fatMap[f.id_atm] = f);
@@ -300,6 +299,20 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.data_entrega !== undefined) updateAtm.data_entrega = d.data_entrega ? formatarProBanco(d.data_entrega) : null;
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
+
+    // 🟢 CORREÇÃO: Transforma o nome da transportadora no ID do banco
+    if (d.nome_transportadora !== undefined) {
+      if (d.nome_transportadora) {
+        try {
+          const transp = await withAuth(() => pb.collection('transportadoras').getFirstListItem(pb.filter('nome = {:nome}', { nome: d.nome_transportadora })));
+          updateAtm.id_transportadora = transp.id;
+        } catch (e) {
+          updateAtm.id_transportadora = null; // Caso não encontre, deixa nulo
+        }
+      } else {
+        updateAtm.id_transportadora = null;
+      }
+    }
 
     // Atualiza ATM
     const pedido = await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
@@ -397,6 +410,20 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.data_entrega !== undefined) updateAtm.data_entrega = dados.data_entrega ? formatarProBanco(dados.data_entrega) : null;
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
+
+    // 🟢 CORREÇÃO: Resgata a transportadora para a edição em lote
+    if (dados.nome_transportadora !== undefined) {
+      if (dados.nome_transportadora) {
+        try {
+          const transp = await withAuth(() => pb.collection('transportadoras').getFirstListItem(pb.filter('nome = {:nome}', { nome: dados.nome_transportadora })));
+          updateAtm.id_transportadora = transp.id;
+        } catch (e) {
+          updateAtm.id_transportadora = null;
+        }
+      } else {
+        updateAtm.id_transportadora = null;
+      }
+    }
 
     const updateFat = {};
     if (dados.tipo_documento !== undefined) updateFat.tipo_documento = str(dados.tipo_documento);
