@@ -48,6 +48,16 @@ export default function BtnPdf({ atm }) {
     return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataStr;
   };
 
+  // 🟢 Tratamento para a lista de cargas
+  const extrairCargas = () => {
+    if (!atm.lista_cargas) return [];
+    try {
+      return typeof atm.lista_cargas === 'string' ? JSON.parse(atm.lista_cargas) : atm.lista_cargas;
+    } catch (e) {
+      return [];
+    }
+  };
+
   const handleGerarPdf = async () => {
     setGerando(true);
 
@@ -56,6 +66,18 @@ export default function BtnPdf({ atm }) {
         getBase64ImageFromURL(logoComau),
         getBase64ImageFromURL(carimbo)
       ]);
+
+      const cargas = extrairCargas();
+      
+      // Monta as linhas da tabela de itens
+      const linhasItens = cargas.length > 0 
+        ? cargas.map(c => [
+            { text: c.nome || c.name || '-', margin: [0, 4] },
+            { text: c.quantidade || c.qty || '-', alignment: 'center', margin: [0, 4] },
+            { text: c.peso ? `${c.peso} kg` : '-', alignment: 'center', margin: [0, 4] },
+            { text: (c.comprimento || c.l) ? `${c.comprimento || c.l}x${c.largura || c.w}x${c.altura || c.h}m` : '-', alignment: 'center', margin: [0, 4] }
+          ])
+        : [[{ text: 'Nenhum item detalhado', colSpan: 4, alignment: 'center', margin: [0, 5] }, {}, {}, {}]];
 
       const docDefinition = {
         pageSize: 'A4',
@@ -79,7 +101,7 @@ export default function BtnPdf({ atm }) {
             margin: [0, 15, 0, 12],
             columns: [
               { text: [{ text: 'Nº ATM: ', bold: true }, atm.numero_atm || (atm.id ? atm.id.substring(0,8).toUpperCase() : 'N/A')] },
-              { text: [{ text: 'Transportadora: ', bold: true }, atm.transportadora?.nome || 'A DEFINIR'], alignment: 'right' }
+              { text: [{ text: 'Transportadora: ', bold: true }, atm.transportadora?.nome || atm.nome_transportadora || 'A DEFINIR'], alignment: 'right' }
             ]
           },
 
@@ -94,7 +116,8 @@ export default function BtnPdf({ atm }) {
               body: [
                 [{ text: 'Solicitante:', bold: true, margin: [0, 4] }, { text: atm.solicitacao || 'N/A', margin: [0, 4] }],
                 [{ text: 'Data da Solicitação:', bold: true, margin: [0, 4] }, { text: formatarData(atm.data_solicitacao || atm.created_at), margin: [0, 4] }],
-                [{ text: 'Centro de Custo / WBS:', bold: true, margin: [0, 4] }, { text: atm.wbs || 'N/A', margin: [0, 4] }]
+                [{ text: 'Centro de Custo / WBS:', bold: true, margin: [0, 4] }, { text: atm.wbs || 'N/A', margin: [0, 4] }],
+                [{ text: 'Tipo de Operação:', bold: true, margin: [0, 4] }, { text: atm.tipo_operacao?.toUpperCase() || 'N/A', margin: [0, 4] }]
               ]
             },
             margin: [0, 0, 0, 15]
@@ -110,17 +133,17 @@ export default function BtnPdf({ atm }) {
               widths: ['*', 140],
               body: [
                 [
-                  { text: [{ text: 'Endereço: ', bold: true }, `${atm.origem?.logradouro || ''}, ${atm.origem?.numero || ''} - ${atm.origem?.municipio || ''}/${atm.origem?.uf || ''}`], margin: [0, 5] },
-                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.created_at)], alignment: 'right', margin: [0, 5] }
+                  { text: [{ text: 'Endereço: ', bold: true }, `${atm.origem?.logradouro || ''}, ${atm.origem?.numero || ''} - ${atm.origem?.municipio || ''}/${atm.origem?.uf || ''} - CEP: ${atm.origem?.cep || 'N/A'}`], margin: [0, 5] },
+                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] } // 🟢 CORREÇÃO: data_coleta ao invés de created_at
                 ],
                 [
                   { 
                     text: [
                       { text: 'Contato: ', bold: true }, 
-                      atm.nomeContatoColeta || atm.origem?.contato || 'N/A', 
+                      atm.contato_coleta || atm.origem?.contato || 'N/A', 
                       '   |   ', 
                       { text: 'Telefone: ', bold: true }, 
-                      atm.telefoneColeta || atm.origem?.telefone || 'N/A'
+                      atm.telefone_coleta || atm.origem?.telefone || 'N/A'
                     ], 
                     colSpan: 2, 
                     margin: [0, 5] 
@@ -142,22 +165,22 @@ export default function BtnPdf({ atm }) {
               widths: ['*', 140],
               body: [
                 [
-                  { text: [{ text: 'Endereço: ', bold: true }, `${atm.destino?.logradouro || ''}, ${atm.destino?.numero || ''} - ${atm.destino?.municipio || ''}/${atm.destino?.uf || ''}`], margin: [0, 5] },
+                  { text: [{ text: 'Endereço: ', bold: true }, `${atm.destino?.logradouro || ''}, ${atm.destino?.numero || ''} - ${atm.destino?.municipio || ''}/${atm.destino?.uf || ''} - CEP: ${atm.destino?.cep || 'N/A'}`], margin: [0, 5] },
                   { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_entrega)], alignment: 'right', margin: [0, 5] }
                 ],
                 [
                   { 
                     text: [
                       { text: 'Contato: ', bold: true }, 
-                      atm.nomeContatoEntrega || atm.destino?.contato || 'N/A', 
+                      atm.contato_entrega || atm.destino?.contato || 'N/A', 
                       '   |   ', 
                       { text: 'Telefone: ', bold: true }, 
-                      atm.telefoneEntrega || atm.destino?.telefone || 'N/A'
+                      atm.telefone_entrega || atm.destino?.telefone || 'N/A'
                     ], 
                     colSpan: 2, 
                     margin: [0, 5] 
                   },
-                  {} // Espaço vazio obrigatório devido ao colSpan
+                  {} 
                 ]
               ]
             },
@@ -174,21 +197,22 @@ export default function BtnPdf({ atm }) {
               widths: ['*', '*', '*'],
               body: [
                 [
-                  { text: [{ text: 'Peso: ', bold: true }, atm.peso ? `${atm.peso} kg` : 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Volume: ', bold: true }, atm.volume ? `${atm.volume} m³` : 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Tipo Veículo: ', bold: true }, atm.veiculo || 'N/A'], margin: [0, 5] }
+                  { text: [{ text: 'Peso Total: ', bold: true }, atm.peso ? `${atm.peso} kg` : 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Volume Total: ', bold: true }, atm.volume ? `${atm.volume} m³` : 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Medidas (CxLxA): ', bold: true }, atm.medidas || 'N/A'], margin: [0, 5] }
                 ],
                 [
-                  { text: [{ text: 'Frete: ', bold: true }, atm.tipo_frete || 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Pedido: ', bold: true }, atm.pedido_compra || 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'NF: ', bold: true }, atm.nf || 'N/A'], margin: [0, 5] }
+                  { text: [{ text: 'Veículo: ', bold: true }, atm.veiculo || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Tipo Frete: ', bold: true }, atm.tipo_frete || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Pedido Compra: ', bold: true }, atm.pedido_compra || 'N/A'], margin: [0, 5] }
                 ],
-                // 🟢 NOVA LINHA: VALOR DA NF (Ocupando todo o espaço da linha com colSpan 3)
                 [
                   { 
                     text: [
                       { text: 'Valor da NF: ', bold: true }, 
-                      atm.valor_nf ? Number(atm.valor_nf).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A'
+                      atm.valor_nf ? Number(atm.valor_nf).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A',
+                      '   |   ',
+                      { text: 'Nota Fiscal: ', bold: true }, atm.nf || 'N/A'
                     ], 
                     margin: [0, 5],
                     colSpan: 3 
@@ -196,6 +220,30 @@ export default function BtnPdf({ atm }) {
                   {},
                   {}
                 ]
+              ]
+            },
+            margin: [0, 0, 0, 15]
+          },
+
+          // 🟢 NOVA SEÇÃO: DETALHAMENTO DA CARGA (ITENS)
+          {
+            table: { widths: ['*'], body: [[{ text: 'DETALHAMENTO DA CARGA', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
+            margin: [0, 0, 0, 4]
+          },
+          {
+            table: {
+              widths: ['*', 50, 70, 100], // Proporções da tabela
+              headerRows: 1,
+              body: [
+                // Cabeçalho da tabela de itens
+                [
+                  { text: 'Descrição do Item', bold: true, fillColor: '#f8fafc', margin: [0, 4] },
+                  { text: 'Qtd.', bold: true, alignment: 'center', fillColor: '#f8fafc', margin: [0, 4] },
+                  { text: 'Peso Unit.', bold: true, alignment: 'center', fillColor: '#f8fafc', margin: [0, 4] },
+                  { text: 'Medidas (CxLxA)', bold: true, alignment: 'center', fillColor: '#f8fafc', margin: [0, 4] }
+                ],
+                // Linhas mapeadas dinamicamente
+                ...linhasItens
               ]
             },
             margin: [0, 0, 0, 15]
@@ -209,7 +257,7 @@ export default function BtnPdf({ atm }) {
           {
             table: {
               widths: ['*'],
-              heights: 55, 
+              heights: 45, 
               body: [[{ text: atm.observacoes || 'Nenhuma observação extra.', fontSize: 9.5, margin: [5, 4, 5, 4] }]]
             },
             margin: [0, 0, 0, 5]
