@@ -43,8 +43,14 @@ export default function AdminDashboard() {
 
       const resposta = await api.get('/admin/transportes');
       
-      setDebugInfo(`Sucesso! Recebi ${resposta.data.length} pedidos do banco.`); 
-      setAtms(resposta.data);
+      // 🟢 CORREÇÃO: Padroniza o Tipo de Frete para maiúsculo para o Select reconhecer!
+      const dadosNormalizados = resposta.data.map(atm => ({
+        ...atm,
+        tipo_frete: atm.tipo_frete ? atm.tipo_frete.toUpperCase() : ''
+      }));
+
+      setDebugInfo(`Sucesso! Recebi ${dadosNormalizados.length} pedidos do banco.`); 
+      setAtms(dadosNormalizados);
     } catch (erro) {
       setDebugInfo("ERRO NA API: " + (erro.response?.data?.erro || erro.message));
     } finally {
