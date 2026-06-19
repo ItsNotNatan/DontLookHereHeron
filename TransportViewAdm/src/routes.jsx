@@ -1,3 +1,4 @@
+// src/routes.jsx
 import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 
@@ -10,7 +11,6 @@ import EditorMotivos from './pages/EditorMotivos/EditorMotivos';
 import EditorUsuarios from './pages/EditorUsuarios/EditorUsuarios';
 import EditorVeiculos from './pages/EditorVeiculos/EditorVeiculos';
 import EditorEndereco from './pages/EditorEndereco/EditorEndereco';
-// 🟢 IMPORTAR O NOVO COMPONENTE:
 import EditorTransportadoras from './pages/EditorTransportadoras/EditorTransportadoras';
 
 const RotaPrivada = ({ children }) => {
@@ -20,7 +20,7 @@ const RotaPrivada = ({ children }) => {
 };
 
 const RotaProtegida = ({ children, perfisPermitidos }) => {
-  const perfilAtual = localStorage.getItem('perfil') || 'Visualizador';
+  const perfilAtual = localStorage.getItem('perfil') || 'Operador';
   if (!perfisPermitidos.includes(perfilAtual)) {
     alert(`Acesso Negado: Seu perfil (${perfilAtual}) não tem permissão para acessar esta área.`);
     return <Navigate to="/" replace />;
@@ -41,24 +41,24 @@ export const router = createBrowserRouter([
     children: [
       { 
         path: "/", 
-        element: <RotaProtegida perfisPermitidos={['Admin', 'Operador', 'Visualizador']}><AdminDashboard /></RotaProtegida> 
+        element: <RotaProtegida perfisPermitidos={['Admin', 'Operador']}><AdminDashboard /></RotaProtegida> 
       },
+      // 🟢 Daqui pra baixo, TUDO é restrito apenas ao Admin!
       { 
         path: "/editor-projetos", 
-        element: <RotaProtegida perfisPermitidos={['Admin', 'Operador']}><EditorProjetos /></RotaProtegida> 
+        element: <RotaProtegida perfisPermitidos={['Admin']}><EditorProjetos /></RotaProtegida> 
       },
       { 
         path: "/editor-motivos", 
-        element: <RotaProtegida perfisPermitidos={['Admin', 'Operador']}><EditorMotivos /></RotaProtegida> 
+        element: <RotaProtegida perfisPermitidos={['Admin']}><EditorMotivos /></RotaProtegida> 
       },
       { 
         path: "/editor-enderecos", 
-        element: <RotaProtegida perfisPermitidos={['Admin', 'Operador']}><EditorEndereco /></RotaProtegida> 
+        element: <RotaProtegida perfisPermitidos={['Admin']}><EditorEndereco /></RotaProtegida> 
       },
-      // 🟢 INCLUIR A NOVA ROTA DE TRANSPORTADORAS AQUI:
       { 
         path: "/editor-transportadoras", 
-        element: <RotaProtegida perfisPermitidos={['Admin', 'Operador']}><EditorTransportadoras /></RotaProtegida> 
+        element: <RotaProtegida perfisPermitidos={['Admin']}><EditorTransportadoras /></RotaProtegida> 
       },      
       { 
         path: "/gestao-usuarios", 
