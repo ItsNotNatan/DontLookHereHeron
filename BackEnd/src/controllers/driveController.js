@@ -1,47 +1,40 @@
 // src/controllers/driveController.js
-const { google } = require('googleapis');
-const { Readable } = require('stream');
-
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: process.env.GOOGLE_CLIENT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
-  },
-  scopes: ['https://www.googleapis.com/auth/drive.file'],
-});
-
-const drive = google.drive({ version: 'v3', auth });
+const fs = require('fs');
+const path = require('path');
 
 exports.uploadParaDrive = async (req, res) => {
   try {
     const { arquivoBase64, nomeArquivo } = req.body;
 
-    // ID da pasta do Drive vindo do .env (corrige o ID malformado fixo no codigo)
-    const PASTA_ID = process.env.DRIVE_FOLDER_ID;
-
-    if (!process.env.GOOGLE_CLIENT_EMAIL || !PASTA_ID) {
-      return res.status(503).json({ erro: 'Upload para o Drive nao configurado (defina GOOGLE_CLIENT_EMAIL e DRIVE_FOLDER_ID no .env).' });
-    }
     if (!arquivoBase64 || !nomeArquivo) {
       return res.status(400).json({ erro: 'Arquivo base64 e nomeArquivo sao obrigatorios.' });
     }
 
+    // 1. Cria a pasta uploads física no servidor caso não exista
+    const uploadDir = path.join(__dirname, '../../uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // 2. Limpa o cabeçalho base64 do stream
     const base64Data = arquivoBase64.replace(/^data:\w+\/[a-zA-Z+\-.]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
-    const stream = new Readable();
-    stream.push(buffer);
-    stream.push(null);
+    // 3. Monta um nome seguro e único para evitar colisões
+    const nomeUnico = `${Date.now()}_${nomeArquivo.replace(/\s+/g, '_')}`;
+    const caminhoFisico = path.join(uploadDir, nomeUnico);
 
-    const file = await drive.files.create({
-      resource: { name: nomeArquivo, parents: [PASTA_ID] },
-      media: { mimeType: 'application/pdf', body: stream },
-      fields: 'id, webViewLink, webContentLink',
-    });
+    // 4. Salva o arquivo no disco local
+    fs.writeFileSync(caminhoFisico, buffer);
 
-    res.status(200).json({ sucesso: true, fileId: file.data.id, link: file.data.webViewLink });
+    // 5. Gera a URL baseada no host atual do servidor Express
+    const linkAcesso = `${req.protocol}://${req.get('host')}/uploads/${nomeUnico}`;
+
+    console.log(`✅ Arquivo armazenado localmente com sucesso: ${nomeUnico}`);
+
+    res.status(200).json({ sucesso: true, fileId: nomeUnico, link: linkAcesso });
   } catch (error) {
-    console.error('Erro no upload para o Drive:', error);
-    res.status(500).json({ erro: 'Falha ao fazer upload para o Google Drive.', detalhe: error.message });
+    console.error('Erro no upload local de arquivos:', error);
+    res.status(500).json({ erro: 'Falha ao processar e salvar o comprovante localmente.', detalhe: error.message });
   }
 };
