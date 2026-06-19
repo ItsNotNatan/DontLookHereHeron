@@ -1,6 +1,13 @@
 // src/utils/formatters.js
 const formatarProBanco = (dataBR) => {
   if (!dataBR) return null;
+
+  // 🟢 CORREÇÃO: Se a data já vier do input com traço (YYYY-MM-DD), aceita e envia pro banco
+  if (String(dataBR).includes('-')) {
+    return String(dataBR).split('T')[0];
+  }
+
+  // Tratamento original para datas que vêm com barra (DD/MM/YYYY)
   const partes = String(dataBR).split('/');
   if (partes.length === 3) {
     let [dia, mes, ano] = partes;
@@ -8,6 +15,7 @@ const formatarProBanco = (dataBR) => {
     if (ano.length !== 4) throw new Error(`A data "${dataBR}" esta incompleta. Preencha com 4 digitos.`);
     return `${ano}-${mes}-${dia}`;
   }
+  
   return null;
 };
 
