@@ -411,12 +411,12 @@ export default function RequestForm() {
               <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} required className="input-control" placeholder="Digite o nº do pedido" />
             </div>
             {/* 🟢 CORREÇÃO DOS VALUES E LABELS DA OPERAÇÃO */}
-            <div className="input-group">
+<div className="input-group">
               <label>Tipo de Operação *</label>
               <select name="tipo_operacao" value={tipoOperacao} onChange={e => setTipoOperacao(e.target.value)} required className="input-control">
                 <option value="" disabled>Selecione...</option>
                 <option value="Nacional">NACIONAL</option>
-                <option value="Importação">IMPORTAÇÃO</option>
+                <option value="Nacionalizado">NACIONALIZADO</option>
               </select>
             </div>
           </div>
