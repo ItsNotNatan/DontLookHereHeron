@@ -362,8 +362,8 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             <div>
               <label className="card-editavel__label">Tipo Operação</label>
               <select name="tipo_operacao" defaultValue={atm.tipo_operacao} className="card-editavel__select">
-                <option value="Nacional">NACIONALIZADO</option>
-                <option value="Importação">IMPORTAÇÃO</option>
+                <option value="Nacional">NACIONAL</option>
+                <option value="Nacionalizado">NACIONALIZADO</option>
               </select>
             </div>
             <div style={{ position: 'relative' }}>
