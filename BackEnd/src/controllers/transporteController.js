@@ -135,6 +135,7 @@ const criarTransporte = async (req, res) => {
       quantidade_volumes: parseInt(dados.quantidadeVolumes) || 0,
       peso: num(dados.pesoTotal) || 0,
       volume: 0,
+      data_coleta: dados.dataColeta ? formatarProBanco(dados.dataColeta) : null,
       data_entrega: dados.dataEntrega ? formatarProBanco(dados.dataEntrega) : null,
       status: 'Aguardando Aprovação',
       observacoes: str(dados.obs)
@@ -204,6 +205,8 @@ const receberWebhookGoogleForms = async (req, res) => {
       quantidade_volumes: parseInt(dados.quantidadeVolumes) || 1,
       peso: num(dados.pesoTotal) || 0,
       volume: 0,
+      data_coleta: dados.dataColeta ? formatarProBanco(dados.dataColeta) : null,
+      data_entrega: dados.dataEntrega ? formatarProBanco(dados.dataEntrega) : null,
       status: 'Pendente',
       observacoes: str(dados.obs)
     });
@@ -271,12 +274,18 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.link_rastreio !== undefined) updateAtm.link_rastreio = str(d.link_rastreio);
     if (d.motivo !== undefined) updateAtm.motivo = str(d.motivo);
     if (d.observacoes !== undefined) updateAtm.observacoes = str(d.observacoes);
-    if (d.data_coleta !== undefined) updateAtm.data_coleta = d.data_coleta ? formatarProBanco(d.data_coleta) : null;
     if (d.contato_coleta !== undefined) updateAtm.contato_coleta = str(d.contato_coleta);
     if (d.telefone_coleta !== undefined) updateAtm.telefone_coleta = str(d.telefone_coleta);
-    if (d.data_entrega !== undefined) updateAtm.data_entrega = d.data_entrega ? formatarProBanco(d.data_entrega) : null;
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
+
+    // 🟢 CORREÇÕES: Verifica explicitamente e salva a data, ou apaga enviando "" se vier limpa
+    if (d.data_coleta !== undefined) {
+      updateAtm.data_coleta = d.data_coleta ? formatarProBanco(d.data_coleta) : "";
+    }
+    if (d.data_entrega !== undefined) {
+      updateAtm.data_entrega = d.data_entrega ? formatarProBanco(d.data_entrega) : "";
+    }
 
     if (d.nome_transportadora !== undefined) {
       if (d.nome_transportadora) {
@@ -314,10 +323,7 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto);
     if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : "";
     if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : "";
-    
-    // 🟢 CORREÇÃO: PEP recebe a variável correta vinda do corpo da requisição
     if (d.elemento_pep_cc_wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.elemento_pep_cc_wbs); 
-    
     if (d.validacao_pep !== undefined) fatData.validacao_pep = str(d.validacao_pep);
     if (d.registrado_sap !== undefined) fatData.registrado_sap = str(d.registrado_sap);
 
@@ -375,12 +381,18 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.medidas !== undefined) updateAtm.medidas = str(dados.medidas);
     if (dados.link_rastreio !== undefined) updateAtm.link_rastreio = str(dados.link_rastreio);
     if (dados.observacoes !== undefined) updateAtm.observacoes = str(dados.observacoes);
-    if (dados.data_coleta !== undefined) updateAtm.data_coleta = dados.data_coleta ? formatarProBanco(dados.data_coleta) : null;
     if (dados.contato_coleta !== undefined) updateAtm.contato_coleta = str(dados.contato_coleta);
     if (dados.telefone_coleta !== undefined) updateAtm.telefone_coleta = str(dados.telefone_coleta);
-    if (dados.data_entrega !== undefined) updateAtm.data_entrega = dados.data_entrega ? formatarProBanco(dados.data_entrega) : null;
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
+
+    // 🟢 CORREÇÕES PARA LOTE
+    if (dados.data_coleta !== undefined) {
+      updateAtm.data_coleta = dados.data_coleta ? formatarProBanco(dados.data_coleta) : "";
+    }
+    if (dados.data_entrega !== undefined) {
+      updateAtm.data_entrega = dados.data_entrega ? formatarProBanco(dados.data_entrega) : "";
+    }
 
     if (dados.nome_transportadora !== undefined) {
       if (dados.nome_transportadora) {
@@ -404,8 +416,6 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); 
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
-    
-    // 🟢 CORREÇÃO: PEP recebe o valor correto na alteração em lote
     if (dados.elemento_pep_cc_wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.elemento_pep_cc_wbs);
 
     const promessas = ids.map(async (id) => {
