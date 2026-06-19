@@ -1,9 +1,4 @@
 // seed.js
-// Popula o PocketBase com os dados iniciais (master data) do ATMLog.
-// IDEMPOTENTE: so insere numa colecao se ela estiver vazia -> seguro re-rodar.
-// Uso: node seed.js   (chamado automaticamente pelo deploy.bat)
-//
-// Variavel opcional: SEED_SAMPLE=true  -> tambem insere 4 ATMs de exemplo (teste).
 require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
@@ -26,7 +21,6 @@ async function isEmpty(col) {
   }
 }
 
-// Insere em lotes com concorrencia limitada; ignora erros pontuais (ex.: indice unico).
 async function insertAll(col, items, conc = 25) {
   let ok = 0, fail = 0;
   const shownErr = new Set();
@@ -60,14 +54,12 @@ async function main() {
   );
   console.log('  [auth] superuser OK\n');
 
-  // --- usuarios (senhas em texto puro, conforme versao atual) ---
+  // 🟢 CORREÇÃO: Removido o perfil de exemplo do antigo "Visualizador", consolidando o novo Operador
   await seedIfEmpty('usuarios', [
     { nome: 'Administrador Comau', email: 'admin@comau.com', senha: 'admin123', perfil: 'Admin', ativo: true },
-    { nome: 'Operador Logistica', email: 'operador@comau.com', senha: 'operador123', perfil: 'Operador', ativo: true },
-    { nome: 'Visualizador Diretoria', email: 'visualizador@comau.com', senha: 'visu123', perfil: 'Visualizador', ativo: true },
+    { nome: 'Operador Logistica', email: 'operador@comau.com', senha: 'operador123', perfil: 'Operador', ativo: true }
   ]);
 
-  // --- transportadoras ---
   await seedIfEmpty('transportadoras', [
     { nome: 'Expresso M2000 LTDA', ativo: true },
     { nome: 'JSL Logistica S/A', ativo: true },
@@ -77,7 +69,6 @@ async function main() {
     { nome: 'VENTANA', ativo: true },
   ]);
 
-  // --- veiculos ---
   await seedIfEmpty('veiculos', [
     { nome: 'Fiorino', comprimento: 1.60, largura: 1.30, altura: 1.10, ativo: true },
     { nome: 'VAN (Sprinter/Master)', comprimento: 3.30, largura: 1.70, altura: 1.80, ativo: true },
@@ -92,7 +83,6 @@ async function main() {
     { nome: 'Double Deck (Bau)', comprimento: 14.50, largura: 2.45, altura: 4.00, ativo: true },
   ]);
 
-  // --- motivos (alguns padroes uteis; o admin pode editar) ---
   await seedIfEmpty('motivos', [
     { nome: 'Atraso na Coleta', descricao: 'Transportadora atrasou a coleta agendada.', cor: '#f59e0b' },
     { nome: 'Avaria na Carga', descricao: 'Mercadoria danificada durante o transporte.', cor: '#ef4444' },
@@ -100,13 +90,9 @@ async function main() {
     { nome: 'Reentrega', descricao: 'Necessaria nova tentativa de entrega.', cor: '#3b82f6' },
   ]);
 
-  // --- projetos (do JSON convertido) ---
   await seedIfEmpty('projetos', readJson('projetos.json'));
-
-  // --- locais_base (do JSON convertido - ~3 mil registros) ---
   await seedIfEmpty('locais_base', readJson('locais_base.json'), 30);
 
-  // --- AMOSTRA (opcional): 4 ATMs de exemplo para validar a tela ---
   if (String(process.env.SEED_SAMPLE).toLowerCase() === 'true') {
     if (await isEmpty('pedidos_atm')) {
       console.log('  [sample] criando 4 ATMs de exemplo...');
