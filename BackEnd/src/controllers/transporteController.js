@@ -300,24 +300,21 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
 
-    // 🟢 CORREÇÃO: Transforma o nome da transportadora no ID do banco
     if (d.nome_transportadora !== undefined) {
       if (d.nome_transportadora) {
         try {
           const transp = await withAuth(() => pb.collection('transportadoras').getFirstListItem(pb.filter('nome = {:nome}', { nome: d.nome_transportadora })));
           updateAtm.id_transportadora = transp.id;
         } catch (e) {
-          updateAtm.id_transportadora = null; // Caso não encontre, deixa nulo
+          updateAtm.id_transportadora = null;
         }
       } else {
         updateAtm.id_transportadora = null;
       }
     }
 
-    // Atualiza ATM
     const pedido = await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
 
-    // Atualiza Endereços relacionados
     if (pedido.id_origem && d.origem) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_origem, {
         logradouro: str(d.origem.logradouro),
@@ -336,7 +333,6 @@ const atualizarTransporteAdmin = async (req, res) => {
       }));
     }
 
-    // Processa Faturamento (Upsert)
     const fatData = {};
     if (d.tipo_documento !== undefined) fatData.tipo_documento = str(d.tipo_documento);
     if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null;
@@ -344,7 +340,10 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto);
     if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : null;
     if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : null;
-    if (d.wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.wbs);
+    
+    // 🟢 CORREÇÃO: Agora puxa o PEP da variável certa (elemento_pep_cc_wbs), e não da variável wbs
+    if (d.elemento_pep_cc_wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.elemento_pep_cc_wbs); 
+    
     if (d.validacao_pep !== undefined) fatData.validacao_pep = str(d.validacao_pep);
     if (d.registrado_sap !== undefined) fatData.registrado_sap = str(d.registrado_sap);
 
@@ -411,7 +410,6 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
 
-    // 🟢 CORREÇÃO: Resgata a transportadora para a edição em lote
     if (dados.nome_transportadora !== undefined) {
       if (dados.nome_transportadora) {
         try {
@@ -434,7 +432,9 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); 
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
-    if (dados.wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.wbs);
+    
+    // 🟢 CORREÇÃO: Agora puxa o PEP da variável certa (elemento_pep_cc_wbs), e não da variável wbs
+    if (dados.elemento_pep_cc_wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.elemento_pep_cc_wbs);
 
     const promessas = ids.map(async (id) => {
       let atm = null;
@@ -474,7 +474,6 @@ const atualizarLoteAdmin = async (req, res) => {
     req.app.get('io').emit('transportes_atualizados');
     res.json({ transatlantic: `✅ Lote de ${ids.length} pedidos atualizado com sucesso!` });
   } catch (erro) {
-    console.error("Erro na edição em lote:", erro);
     res.status(500).json({ erro: erro.message });
   }
 };
@@ -491,9 +490,7 @@ const rastrearPedidoPublico = async (req, res) => {
           { expand: 'id_origem,id_destino' }
         )
       );
-    } catch (e) { 
-      // Se não encontrou, deixa o pedido como null
-    }
+    } catch (e) { }
 
     if (!pedido) {
       return res.status(404).json({ erro: 'Pedido não encontrado.' });
