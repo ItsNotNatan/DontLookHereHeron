@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     const nome = localStorage.getItem('userName');
-    const perfil = localStorage.getItem('perfil'); // 🟢 Lendo o perfil salvo
+    const perfil = localStorage.getItem('perfil');
     
     if (token && nome) {
       setUsuario({ nome, perfil });
@@ -22,7 +22,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('accessToken', dados.accessToken);
     localStorage.setItem('refreshToken', dados.refreshToken);
     localStorage.setItem('userName', dados.nome);
-    localStorage.setItem('perfil', dados.perfil || 'Visualizador'); 
+    // 🟢 Agora o padrão é Operador
+    localStorage.setItem('perfil', dados.perfil || 'Operador'); 
     
     setUsuario({ nome: dados.nome, perfil: dados.perfil });
   };
