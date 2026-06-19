@@ -187,44 +187,6 @@ export default function BtnPdf({ atm }) {
             margin: [0, 0, 0, 15]
           },
 
-          // DADOS MATERIAL E FRETE
-          {
-            table: { widths: ['*'], body: [[{ text: 'DADOS DO MATERIAL E FRETE', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
-            margin: [0, 0, 0, 4]
-          },
-          {
-            table: {
-              widths: ['*', '*', '*'],
-              body: [
-                [
-                  { text: [{ text: 'Peso Total: ', bold: true }, atm.peso ? `${atm.peso} kg` : 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Volume Total: ', bold: true }, atm.volume ? `${atm.volume} m³` : 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Medidas (CxLxA): ', bold: true }, atm.medidas || 'N/A'], margin: [0, 5] }
-                ],
-                [
-                  { text: [{ text: 'Veículo: ', bold: true }, atm.veiculo || 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Tipo Frete: ', bold: true }, atm.tipo_frete || 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Pedido Compra: ', bold: true }, atm.pedido_compra || 'N/A'], margin: [0, 5] }
-                ],
-                [
-                  { 
-                    text: [
-                      { text: 'Valor da NF: ', bold: true }, 
-                      atm.valor_nf ? Number(atm.valor_nf).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A',
-                      '   |   ',
-                      { text: 'Nota Fiscal: ', bold: true }, atm.nf || 'N/A'
-                    ], 
-                    margin: [0, 5],
-                    colSpan: 3 
-                  },
-                  {},
-                  {}
-                ]
-              ]
-            },
-            margin: [0, 0, 0, 15]
-          },
-
           // 🟢 NOVA SEÇÃO: DETALHAMENTO DA CARGA (ITENS)
           {
             table: { widths: ['*'], body: [[{ text: 'DETALHAMENTO DA CARGA', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
