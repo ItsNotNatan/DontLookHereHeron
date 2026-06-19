@@ -2,10 +2,6 @@
 const { pb, withAuth } = require('../config/pocketbase');
 const { formatarProBanco } = require('../utils/formatters');
 
-// ============================================================================
-// DICIONÁRIO DE ENDEREÇOS AUTOMATIZADOS
-// As chaves devem ser idênticas às opções do Google Forms
-// ============================================================================
 const enderecosComau = {
   "COMAU BETIM - GALPÃO 57 BR01": {
     nome_local: "COMAU BETIM, GALPÃO 57 BR01",
@@ -45,13 +41,9 @@ const enderecosComau = {
   }
 };
 
-// ============================================================================
-// FUNÇÕES AUXILIARES
-// ============================================================================
 const num = (val) => (val === "" || val === undefined || val === null ? null : parseFloat(val));
-const str = (val) => (val === "" || val === undefined || val === null ? null : String(val));
+const str = (val) => (val === "" || val === undefined || val === null ? "" : String(val));
 
-// Busca o último número de ATM no banco e soma 1
 async function gerarProximoNumeroATM() {
   try {
     const records = await withAuth(() =>
@@ -74,7 +66,6 @@ async function gerarProximoNumeroATM() {
   }
 }
 
-// Detecta erro de violacao do indice UNICO de numero_atm (corrida entre 2 pedidos).
 function isConflitoNumeroAtm(e) {
   try {
     const data = (e && e.response && e.response.data) || (e && e.data) || {};
@@ -86,25 +77,18 @@ function isConflitoNumeroAtm(e) {
   }
 }
 
-// Cria o pedido atribuindo o numero do ATM de forma SEGURA para uso simultaneo:
-// se 2 pedidos pegarem o mesmo numero ao mesmo tempo, o indice UNICO rejeita o
-// duplicado e tentamos o proximo numero (em vez de a solicitacao do usuario falhar).
 async function criarPedidoComNumeroAtm(dadosPedido) {
   for (let tentativa = 0; tentativa < 15; tentativa++) {
     const numero_atm = await gerarProximoNumeroATM();
     try {
       return await withAuth(() => pb.collection('pedidos_atm').create({ ...dadosPedido, numero_atm }));
     } catch (e) {
-      if (isConflitoNumeroAtm(e) && tentativa < 14) continue; // outro pedido pegou esse numero
+      if (isConflitoNumeroAtm(e) && tentativa < 14) continue; 
       throw e;
     }
   }
   throw new Error('Nao foi possivel gerar um numero de ATM unico apos varias tentativas.');
 }
-
-// ============================================================================
-// FUNÇÕES DO CONTROLLER
-// ============================================================================
 
 const criarTransporte = async (req, res) => {
   const dados = req.body;
@@ -130,7 +114,6 @@ const criarTransporte = async (req, res) => {
       bairro: str(dados.bairroEntrega)
     }));
 
-    // numero_atm e' atribuido dentro de criarPedidoComNumeroAtm (seguro p/ uso simultaneo)
     const pedidoAtm = await criarPedidoComNumeroAtm({
       data_solicitacao: dados.dataSolicitacao ? formatarProBanco(dados.dataSolicitacao) : null,
       tipo_operacao: str(dados.tipo_operacao),
@@ -167,8 +150,6 @@ const criarTransporte = async (req, res) => {
 const receberWebhookGoogleForms = async (req, res) => {
   try {
     const dados = req.body;
-    console.log("🔔 [WEBHOOK] Novo formulário recebido do Google!");
-
     const dataSolLimpa = dados.dataSolicitacao ? dados.dataSolicitacao.split(' ')[0] : null;
 
     const endColeta = enderecosComau[dados.empresaColeta] || {
@@ -227,24 +208,21 @@ const receberWebhookGoogleForms = async (req, res) => {
       observacoes: str(dados.obs)
     });
 
-    console.log(`✅ [WEBHOOK] Sucesso! Pedido de ${dados.solicitante} integrado com operação Nacional.`);
     req.app.get('io').emit('transportes_atualizados');
     res.status(200).send("Webhook processado e salvo com sucesso!");
   } catch (erro) {
-    console.error("❌ Erro no processamento do Webhook:", erro.message);
+    console.error("❌ Erro no Webhook:", erro.message);
     res.status(500).send("Erro interno ao processar dados do formulário.");
   }
 };
 
 const listarTransportesAdmin = async (req, res) => {
   try {
-    // Traz os ATMs e expande as FKs nativas (origem, destino, transportadora)
     const registros = await withAuth(() => pb.collection('pedidos_atm').getFullList({
       sort: '-created_at',
       expand: 'id_origem,id_destino,id_transportadora'
     }));
 
-    // Traz todos os faturamentos para fazer o "join" manual 
     const faturamentos = await withAuth(() => pb.collection('faturamento_atm').getFullList());
     const fatMap = {};
     faturamentos.forEach(f => fatMap[f.id_atm] = f);
@@ -317,31 +295,27 @@ const atualizarTransporteAdmin = async (req, res) => {
 
     if (pedido.id_origem && d.origem) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_origem, {
-        logradouro: str(d.origem.logradouro),
-        numero: str(d.origem.numero),
-        municipio: str(d.origem.municipio),
-        uf: str(d.origem.uf)
+        logradouro: str(d.origem.logradouro), numero: str(d.origem.numero),
+        municipio: str(d.origem.municipio), uf: str(d.origem.uf)
       }));
     }
 
     if (pedido.id_destino && d.destino) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_destino, {
-        logradouro: str(d.destino.logradouro),
-        numero: str(d.destino.numero),
-        municipio: str(d.destino.municipio),
-        uf: str(d.destino.uf)
+        logradouro: str(d.destino.logradouro), numero: str(d.destino.numero),
+        municipio: str(d.destino.municipio), uf: str(d.destino.uf)
       }));
     }
 
     const fatData = {};
     if (d.tipo_documento !== undefined) fatData.tipo_documento = str(d.tipo_documento);
-    if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : null;
+    if (d.data_mapeamento !== undefined) fatData.data_mapeamento = d.data_mapeamento ? formatarProBanco(d.data_mapeamento) : "";
     if (d.fatura_cte !== undefined) fatData.fatura_cte = str(d.fatura_cte);
     if (d.valor_previsto !== undefined) fatData.valor_previsto = num(d.valor_previsto);
-    if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : null;
-    if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : null;
+    if (d.data_emissao !== undefined) fatData.data_emissao = d.data_emissao ? formatarProBanco(d.data_emissao) : "";
+    if (d.vencimento !== undefined) fatData.vencimento = d.vencimento ? formatarProBanco(d.vencimento) : "";
     
-    // 🟢 CORREÇÃO: Agora puxa o PEP da variável certa (elemento_pep_cc_wbs), e não da variável wbs
+    // 🟢 CORREÇÃO: PEP recebe a variável correta vinda do corpo da requisição
     if (d.elemento_pep_cc_wbs !== undefined) fatData.elemento_pep_cc_wbs = str(d.elemento_pep_cc_wbs); 
     
     if (d.validacao_pep !== undefined) fatData.validacao_pep = str(d.validacao_pep);
@@ -351,9 +325,7 @@ const atualizarTransporteAdmin = async (req, res) => {
       let existingFat = null;
       try {
         existingFat = await withAuth(() => pb.collection('faturamento_atm').getFirstListItem(pb.filter('id_atm = {:id}', { id })));
-      } catch (e) {
-        // Nao existe, ira criar
-      }
+      } catch (e) {}
 
       if (existingFat) {
         await withAuth(() => pb.collection('faturamento_atm').update(existingFat.id, fatData));
@@ -366,7 +338,7 @@ const atualizarTransporteAdmin = async (req, res) => {
     res.json({ mensagem: '✅ Pedido, Endereços e Faturamento atualizados!' });
 
   } catch (erro) {
-    console.error("Erro completo no Update:", erro);
+    console.error("Erro no Update:", erro);
     res.status(400).json({ erro: erro.message });
   }
 };
@@ -426,14 +398,14 @@ const atualizarLoteAdmin = async (req, res) => {
     const updateFat = {};
     if (dados.tipo_documento !== undefined) updateFat.tipo_documento = str(dados.tipo_documento);
     if (dados.fatura_cte !== undefined) updateFat.fatura_cte = str(dados.fatura_cte);
-    if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = dados.data_mapeamento ? formatarProBanco(dados.data_mapeamento) : null;
-    if (dados.data_emissao !== undefined) updateFat.data_emissao = dados.data_emissao ? formatarProBanco(dados.data_emissao) : null;
-    if (dados.vencimento !== undefined) updateFat.vencimento = dados.vencimento ? formatarProBanco(dados.vencimento) : null;
+    if (dados.data_mapeamento !== undefined) updateFat.data_mapeamento = dados.data_mapeamento ? formatarProBanco(dados.data_mapeamento) : "";
+    if (dados.data_emissao !== undefined) updateFat.data_emissao = dados.data_emissao ? formatarProBanco(dados.data_emissao) : "";
+    if (dados.vencimento !== undefined) updateFat.vencimento = dados.vencimento ? formatarProBanco(dados.vencimento) : "";
     if (dados.valor_previsto !== undefined) updateFat.valor_previsto = num(dados.valor_previsto); 
     if (dados.validacao_pep !== undefined) updateFat.validacao_pep = str(dados.validacao_pep);
     if (dados.registrado_sap !== undefined) updateFat.registrado_sap = str(dados.registrado_sap);
     
-    // 🟢 CORREÇÃO: Agora puxa o PEP da variável certa (elemento_pep_cc_wbs), e não da variável wbs
+    // 🟢 CORREÇÃO: PEP recebe o valor correto na alteração em lote
     if (dados.elemento_pep_cc_wbs !== undefined) updateFat.elemento_pep_cc_wbs = str(dados.elemento_pep_cc_wbs);
 
     const promessas = ids.map(async (id) => {
@@ -441,7 +413,7 @@ const atualizarLoteAdmin = async (req, res) => {
       try {
         atm = await withAuth(() => pb.collection('pedidos_atm').getOne(id));
       } catch (e) {
-        return; // Pula se nao achar o ATM
+        return; 
       }
 
       if (Object.keys(updateAtm).length > 0) {
