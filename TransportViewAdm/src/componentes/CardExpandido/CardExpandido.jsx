@@ -78,7 +78,6 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
       wbs: atm.wbs,
       nf: atm.nf,
       valor_nf: atm.valor_nf,
-      // 🟢 CORREÇÃO APLICADA: Usando valor_previsto
       valor_previsto: atm.faturamento?.valor_previsto || atm.valor_previsto,
       cotacao_bid: atm.cotacao_bid,
       veiculo: atm.veiculo,
@@ -125,7 +124,7 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
   const shortId = (id) => id ? id.substring(0, 8).toUpperCase() : 'N/A';
   const formatarData = (dataStr) => {
     if (!dataStr) return 'Não informada';
-    const partes = dataStr.split('-');
+    const partes = dataStr.split('T')[0].split('-');
     if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
     return dataStr;
   };
@@ -338,8 +337,6 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
                 <div>
                   <h4 className="card-expandido__section-title">Características da Carga</h4>
                   <ul className="card-expandido__list">
-                    
-                    {/* 🟢 CORREÇÃO APLICADA AQUI NO RENDER DO TEXTO */}
                     <li className="card-expandido__list-item"><span className="card-expandido__label">Valor Previsto:</span> <strong className="card-expandido__value">{formatarMoeda(atm.faturamento?.valor_previsto || 0)}</strong></li>
                     <li className="card-expandido__list-item"><span className="card-expandido__label">Valor Realizado:</span> <strong className="card-expandido__value">{formatarMoeda(atm.valor_realizado || 0)}</strong></li>
                     
@@ -397,24 +394,38 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
                   </div>
                 )}
 
-                {/* 3. ORIGEM E DESTINO */}
+                {/* 🟢 3. ORIGEM E DESTINO CORRIGIDOS (Datas, Contato, Telefones) */}
                 <div className="card-expandido__full-width">
                   <h4 className="card-expandido__section-title">Rota Detalhada e Rastreamento</h4>
                   <div className="card-expandido__route-grid">
+                    
                     {/* ORIGEM */}
                     <div className="card-expandido__route-card">
                       <span className="card-expandido__route-tag">Origem (Coleta)</span>
                       <strong className="card-expandido__route-name">{atm.origem?.nome_local || 'Fornecedor não especificado'}</strong>
                       <div className="card-expandido__route-details">
-                        <div><strong>Cidade/UF:</strong> {atm.origem?.municipio} - {atm.origem?.uf}</div>
+                        <div style={{ marginTop: '4px' }}><strong>Data da Coleta:</strong> {formatarData(atm.data_coleta)}</div>
+                        <div style={{ marginTop: '4px' }}><strong>Endereço:</strong> {atm.origem?.logradouro || 'N/A'}, {atm.origem?.numero || 'S/N'} - {atm.origem?.bairro || ''}</div>
+                        <div><strong>Cidade/UF:</strong> {atm.origem?.municipio} - {atm.origem?.uf} | CEP: {atm.origem?.cep}</div>
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                          <strong>Contato:</strong> {atm.contato_coleta || atm.origem?.contato || 'N/A'} <br />
+                          <strong>Telefone:</strong> {atm.telefone_coleta || atm.origem?.telefone || 'N/A'}
+                        </div>
                       </div>
                     </div>
+                    
                     {/* DESTINO */}
                     <div className="card-expandido__route-card">
-                      <span className="card-expandido__route-tag">Destino (Entrega)</span>
+                      <span className="card-expandido__route-tag" style={{ backgroundColor: '#ecfdf5', color: '#059669', borderColor: '#a7f3d0' }}>Destino (Entrega)</span>
                       <strong className="card-expandido__route-name">{atm.destino?.nome_local || 'Destinatário não especificado'}</strong>
                       <div className="card-expandido__route-details">
-                        <div><strong>Cidade/UF:</strong> {atm.destino?.municipio} - {atm.destino?.uf}</div>
+                        <div style={{ marginTop: '4px' }}><strong>Data da Entrega:</strong> {formatarData(atm.data_entrega)}</div>
+                        <div style={{ marginTop: '4px' }}><strong>Endereço:</strong> {atm.destino?.logradouro || 'N/A'}, {atm.destino?.numero || 'S/N'} - {atm.destino?.bairro || ''}</div>
+                        <div><strong>Cidade/UF:</strong> {atm.destino?.municipio} - {atm.destino?.uf} | CEP: {atm.destino?.cep}</div>
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
+                          <strong>Contato:</strong> {atm.contato_entrega || atm.destino?.contato || 'N/A'} <br />
+                          <strong>Telefone:</strong> {atm.telefone_entrega || atm.destino?.telefone || 'N/A'}
+                        </div>
                       </div>
                     </div>
                   </div>
