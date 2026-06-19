@@ -6,6 +6,8 @@ const { verificarToken, permitirPerfis } = require('../middlewares/authMiddlewar
 router.post('/transportes', transporteController.criarTransporte);
 router.get('/transportes/rastreio/:codigo', transporteController.rastrearPedidoPublico);
 router.get('/admin/transportes', transporteController.listarTransportesAdmin);
+
+// 🟢 Perfis atualizados: Apenas Admin e o novo Operador possuem permissão para atualizar os ATMs
 router.put('/admin/transportes/lote/editar', verificarToken, permitirPerfis(['Admin', 'Operador']), transporteController.atualizarLoteAdmin);
 router.put('/admin/transportes/:id', verificarToken, permitirPerfis(['Admin', 'Operador']), transporteController.atualizarTransporteAdmin);
 
