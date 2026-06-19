@@ -125,13 +125,11 @@ export default function AcompFinan() {
           api.get('/admin/projetos')
         ]);
         
-        // Blindagem: Garante que os dados do estado sejam sempre Arrays (mesmo que a API falhe)
         setAtms(Array.isArray(respostaAtms.data) ? respostaAtms.data : []);
         setProjetosOficiais(Array.isArray(respostaProjetos.data) ? respostaProjetos.data : []);
 
       } catch (erro) {
         console.error("Erro ao buscar dados financeiros:", erro);
-        // Garante que, em caso de erro na API, o state fique como array vazio para não quebrar os hooks abaixo
         setAtms([]);
         setProjetosOficiais([]);
       } finally {
@@ -142,9 +140,7 @@ export default function AcompFinan() {
   }, []);
 
   const opcoesProjeto = useMemo(() => {
-    // Blindagem: Mais uma camada de segurança no map
     const projetosSeguros = Array.isArray(projetosOficiais) ? projetosOficiais : [];
-
     const opcoes = projetosSeguros.map(p => {
       const nomeProjeto = p.descricao || p.nome_projeto || p.wbs || 'Projeto Sem Nome';
       return { value: nomeProjeto.toUpperCase().trim(), label: nomeProjeto };
@@ -157,15 +153,12 @@ export default function AcompFinan() {
   }, [projetosOficiais]);
 
   const atmsDoProjeto = useMemo(() => {
-    // Blindagem: Previne que o ".filter" quebre
     const atmsSeguros = Array.isArray(atms) ? atms : [];
-
     if (!projetoAtivo || projetoAtivo === 'TODOS') return atmsSeguros;
     
     return atmsSeguros.filter(atm => {
       const pepLogistica = (atm.wbs || '').toUpperCase().trim();
       const pepFinanceiro = (atm.faturamento?.elemento_pep_cc_wbs || '').toUpperCase().trim(); 
-      
       return pepLogistica === projetoAtivo || pepFinanceiro === projetoAtivo;
     });
   }, [atms, projetoAtivo]);
@@ -178,9 +171,8 @@ export default function AcompFinan() {
     let tGasto = 0;
     const mesesMap = {};
     
-    // INCLUSÃO: divergenciasCount adicionado para rastrear divergências por mês
     mesesAbrev.forEach((m, i) => {
-      mesesMap[i + 1] = { mes: m, num: i + 1, total: 0, count: 0, media: 0, previstoTotal: 0, realizadoTotal: 0, divergenciasCount: 0 };
+      mesesMap[i + 1] = { mes: m, num: i + 1, total: 0, count: 0, media: 0, previstoTotal: 0, realizadoTotal: 0 };
     });
     
     const transMap = {};
@@ -188,8 +180,6 @@ export default function AcompFinan() {
     const motivosMap = {};
 
     atmsDoProjeto.forEach(atm => {
-      // Custo de frete vem de faturamento.valor_previsto (orcamento) - NUNCA do valor_nf,
-      // que é o valor da mercadoria e nao tem relacao com o custo do transporte.
       const previstoVal = Number(atm.faturamento?.valor_previsto) || Number(atm.valor_previsto) || 0;
       const realizadoVal = Number(atm.valor_realizado) || 0;
       
@@ -210,11 +200,6 @@ export default function AcompFinan() {
           mesesMap[mesIndex].count += 1;
           mesesMap[mesIndex].previstoTotal += previstoVal;
           mesesMap[mesIndex].realizadoTotal += realizadoVal;
-
-          // INCLUSÃO: Conta a divergência se existir um motivo
-          if (atm.motivo && atm.motivo.trim() !== '') {
-            mesesMap[mesIndex].divergenciasCount += 1;
-          }
         }
       }
 
@@ -236,6 +221,7 @@ export default function AcompFinan() {
       if (atm.motivo && atm.motivo.trim() !== '') {
         const mNome = atm.motivo;
         if (!motivosMap[mNome]) motivosMap[mNome] = { nome: mNome, count: 0, total: 0 };
+        // Incrementa 1 frete para este motivo específico
         motivosMap[mNome].count += 1;
         motivosMap[mNome].total += valorEfetivo;
       }
@@ -250,15 +236,13 @@ export default function AcompFinan() {
       }); 
 
     const dData = Object.values(mesesMap).map(m => {
-      return {
-        mes: m.mes,
-        previsto: m.previstoTotal,
-        realizado: m.realizadoTotal
-      };
+      return { mes: m.mes, previsto: m.previstoTotal, realizado: m.realizadoTotal };
     });
 
     const tData = Object.values(transMap).map(t => ({ ...t, media: t.total / t.count })).sort((a, b) => b.total - a.total);
     const rData = Object.values(rotasMap).map(r => ({ ...r, media: r.total / r.count })).sort((a, b) => b.count - a.count);
+    
+    // motData contém todos os motivos ordenados pela quantidade de vezes que aconteceram
     const motData = Object.values(motivosMap).sort((a, b) => b.count - a.count);
 
     return {
@@ -379,16 +363,11 @@ export default function AcompFinan() {
                         {desvioMensalData.map((entry, index) => {
                           const corBarra = entry.realizado > entry.previsto ? DANGER : BLUE_LIGHT;
                           return (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={corBarra} 
-                            />
+                            <Cell key={`cell-${index}`} fill={corBarra} />
                           );
                         })}
                       </Bar>
-                      
                       <Line type="monotone" dataKey="previsto" name="Orçamento Previsto" stroke={ACCENT} strokeWidth={3} dot={{ r: 5, fill: ACCENT }} />
-                      
                     </ComposedChart>
                   </ResponsiveContainer>
                   <ChartDataTable 
@@ -465,68 +444,37 @@ export default function AcompFinan() {
                   />
                 </div>
 
+                {/* 🟢 AQUI ESTÁ A CORREÇÃO: Gráfico Focado Apenas no TIPO DE DIVERGÊNCIA e QUANTIDADE DE FRETES (Duas Colunas) */}
                 {motivosData && motivosData.length > 0 && (
                   <>
-                    <SectionHeader title="Análise de Motivos e Divergências" subtitle="Impacto financeiro e volume por tipo de ocorrência" />
+                    <SectionHeader title="Quantidade de Fretes por Tipo de Divergência" subtitle="Veja o volume exato de fretes impactados para cada motivo registado." />
                     <div className="acomp-card" style={{ marginBottom: '20px' }}>
                       <ResponsiveContainer width="100%" height={350}>
-                        <BarChart data={motivosData.slice(0, 5)} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                        <BarChart data={motivosData.slice(0, 10)} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke={BLUE_PALE} vertical={false} />
                           <XAxis dataKey="nome" tick={{ fontSize: 11, fill: GRAY_MED }} interval={0} />
-                          <YAxis yAxisId="left" orientation="left" tick={{ fontSize: 10, fill: GRAY_MED }} />
-                          <YAxis yAxisId="right" orientation="right" tickFormatter={v => `R$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 10, fill: GRAY_MED }} />
+                          <YAxis orientation="left" tick={{ fontSize: 10, fill: GRAY_MED }} />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                           
-                          <Bar yAxisId="left" dataKey="count" name="Qtd. de Ocorrências" fill={DANGER} barSize={35} radius={[4, 4, 0, 0]}>
-                            <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: GRAY_DARK, fontWeight: 'bold' }} />
-                          </Bar>
-                          <Bar yAxisId="right" dataKey="total" name="Custo Impactado" fill={ACCENT} barSize={35} radius={[4, 4, 0, 0]}>
-                            <LabelList dataKey="total" position="top" formatter={(val) => fmtK(val)} style={{ fontSize: 11, fill: GRAY_DARK, fontWeight: 'bold' }} />
+                          {/* Apenas uma barra representando a Quantidade */}
+                          <Bar dataKey="count" name="Quantidade de Fretes" fill={DANGER} barSize={40} radius={[4, 4, 0, 0]}>
+                            <LabelList dataKey="count" position="top" style={{ fontSize: 12, fill: GRAY_DARK, fontWeight: 'bold' }} />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
+                      
+                      {/* Tabela exata de 2 colunas: Tipo de Divergência | Quantidade */}
                       <ChartDataTable 
-                        data={motivosData.slice(0, 5)} 
+                        data={motivosData.slice(0, 10)} 
                         categoryKey="nome" 
                         series={[
-                          { key: 'count', name: 'Qtd. de Ocorrências', color: DANGER },
-                          { key: 'total', name: 'Custo Impactado', color: ACCENT, formatter: fmt }
+                          { key: 'count', name: 'Quantidade de Fretes', color: DANGER }
                         ]} 
                       />
                     </div>
                   </>
                 )}
-
-                {/* NOVO GRÁFICO: Volume de Fretes vs Divergências (Por Mês) */}
-                <SectionHeader title="Volume de Fretes vs Divergências (Por Mês)" subtitle="Comparativo mensal da quantidade total de fretes em relação aos que apresentaram motivos de ocorrência" />
-                <div className="acomp-card" style={{ marginBottom: '20px' }}>
-                  <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={monthlyData} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={BLUE_PALE} vertical={false} />
-                      <XAxis dataKey="mes" tick={{ fontSize: 11, fill: GRAY_MED }} interval={0} />
-                      <YAxis yAxisId="left" orientation="left" tick={{ fontSize: 10, fill: GRAY_MED }} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} />
-                      
-                      <Bar yAxisId="left" dataKey="count" name="Total de Fretes" fill={BLUE_MAIN} barSize={35} radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="count" position="top" style={{ fontSize: 11, fill: GRAY_DARK, fontWeight: 'bold' }} />
-                      </Bar>
-                      <Bar yAxisId="left" dataKey="divergenciasCount" name="Com Divergência" fill={DANGER} barSize={35} radius={[4, 4, 0, 0]}>
-                        <LabelList dataKey="divergenciasCount" position="top" style={{ fontSize: 11, fill: GRAY_DARK, fontWeight: 'bold' }} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <ChartDataTable 
-                    data={monthlyData} 
-                    categoryKey="mes" 
-                    series={[
-                      { key: 'count', name: 'Total de Fretes', color: BLUE_MAIN },
-                      { key: 'divergenciasCount', name: 'Com Divergência', color: DANGER }
-                    ]} 
-                  />
-                </div>
-                {/* FIM DO NOVO GRÁFICO */}
 
               </div>
             )}
