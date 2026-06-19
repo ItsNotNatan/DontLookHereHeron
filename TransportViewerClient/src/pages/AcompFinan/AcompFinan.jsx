@@ -221,7 +221,6 @@ export default function AcompFinan() {
       if (atm.motivo && atm.motivo.trim() !== '') {
         const mNome = atm.motivo;
         if (!motivosMap[mNome]) motivosMap[mNome] = { nome: mNome, count: 0, total: 0 };
-        // Incrementa 1 frete para este motivo específico
         motivosMap[mNome].count += 1;
         motivosMap[mNome].total += valorEfetivo;
       }
@@ -241,8 +240,6 @@ export default function AcompFinan() {
 
     const tData = Object.values(transMap).map(t => ({ ...t, media: t.total / t.count })).sort((a, b) => b.total - a.total);
     const rData = Object.values(rotasMap).map(r => ({ ...r, media: r.total / r.count })).sort((a, b) => b.count - a.count);
-    
-    // motData contém todos os motivos ordenados pela quantidade de vezes que aconteceram
     const motData = Object.values(motivosMap).sort((a, b) => b.count - a.count);
 
     return {
@@ -444,36 +441,37 @@ export default function AcompFinan() {
                   />
                 </div>
 
-                {/* 🟢 AQUI ESTÁ A CORREÇÃO: Gráfico Focado Apenas no TIPO DE DIVERGÊNCIA e QUANTIDADE DE FRETES (Duas Colunas) */}
-                {motivosData && motivosData.length > 0 && (
-                  <>
-                    <SectionHeader title="Quantidade de Fretes por Tipo de Divergência" subtitle="Veja o volume exato de fretes impactados para cada motivo registado." />
-                    <div className="acomp-card" style={{ marginBottom: '20px' }}>
-                      <ResponsiveContainer width="100%" height={350}>
-                        <BarChart data={motivosData.slice(0, 10)} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={BLUE_PALE} vertical={false} />
-                          <XAxis dataKey="nome" tick={{ fontSize: 11, fill: GRAY_MED }} interval={0} />
-                          <YAxis orientation="left" tick={{ fontSize: 10, fill: GRAY_MED }} />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend wrapperStyle={{ fontSize: 12 }} />
-                          
-                          {/* Apenas uma barra representando a Quantidade */}
-                          <Bar dataKey="count" name="Quantidade de Fretes" fill={DANGER} barSize={40} radius={[4, 4, 0, 0]}>
-                            <LabelList dataKey="count" position="top" style={{ fontSize: 12, fill: GRAY_DARK, fontWeight: 'bold' }} />
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                      
-                      {/* Tabela exata de 2 colunas: Tipo de Divergência | Quantidade */}
-                      <ChartDataTable 
-                        data={motivosData.slice(0, 10)} 
-                        categoryKey="nome" 
-                        series={[
-                          { key: 'count', name: 'Quantidade de Fretes', color: DANGER }
-                        ]} 
-                      />
-                    </div>
-                  </>
+                <SectionHeader title="Quantidade de Fretes por Tipo de Divergência" subtitle="Veja o volume exato de fretes impactados para cada motivo registado." />
+                
+                {motivosData && motivosData.length > 0 ? (
+                  <div className="acomp-card" style={{ marginBottom: '20px' }}>
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={motivosData.slice(0, 10)} margin={{ top: 20, right: 10, left: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={BLUE_PALE} vertical={false} />
+                        <XAxis dataKey="nome" tick={{ fontSize: 11, fill: GRAY_MED }} interval={0} />
+                        <YAxis orientation="left" tick={{ fontSize: 10, fill: GRAY_MED }} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        
+                        <Bar dataKey="count" name="Quantidade de Fretes" fill={DANGER} barSize={40} radius={[4, 4, 0, 0]}>
+                          <LabelList dataKey="count" position="top" style={{ fontSize: 12, fill: GRAY_DARK, fontWeight: 'bold' }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    
+                    <ChartDataTable 
+                      data={motivosData.slice(0, 10)} 
+                      categoryKey="nome" 
+                      series={[
+                        { key: 'count', name: 'Quantidade de Fretes', color: DANGER }
+                      ]} 
+                    />
+                  </div>
+                ) : (
+                  <div className="acomp-card" style={{ marginBottom: '20px', padding: '40px', textAlign: 'center', color: GRAY_MED, backgroundColor: '#f8fafc', border: '1px dashed #cbd5e1' }}>
+                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: BLUE_MAIN }}>🎉 Boas notícias!</p>
+                    <p>Não existem divergências ou motivos de ocorrência registados para os fretes deste projeto.</p>
+                  </div>
                 )}
 
               </div>
