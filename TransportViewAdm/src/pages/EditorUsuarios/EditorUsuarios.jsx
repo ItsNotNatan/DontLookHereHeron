@@ -1,3 +1,4 @@
+// src/pages/EditorUsuarios/EditorUsuarios.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import './EditorUsuarios.css'; 
@@ -21,7 +22,7 @@ export default function EditorUsuarios() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [termoBusca, setTermoBusca] = useState('');
   
-  // 🟢 Padrão alterado para "Operador"
+  // 🟢 CORREÇÃO: O perfil padrão agora é 'Operador'
   const [formData, setFormData] = useState({ nome: '', email: '', senha: '', perfil: 'Operador' });
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function EditorUsuarios() {
 
   const handleNovo = () => {
     setSelecionado(null);
-    // 🟢 Padrão alterado para "Operador"
+    // 🟢 CORREÇÃO: Reseta o form para criar um 'Operador' por padrão
     setFormData({ nome: '', email: '', senha: '', perfil: 'Operador' });
     setMostrarForm(true); 
   };
@@ -154,7 +155,7 @@ export default function EditorUsuarios() {
                 <div className="form-group-p" style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>Perfil de Acesso</label>
                   <select value={formData.perfil} onChange={e => setFormData({ ...formData, perfil: e.target.value })} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none', backgroundColor: '#fff', cursor: 'pointer' }}>
-                    {/* 🟢 Visualizador removido daqui */}
+                    {/* 🟢 CORREÇÃO: "Visualizador" foi removido. */}
                     <option value="Admin">Admin</option>
                     <option value="Operador">Operador</option>
                   </select>
