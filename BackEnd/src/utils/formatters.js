@@ -1,13 +1,13 @@
 // src/utils/formatters.js
 const formatarProBanco = (dataBR) => {
-  if (!dataBR) return null;
+  if (!dataBR) return ""; // Retorna string vazia para limpar o campo no PocketBase
 
-  // 🟢 CORREÇÃO: Se a data já vier do input com traço (YYYY-MM-DD), aceita e envia pro banco
+  // Se já vier do HTML com traço (YYYY-MM-DD), o banco aceita direto
   if (String(dataBR).includes('-')) {
     return String(dataBR).split('T')[0];
   }
 
-  // Tratamento original para datas que vêm com barra (DD/MM/YYYY)
+  // Tratamento para datas que vêm com barra (DD/MM/YYYY)
   const partes = String(dataBR).split('/');
   if (partes.length === 3) {
     let [dia, mes, ano] = partes;
@@ -16,7 +16,7 @@ const formatarProBanco = (dataBR) => {
     return `${ano}-${mes}-${dia}`;
   }
   
-  return null;
+  return "";
 };
 
 module.exports = { formatarProBanco };
