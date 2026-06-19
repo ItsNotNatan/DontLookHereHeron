@@ -20,7 +20,9 @@ export default function EditorUsuarios() {
   const [selecionado, setSelecionado] = useState(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [termoBusca, setTermoBusca] = useState('');
-  const [formData, setFormData] = useState({ nome: '', email: '', senha: '', perfil: 'Visualizador' });
+  
+  // 🟢 Padrão alterado para "Operador"
+  const [formData, setFormData] = useState({ nome: '', email: '', senha: '', perfil: 'Operador' });
 
   useEffect(() => {
     fetchUsuarios();
@@ -50,7 +52,8 @@ export default function EditorUsuarios() {
 
   const handleNovo = () => {
     setSelecionado(null);
-    setFormData({ nome: '', email: '', senha: '', perfil: 'Visualizador' });
+    // 🟢 Padrão alterado para "Operador"
+    setFormData({ nome: '', email: '', senha: '', perfil: 'Operador' });
     setMostrarForm(true); 
   };
 
@@ -116,7 +119,7 @@ export default function EditorUsuarios() {
                 <div key={u.id} className={`card-item ${selecionado?.id === u.id ? 'active' : ''}`} onClick={() => handleSelect(u)}>
                   <div className="card-info" style={{ flexGrow: 1 }}>
                       <strong style={{ color: '#1e293b' }}>{u.nome}</strong>
-                      <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{u.perfil}</span>
+                      <span style={{ color: '#64748b', fontSize: '0.8rem', display: 'block', marginTop: '2px' }}>{u.perfil}</span>
                   </div>
                   <button type="button" className="btn-del-small" onClick={(e) => { e.stopPropagation(); handleExcluir(u.id); }}><Trash /></button>
                 </div>
@@ -150,10 +153,10 @@ export default function EditorUsuarios() {
                 </div>
                 <div className="form-group-p" style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>Perfil de Acesso</label>
-                  <select value={formData.perfil} onChange={e => setFormData({ ...formData, perfil: e.target.value })} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none' }}>
+                  <select value={formData.perfil} onChange={e => setFormData({ ...formData, perfil: e.target.value })} style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '1rem', outline: 'none', backgroundColor: '#fff', cursor: 'pointer' }}>
+                    {/* 🟢 Visualizador removido daqui */}
                     <option value="Admin">Admin</option>
                     <option value="Operador">Operador</option>
-                    <option value="Visualizador">Visualizador</option>
                   </select>
                 </div>
                 <div className="form-actions-p" style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', borderTop: '1px solid #e5e7eb', paddingTop: '25px', marginTop: '30px' }}>
