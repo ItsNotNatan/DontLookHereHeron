@@ -10,24 +10,24 @@ exports.uploadParaDrive = async (req, res) => {
       return res.status(400).json({ erro: 'Arquivo base64 e nomeArquivo sao obrigatorios.' });
     }
 
-    // 1. Cria a pasta uploads física no servidor caso não exista
+    // Cria a pasta uploads física no servidor caso não exista
     const uploadDir = path.join(__dirname, '../../uploads');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // 2. Limpa o cabeçalho base64 do stream
+    // Limpa o cabeçalho base64 do stream
     const base64Data = arquivoBase64.replace(/^data:\w+\/[a-zA-Z+\-.]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
-    // 3. Monta um nome seguro e único para evitar colisões
+    // Monta um nome seguro e único para evitar colisões
     const nomeUnico = `${Date.now()}_${nomeArquivo.replace(/\s+/g, '_')}`;
     const caminhoFisico = path.join(uploadDir, nomeUnico);
 
-    // 4. Salva o arquivo no disco local
+    // Salva o arquivo no disco local
     fs.writeFileSync(caminhoFisico, buffer);
 
-    // 5. Gera a URL baseada no host atual do servidor Express
+    // Gera a URL baseada no host atual do servidor Express
     const linkAcesso = `${req.protocol}://${req.get('host')}/uploads/${nomeUnico}`;
 
     console.log(`✅ Arquivo armazenado localmente com sucesso: ${nomeUnico}`);
