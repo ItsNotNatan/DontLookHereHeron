@@ -12,7 +12,7 @@ import { useCargasContext } from '../../components/context/CargasContext.jsx';
 // 🟢 1. IMPORTA O SOCKET
 import { io } from 'socket.io-client';
 
-// 🟢 2. CONFIGURA A URL DO SOCKET
+// 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou nuvem)
 const SOCKET_URL = `http://${window.location.hostname}:3001`;
 const socket = io(SOCKET_URL);
 
@@ -50,14 +50,14 @@ export default function RequestForm() {
   const [nomeContatoColeta, setNomeContatoColeta] = useState(savedState.nomeContatoColeta || '');
   const [telefoneColeta, setTelefoneColeta] = useState(savedState.telefoneColeta || '');
   const [dataColeta, setDataColeta] = useState(savedState.dataColeta || '');
-  const [horaColeta, setHoraColeta] = useState(savedState.horaColeta || ''); // 🟢 NOVO ESTADO: Hora Coleta
+  const [horaColeta, setHoraColeta] = useState(savedState.horaColeta || ''); 
   const [coleta, setColeta] = useState(savedState.coleta || { cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
 
   const [empresaEntrega, setEmpresaEntrega] = useState(savedState.empresaEntrega || '');
   const [nomeContatoEntrega, setNomeContatoEntrega] = useState(savedState.nomeContatoEntrega || '');
   const [telefoneEntrega, setTelefoneEntrega] = useState(savedState.telefoneEntrega || '');
   const [dataEntrega, setDataEntrega] = useState(savedState.dataEntrega || '');
-  const [horaEntrega, setHoraEntrega] = useState(savedState.horaEntrega || ''); // 🟢 NOVO ESTADO: Hora Entrega
+  const [horaEntrega, setHoraEntrega] = useState(savedState.horaEntrega || ''); 
   const [entrega, setEntrega] = useState(savedState.entrega || { cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
 
   const [novaCarga, setNovaCarga] = useState({
@@ -276,7 +276,7 @@ export default function RequestForm() {
     setEmpresaColeta(''); setEmpresaEntrega('');
     setNomeContatoColeta(''); setNomeContatoEntrega('');
     setDataColeta(''); setDataEntrega('');
-    setHoraColeta(''); setHoraEntrega(''); // 🟢 Limpa a hora também
+    setHoraColeta(''); setHoraEntrega('');
     setTelefoneColeta(''); setTelefoneEntrega('');
     setColeta({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
     setEntrega({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
@@ -315,16 +315,12 @@ export default function RequestForm() {
 
     dados.dataSolicitacao = dataHoje; 
     
-    // 🟢 UNE A DATA COM A HORA (SE EXISTIR) PARA A COLETA E ENTREGA
+    // 🟢 FORMATA APENAS A DATA (A hora já vai separada no formData, não precisamos misturar)
     if (dados.dataColeta) {
-      let dataColetaFmt = dados.dataColeta.split('-').reverse().join('/');
-      if (dados.horaColeta) dataColetaFmt += ` ${dados.horaColeta}`;
-      dados.dataColeta = dataColetaFmt;
+      dados.dataColeta = dados.dataColeta.split('-').reverse().join('/');
     }
     if (dados.dataEntrega) {
-      let dataEntregaFmt = dados.dataEntrega.split('-').reverse().join('/');
-      if (dados.horaEntrega) dataEntregaFmt += ` ${dados.horaEntrega}`;
-      dados.dataEntrega = dataEntregaFmt;
+      dados.dataEntrega = dados.dataEntrega.split('-').reverse().join('/');
     }
 
     dados.listaCargas = JSON.stringify(cargas);
@@ -480,7 +476,6 @@ export default function RequestForm() {
                 <input type="text" name="empresaColeta" value={empresaColeta} onChange={e => setEmpresaColeta(e.target.value)} required className="input-control" placeholder="Nome do Fornecedor" />
               </div>
               
-              {/* 🟢 INPUT DE DATA E HORA DA COLETA */}
               <div className="input-group">
                 <label>Data e Hora Coleta * <small style={{fontWeight: 'normal', color: '#64748b'}}>(Hora opcional)</small></label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -575,7 +570,6 @@ export default function RequestForm() {
                 <input type="text" name="empresaEntrega" value={empresaEntrega} onChange={e => setEmpresaEntrega(e.target.value)} required className="input-control" placeholder="Destinatário final" />
               </div>
               
-              {/* 🟢 INPUT DE DATA E HORA DA ENTREGA */}
               <div className="input-group">
                 <label>Data e Hora Entrega * <small style={{fontWeight: 'normal', color: '#64748b'}}>(Hora opcional)</small></label>
                 <div style={{ display: 'flex', gap: '8px' }}>
