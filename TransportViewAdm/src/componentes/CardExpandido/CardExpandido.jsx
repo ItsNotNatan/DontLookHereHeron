@@ -89,10 +89,12 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
       motivo: atm.motivo,
       observacoes: atm.observacoes,
       data_coleta: atm.data_coleta,
+      hora_coleta: atm.hora_coleta, // 🟢 ADICIONADO: Hora da Coleta
       contato_coleta: atm.contato_coleta,
       telefone_coleta: atm.telefone_coleta,
       origem: atm.origem,
       data_entrega: atm.data_entrega,
+      hora_entrega: atm.hora_entrega, // 🟢 ADICIONADO: Hora da Entrega
       contato_entrega: atm.contato_entrega,
       telefone_entrega: atm.telefone_entrega,
       destino: atm.destino,
@@ -394,7 +396,7 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
                   </div>
                 )}
 
-                {/* 🟢 3. ORIGEM E DESTINO CORRIGIDOS (Datas, Contato, Telefones) */}
+                {/* 🟢 3. ORIGEM E DESTINO (Datas com Horários) */}
                 <div className="card-expandido__full-width">
                   <h4 className="card-expandido__section-title">Rota Detalhada e Rastreamento</h4>
                   <div className="card-expandido__route-grid">
@@ -404,7 +406,11 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
                       <span className="card-expandido__route-tag">Origem (Coleta)</span>
                       <strong className="card-expandido__route-name">{atm.origem?.nome_local || 'Fornecedor não especificado'}</strong>
                       <div className="card-expandido__route-details">
-                        <div style={{ marginTop: '4px' }}><strong>Data da Coleta:</strong> {formatarData(atm.data_coleta)}</div>
+                        <div style={{ marginTop: '4px' }}>
+                          <strong>Data da Coleta:</strong> {formatarData(atm.data_coleta)} 
+                          {/* 🟢 ADICIONADO AQUI: Exibição da Hora da Coleta */}
+                          {atm.hora_coleta && <span style={{ marginLeft: '4px', color: '#2563eb' }}>às {atm.hora_coleta}</span>}
+                        </div>
                         <div style={{ marginTop: '4px' }}><strong>Endereço:</strong> {atm.origem?.logradouro || 'N/A'}, {atm.origem?.numero || 'S/N'} - {atm.origem?.bairro || ''}</div>
                         <div><strong>Cidade/UF:</strong> {atm.origem?.municipio} - {atm.origem?.uf} | CEP: {atm.origem?.cep}</div>
                         <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
@@ -419,7 +425,11 @@ export default function CardExpandido({ atm, onClose, onAtmUpdated }) {
                       <span className="card-expandido__route-tag" style={{ backgroundColor: '#ecfdf5', color: '#059669', borderColor: '#a7f3d0' }}>Destino (Entrega)</span>
                       <strong className="card-expandido__route-name">{atm.destino?.nome_local || 'Destinatário não especificado'}</strong>
                       <div className="card-expandido__route-details">
-                        <div style={{ marginTop: '4px' }}><strong>Data da Entrega:</strong> {formatarData(atm.data_entrega)}</div>
+                        <div style={{ marginTop: '4px' }}>
+                          <strong>Data da Entrega:</strong> {formatarData(atm.data_entrega)}
+                          {/* 🟢 ADICIONADO AQUI: Exibição da Hora da Entrega */}
+                          {atm.hora_entrega && <span style={{ marginLeft: '4px', color: '#059669' }}>às {atm.hora_entrega}</span>}
+                        </div>
                         <div style={{ marginTop: '4px' }}><strong>Endereço:</strong> {atm.destino?.logradouro || 'N/A'}, {atm.destino?.numero || 'S/N'} - {atm.destino?.bairro || ''}</div>
                         <div><strong>Cidade/UF:</strong> {atm.destino?.municipio} - {atm.destino?.uf} | CEP: {atm.destino?.cep}</div>
                         <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0' }}>
