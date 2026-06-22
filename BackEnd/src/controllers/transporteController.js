@@ -135,8 +135,14 @@ const criarTransporte = async (req, res) => {
       quantidade_volumes: parseInt(dados.quantidadeVolumes) || 0,
       peso: num(dados.pesoTotal) || 0,
       volume: 0,
+      
+      // 🟢 ADICIONADO: Salvando as horas diretamente no banco de dados
       data_coleta: dados.dataColeta ? formatarProBanco(dados.dataColeta) : null,
+      hora_coleta: str(dados.horaColeta),
+      
       data_entrega: dados.dataEntrega ? formatarProBanco(dados.dataEntrega) : null,
+      hora_entrega: str(dados.horaEntrega),
+      
       status: 'Aguardando Aprovação',
       observacoes: str(dados.obs)
     });
@@ -206,7 +212,9 @@ const receberWebhookGoogleForms = async (req, res) => {
       peso: num(dados.pesoTotal) || 0,
       volume: 0,
       data_coleta: dados.dataColeta ? formatarProBanco(dados.dataColeta) : null,
+      hora_coleta: "",
       data_entrega: dados.dataEntrega ? formatarProBanco(dados.dataEntrega) : null,
+      hora_entrega: "",
       status: 'Pendente',
       observacoes: str(dados.obs)
     });
@@ -279,12 +287,19 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
 
-    // 🟢 CORREÇÕES: Verifica explicitamente e salva a data, ou apaga enviando "" se vier limpa
+    // 🟢 ADICIONADO: Verifica explicitamente e salva a data e HORA
     if (d.data_coleta !== undefined) {
       updateAtm.data_coleta = d.data_coleta ? formatarProBanco(d.data_coleta) : "";
     }
+    if (d.hora_coleta !== undefined) {
+      updateAtm.hora_coleta = str(d.hora_coleta);
+    }
+
     if (d.data_entrega !== undefined) {
       updateAtm.data_entrega = d.data_entrega ? formatarProBanco(d.data_entrega) : "";
+    }
+    if (d.hora_entrega !== undefined) {
+      updateAtm.hora_entrega = str(d.hora_entrega);
     }
 
     if (d.nome_transportadora !== undefined) {
@@ -386,12 +401,19 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
 
-    // 🟢 CORREÇÕES PARA LOTE
+    // 🟢 ADICIONADO PARA LOTE: Capturar a hora também na edição em massa
     if (dados.data_coleta !== undefined) {
       updateAtm.data_coleta = dados.data_coleta ? formatarProBanco(dados.data_coleta) : "";
     }
+    if (dados.hora_coleta !== undefined) {
+      updateAtm.hora_coleta = str(dados.hora_coleta);
+    }
+
     if (dados.data_entrega !== undefined) {
       updateAtm.data_entrega = dados.data_entrega ? formatarProBanco(dados.data_entrega) : "";
+    }
+    if (dados.hora_entrega !== undefined) {
+      updateAtm.hora_entrega = str(dados.hora_entrega);
     }
 
     if (dados.nome_transportadora !== undefined) {
