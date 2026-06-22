@@ -4,13 +4,12 @@ const cron = require('node-cron');
 const transporteController = require('../controllers/transporteController');
 
 // 1. Configuração da Autenticação do Google
-// O ficheiro credenciais.json deve estar na raiz do teu projeto (junto ao package.json)
 const auth = new google.auth.GoogleAuth({
   keyFile: './credenciais.json', 
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
-// 2. Variáveis da tua Planilha (ID e Nome da aba corrigidos!)
+// 2. Variáveis da tua Planilha
 const SPREADSHEET_ID = '1cZCQW3W-DQE0JkX0wXUYmsmNLAex6aPz3Vy3kDC9Muc'; 
 const NOME_DA_ABA = 'Respostas ao formulário 1';
 
@@ -48,8 +47,8 @@ async function verificarNovasRespostas() {
 
         const dadosFormulario = {
           dataSolicitacao: linha[0] || '', 
-          solicitante: WebHeaderContext[1] || '',
-          pedidoCompra: linha[2] || '',
+          solicitante: linha[1] || '', // 🟢 Corrigido aqui de WebHeaderContext para linha[1]
+          pedidoCompra: WebHeaderContext[2] || '',
           wbs: linha[3] || '',
           empresaColeta: linha[4] || '',
           cepColeta: linha[5] || '',
@@ -80,8 +79,10 @@ async function verificarNovasRespostas() {
           json: function(msg) { console.log('✅ Controller respondeu:', msg); }
         };
 
+        // Executa a inserção no banco de dados através do teu controller
         await transporteController.receberWebhookGoogleForms(reqMock, resMock);
 
+        // Se correu tudo bem, atualiza a planilha para marcar como "Registado"
         const letraColunaStatus = String.fromCharCode(65 + indexStatus);
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
@@ -102,7 +103,6 @@ async function verificarNovasRespostas() {
 
 function iniciarMonitoramentoPlanilha() {
   console.log('⏰ Robô do Google Sheets ativado. A verificar a cada 30 segundos.');
-  // 🟢 Alterado para '*/30 * * * * *' (Roda de 30 em 30 segundos)
   cron.schedule('*/30 * * * * *', () => {
     verificarNovasRespostas();
   });
