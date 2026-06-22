@@ -10,7 +10,7 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
-// 2. Variáveis da tua Planilha (JÁ CONFIGURADO!)
+// 2. Variáveis da tua Planilha (ID e Nome da aba corrigidos!)
 const SPREADSHEET_ID = '1cZCQW3W-DQE0JkX0wXUYmsmNLAex6aPz3Vy3kDC9Muc'; 
 const NOME_DA_ABA = 'Respostas ao formulário 1';
 
@@ -48,7 +48,7 @@ async function verificarNovasRespostas() {
 
         const dadosFormulario = {
           dataSolicitacao: linha[0] || '', 
-          solicitante: linha[1] || '',
+          solicitante: WebHeaderContext[1] || '',
           pedidoCompra: linha[2] || '',
           wbs: linha[3] || '',
           empresaColeta: linha[4] || '',
@@ -101,8 +101,9 @@ async function verificarNovasRespostas() {
 }
 
 function iniciarMonitoramentoPlanilha() {
-  console.log('⏰ Robô do Google Sheets ativado. A verificar a cada 5 minutos.');
-  cron.schedule('*/5 * * * *', () => {
+  console.log('⏰ Robô do Google Sheets ativado. A verificar a cada 30 segundos.');
+  // 🟢 Alterado para '*/30 * * * * *' (Roda de 30 em 30 segundos)
+  cron.schedule('*/30 * * * * *', () => {
     verificarNovasRespostas();
   });
 }
