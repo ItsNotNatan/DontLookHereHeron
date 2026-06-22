@@ -514,14 +514,16 @@ export default function RequestForm() {
                   <input type="text" name="logradouroColeta" required value={coleta.logradouro} onChange={(e) => setColeta({ ...coleta, logradouro: e.target.value })} className="input-control" />
               </div>
               <div className="input-group">
-                  <label>Número / Compl. *</label>
-                  <input type="text" name="numeroColeta" required value={coleta.numero} onChange={(e) => setColeta({ ...coleta, numero: e.target.value })} className="input-control" />
+                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
+                  <label>Número / Compl.</label>
+                  <input type="text" name="numeroColeta" value={coleta.numero} onChange={(e) => setColeta({ ...coleta, numero: e.target.value })} className="input-control" />
               </div>
             </div>
             <div className="form-grid-3">
               <div className="input-group">
-                  <label>Bairro *</label>
-                  <input type="text" name="bairroColeta" required value={coleta.bairro} onChange={(e) => setColeta({ ...coleta, bairro: e.target.value })} className="input-control" />
+                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
+                  <label>Bairro</label>
+                  <input type="text" name="bairroColeta" value={coleta.bairro} onChange={(e) => setColeta({ ...coleta, bairro: e.target.value })} className="input-control" />
               </div>
               <div className="input-group">
                   <label>Cidade *</label>
@@ -608,14 +610,16 @@ export default function RequestForm() {
                   <input type="text" name="logradouroEntrega" required value={entrega.logradouro} onChange={(e) => setEntrega({ ...entrega, logradouro: e.target.value })} className="input-control" />
               </div>
               <div className="input-group">
-                  <label>Número / Compl. *</label>
-                  <input type="text" name="numeroEntrega" required value={entrega.numero} onChange={(e) => setEntrega({ ...entrega, numero: e.target.value })} className="input-control" />
+                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
+                  <label>Número / Compl.</label>
+                  <input type="text" name="numeroEntrega" value={entrega.numero} onChange={(e) => setEntrega({ ...entrega, numero: e.target.value })} className="input-control" />
               </div>
             </div>
             <div className="form-grid-3">
               <div className="input-group">
-                  <label>Bairro *</label>
-                  <input type="text" name="bairroEntrega" required value={entrega.bairro} onChange={(e) => setEntrega({ ...entrega, bairro: e.target.value })} className="input-control" />
+                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
+                  <label>Bairro</label>
+                  <input type="text" name="bairroEntrega" value={entrega.bairro} onChange={(e) => setEntrega({ ...entrega, bairro: e.target.value })} className="input-control" />
               </div>
               <div className="input-group">
                   <label>Cidade *</label>
