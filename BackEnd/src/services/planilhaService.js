@@ -12,7 +12,7 @@ const auth = new google.auth.GoogleAuth({
 
 // 2. Variáveis da tua Planilha (JÁ CONFIGURADO!)
 const SPREADSHEET_ID = '1cZCQW3W-DQE0JkX0wXUYmsmNLAex6aPz3Vy3kDC9Muc'; 
-const NOME_DA_ABA = 'Respostas do formulário 1';
+const NOME_DA_ABA = 'Respostas ao formulário 1';
 
 async function verificarNovasRespostas() {
   console.log('🔍 [Planilha] A procurar novos pedidos de transporte...');
