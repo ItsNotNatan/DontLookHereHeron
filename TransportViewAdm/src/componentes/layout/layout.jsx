@@ -63,9 +63,6 @@ export default function Layout() {
               <NavLink to="/gestao-usuarios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                 <UserGear size={20} /><span>Gestão de Usuários</span>
               </NavLink>
-              <NavLink to="/gestao-veiculos" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                <Truck size={20} /><span>Gestão de Veículos</span>
-              </NavLink>
             </>
           )}
         </nav>
