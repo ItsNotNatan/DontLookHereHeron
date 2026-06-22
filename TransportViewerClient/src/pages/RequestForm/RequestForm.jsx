@@ -12,7 +12,7 @@ import { useCargasContext } from '../../components/context/CargasContext.jsx';
 // 🟢 1. IMPORTA O SOCKET
 import { io } from 'socket.io-client';
 
-// 🟢 2. CONFIGURA A URL DO SOCKET (Ajusta sozinho para localhost ou nuvem)
+// 🟢 2. CONFIGURA A URL DO SOCKET
 const SOCKET_URL = `http://${window.location.hostname}:3001`;
 const socket = io(SOCKET_URL);
 
@@ -50,12 +50,14 @@ export default function RequestForm() {
   const [nomeContatoColeta, setNomeContatoColeta] = useState(savedState.nomeContatoColeta || '');
   const [telefoneColeta, setTelefoneColeta] = useState(savedState.telefoneColeta || '');
   const [dataColeta, setDataColeta] = useState(savedState.dataColeta || '');
+  const [horaColeta, setHoraColeta] = useState(savedState.horaColeta || ''); // 🟢 NOVO ESTADO: Hora Coleta
   const [coleta, setColeta] = useState(savedState.coleta || { cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
 
   const [empresaEntrega, setEmpresaEntrega] = useState(savedState.empresaEntrega || '');
   const [nomeContatoEntrega, setNomeContatoEntrega] = useState(savedState.nomeContatoEntrega || '');
   const [telefoneEntrega, setTelefoneEntrega] = useState(savedState.telefoneEntrega || '');
   const [dataEntrega, setDataEntrega] = useState(savedState.dataEntrega || '');
+  const [horaEntrega, setHoraEntrega] = useState(savedState.horaEntrega || ''); // 🟢 NOVO ESTADO: Hora Entrega
   const [entrega, setEntrega] = useState(savedState.entrega || { cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
 
   const [novaCarga, setNovaCarga] = useState({
@@ -72,16 +74,16 @@ export default function RequestForm() {
     const stateToSave = {
       solicitante, pedidoCompra, tipoOperacao, veiculo, frete, nf, obs,
       wbsSelecionada,
-      enderecoColetaSelecionado, empresaColeta, nomeContatoColeta, telefoneColeta, dataColeta, coleta,
-      enderecoEntregaSelecionado, empresaEntrega, nomeContatoEntrega, telefoneEntrega, dataEntrega, entrega,
+      enderecoColetaSelecionado, empresaColeta, nomeContatoColeta, telefoneColeta, dataColeta, horaColeta, coleta,
+      enderecoEntregaSelecionado, empresaEntrega, nomeContatoEntrega, telefoneEntrega, dataEntrega, horaEntrega, entrega,
       valorNfMask
     };
     sessionStorage.setItem('requestFormState', JSON.stringify(stateToSave));
   }, [
     solicitante, pedidoCompra, tipoOperacao, veiculo, frete, nf, obs,
     wbsSelecionada,
-    enderecoColetaSelecionado, empresaColeta, nomeContatoColeta, telefoneColeta, dataColeta, coleta,
-    enderecoEntregaSelecionado, empresaEntrega, nomeContatoEntrega, telefoneEntrega, dataEntrega, entrega,
+    enderecoColetaSelecionado, empresaColeta, nomeContatoColeta, telefoneColeta, dataColeta, horaColeta, coleta,
+    enderecoEntregaSelecionado, empresaEntrega, nomeContatoEntrega, telefoneEntrega, dataEntrega, horaEntrega, entrega,
     valorNfMask
   ]);
 
@@ -96,7 +98,6 @@ export default function RequestForm() {
     carregarProjetos();
     carregarEnderecos();
 
-    // 🟢 3. ESCUTA EVENTOS DO SERVIDOR PARA ATUALIZAR OS DROPDOWNS EM TEMPO REAL
     socket.on('projetos_atualizados', () => {
       console.log('🔄 Lista de projetos alterada! Atualizando dropdown...');
       carregarProjetos();
@@ -107,7 +108,6 @@ export default function RequestForm() {
       carregarEnderecos();
     });
 
-    // 🟢 4. DESCONECTA OS OUVINTES AO SAIR DA TELA
     return () => {
       socket.off('projetos_atualizados');
       socket.off('locais_atualizados');
@@ -276,6 +276,7 @@ export default function RequestForm() {
     setEmpresaColeta(''); setEmpresaEntrega('');
     setNomeContatoColeta(''); setNomeContatoEntrega('');
     setDataColeta(''); setDataEntrega('');
+    setHoraColeta(''); setHoraEntrega(''); // 🟢 Limpa a hora também
     setTelefoneColeta(''); setTelefoneEntrega('');
     setColeta({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
     setEntrega({ cep: '', logradouro: '', numero: '', bairro: '', localidade: '', uf: '' });
@@ -314,11 +315,16 @@ export default function RequestForm() {
 
     dados.dataSolicitacao = dataHoje; 
     
+    // 🟢 UNE A DATA COM A HORA (SE EXISTIR) PARA A COLETA E ENTREGA
     if (dados.dataColeta) {
-      dados.dataColeta = dados.dataColeta.split('-').reverse().join('/');
+      let dataColetaFmt = dados.dataColeta.split('-').reverse().join('/');
+      if (dados.horaColeta) dataColetaFmt += ` ${dados.horaColeta}`;
+      dados.dataColeta = dataColetaFmt;
     }
     if (dados.dataEntrega) {
-      dados.dataEntrega = dados.dataEntrega.split('-').reverse().join('/');
+      let dataEntregaFmt = dados.dataEntrega.split('-').reverse().join('/');
+      if (dados.horaEntrega) dataEntregaFmt += ` ${dados.horaEntrega}`;
+      dados.dataEntrega = dataEntregaFmt;
     }
 
     dados.listaCargas = JSON.stringify(cargas);
@@ -410,8 +416,7 @@ export default function RequestForm() {
               <label>Nº do Pedido *</label>
               <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} required className="input-control" placeholder="Digite o nº do pedido" />
             </div>
-            {/* 🟢 CORREÇÃO DOS VALUES E LABELS DA OPERAÇÃO */}
-<div className="input-group">
+            <div className="input-group">
               <label>Tipo de Operação *</label>
               <select name="tipo_operacao" value={tipoOperacao} onChange={e => setTipoOperacao(e.target.value)} required className="input-control">
                 <option value="" disabled>Selecione...</option>
@@ -474,24 +479,37 @@ export default function RequestForm() {
                 <label>Empresa de Coleta *</label>
                 <input type="text" name="empresaColeta" value={empresaColeta} onChange={e => setEmpresaColeta(e.target.value)} required className="input-control" placeholder="Nome do Fornecedor" />
               </div>
+              
+              {/* 🟢 INPUT DE DATA E HORA DA COLETA */}
               <div className="input-group">
-                <label>Data Desejada Coleta *</label>
-                <input 
-                  type="date" 
-                  name="dataColeta" 
-                  value={dataColeta} 
-                  onChange={(e) => setDataColeta(e.target.value)} 
-                  min={dataMinima} 
-                  required 
-                  className="input-control" 
-                  onKeyDown={(e) => e.preventDefault()}
-                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                  style={{ cursor: 'pointer' }}
-                />
+                <label>Data e Hora Coleta * <small style={{fontWeight: 'normal', color: '#64748b'}}>(Hora opcional)</small></label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="date" 
+                    name="dataColeta" 
+                    value={dataColeta} 
+                    onChange={(e) => setDataColeta(e.target.value)} 
+                    min={dataMinima} 
+                    required 
+                    className="input-control" 
+                    onKeyDown={(e) => e.preventDefault()}
+                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                    style={{ cursor: 'pointer', flex: '2' }}
+                  />
+                  <input 
+                    type="time" 
+                    name="horaColeta" 
+                    value={horaColeta} 
+                    onChange={(e) => setHoraColeta(e.target.value)} 
+                    className="input-control" 
+                    style={{ cursor: 'pointer', flex: '1' }}
+                    title="Defina o horário limite ou desejado para coleta (Opcional)"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="form-grid-4">
+            <div className="form-grid-4" style={{ marginTop: '1rem' }}>
               <div className="input-group">
                   <label>CEP (Apenas números) *</label>
                   <input type="text" name="cepColeta" maxLength="9" value={coleta.cep} onChange={(e) => buscarCep(e.target.value, 'coleta')} required className="input-control" placeholder="00000000" />
@@ -556,24 +574,37 @@ export default function RequestForm() {
                 <label>Empresa de Entrega / Setor *</label>
                 <input type="text" name="empresaEntrega" value={empresaEntrega} onChange={e => setEmpresaEntrega(e.target.value)} required className="input-control" placeholder="Destinatário final" />
               </div>
+              
+              {/* 🟢 INPUT DE DATA E HORA DA ENTREGA */}
               <div className="input-group">
-                <label>Data Desejada Entrega *</label>
-                <input 
-                  type="date" 
-                  name="dataEntrega" 
-                  value={dataEntrega} 
-                  onChange={(e) => setDataEntrega(e.target.value)} 
-                  min={dataMinima} 
-                  required 
-                  className="input-control" 
-                  onKeyDown={(e) => e.preventDefault()}
-                  onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                  style={{ cursor: 'pointer' }}
-                />
+                <label>Data e Hora Entrega * <small style={{fontWeight: 'normal', color: '#64748b'}}>(Hora opcional)</small></label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="date" 
+                    name="dataEntrega" 
+                    value={dataEntrega} 
+                    onChange={(e) => setDataEntrega(e.target.value)} 
+                    min={dataMinima} 
+                    required 
+                    className="input-control" 
+                    onKeyDown={(e) => e.preventDefault()}
+                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                    style={{ cursor: 'pointer', flex: '2' }}
+                  />
+                  <input 
+                    type="time" 
+                    name="horaEntrega" 
+                    value={horaEntrega} 
+                    onChange={(e) => setHoraEntrega(e.target.value)} 
+                    className="input-control" 
+                    style={{ cursor: 'pointer', flex: '1' }}
+                    title="Defina o horário limite ou desejado para entrega (Opcional)"
+                  />
+                </div>
               </div>
             </div>
             
-            <div className="form-grid-4">
+            <div className="form-grid-4" style={{ marginTop: '1rem' }}>
               <div className="input-group">
                   <label>CEP (Apenas números) *</label>
                   <input type="text" name="cepEntrega" maxLength="9" value={entrega.cep} onChange={(e) => buscarCep(e.target.value, 'entrega')} required className="input-control" placeholder="00000000" />
