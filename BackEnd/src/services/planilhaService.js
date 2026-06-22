@@ -13,6 +13,17 @@ const auth = new google.auth.GoogleAuth({
 const SPREADSHEET_ID = '1cZCQW3W-DQE0JkX0wXUYmsmNLAex6aPz3Vy3kDC9Muc'; 
 const NOME_DA_ABA = 'Respostas ao formulário 1';
 
+// 3. Função extra: Converte o número da coluna na letra correspondente (ex: 0 -> A, 26 -> AA)
+function obterLetraColuna(indice) {
+  let letra = '';
+  let temp = indice;
+  while (temp >= 0) {
+    letra = String.fromCharCode((temp % 26) + 65) + letra;
+    temp = Math.floor(temp / 26) - 1;
+  }
+  return letra;
+}
+
 async function verificarNovasRespostas() {
   console.log('🔍 [Planilha] A procurar novos pedidos de transporte...');
 
@@ -20,9 +31,10 @@ async function verificarNovasRespostas() {
     const client = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: client });
 
+    // Lemos até ZZ para garantir que apanhamos todas as colunas
     const resposta = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${NOME_DA_ABA}!A:Z`,
+      range: `${NOME_DA_ABA}!A:ZZ`, 
     });
 
     const linhas = resposta.data.values;
@@ -30,7 +42,8 @@ async function verificarNovasRespostas() {
       return;
     }
 
-    const cabecalhos = linhas[0];
+    // 🟢 CORREÇÃO: "lines" alterado para "linhas"
+    const cabecalhos = linhas[0]; 
     const indexStatus = cabecalhos.indexOf('Status do Sistema');
 
     if (indexStatus === -1) {
@@ -45,10 +58,11 @@ async function verificarNovasRespostas() {
       if (statusDaLinha !== 'Registado') {
         console.log(`Nova solicitação encontrada na linha ${i + 1}. A processar...`);
 
+        // Leitura dos campos
         const dadosFormulario = {
           dataSolicitacao: linha[0] || '', 
-          solicitante: linha[1] || '', // 🟢 Corrigido aqui de WebHeaderContext para linha[1]
-          pedidoCompra: WebHeaderContext[2] || '',
+          solicitante: linha[1] || '', 
+          pedidoCompra: linha[2] || '', 
           wbs: linha[3] || '',
           empresaColeta: linha[4] || '',
           cepColeta: linha[5] || '',
@@ -79,11 +93,13 @@ async function verificarNovasRespostas() {
           json: function(msg) { console.log('✅ Controller respondeu:', msg); }
         };
 
-        // Executa a inserção no banco de dados através do teu controller
+        // Grava na Base de Dados usando o teu controller
         await transporteController.receberWebhookGoogleForms(reqMock, resMock);
 
-        // Se correu tudo bem, atualiza a planilha para marcar como "Registado"
-        const letraColunaStatus = String.fromCharCode(65 + indexStatus);
+        // 🟢 MELHORIA: Usa a nova função para descobrir a letra da coluna com segurança
+        const letraColunaStatus = obterLetraColuna(indexStatus);
+        
+        // Atualiza o Sheets marcando o sucesso
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${NOME_DA_ABA}!${letraColunaStatus}${i + 1}`,
