@@ -13,7 +13,7 @@ const auth = new google.auth.GoogleAuth({
 const SPREADSHEET_ID = '1cZCQW3W-DQE0JkX0wXUYmsmNLAex6aPz3Vy3kDC9Muc'; 
 const NOME_DA_ABA = 'Respostas ao formulário 1';
 
-// 3. Função extra: Converte o número da coluna na letra correspondente (ex: 0 -> A, 26 -> AA)
+// 3. Função extra: Converte o número da coluna na letra correspondente
 function obterLetraColuna(indice) {
   let letra = '';
   let temp = indice;
@@ -42,7 +42,6 @@ async function verificarNovasRespostas() {
       return;
     }
 
-    // 🟢 CORREÇÃO: "lines" alterado para "linhas"
     const cabecalhos = linhas[0]; 
     const indexStatus = cabecalhos.indexOf('Status do Sistema');
 
@@ -58,29 +57,31 @@ async function verificarNovasRespostas() {
       if (statusDaLinha !== 'Registado') {
         console.log(`Nova solicitação encontrada na linha ${i + 1}. A processar...`);
 
-        // Leitura dos campos
+        // 🟢 MAPEAMENTO EXATO COM AS TUAS COLUNAS DO GOOGLE FORMS
         const dadosFormulario = {
-          dataSolicitacao: linha[0] || '', 
-          solicitante: linha[1] || '', 
-          pedidoCompra: linha[2] || '', 
-          wbs: linha[3] || '',
-          empresaColeta: linha[4] || '',
-          cepColeta: linha[5] || '',
-          logradouroColeta: linha[6] || '',
-          numeroColeta: linha[7] || '',
-          bairroColeta: linha[8] || '',
-          cidadeColeta: linha[9] || '',
-          ufColeta: linha[10] || '',
-          nomeContatoColeta: linha[11] || '',
-          telefoneColeta: linha[12] || '',
-          empresaEntrega: linha[13] || '',
-          pesoTotal: linha[14] || '',
-          quantidadeVolumes: linha[15] || '1',
-          obs: linha[16] || '',
-          veiculo: linha[17] || '',
-          frete: linha[18] || '',
-          nf: linha[19] || ''
+          dataSolicitacao: linha[2] || linha[0] || '', // Coluna C (Data Solicitação) - Se falhar, usa o Carimbo (A)
+          solicitante: linha[1] || '',                 // Coluna B (Nome Completo)
+          pedidoCompra: linha[3] || '',                // Coluna D (PO de Compras)
+          wbs: linha[4] || '',                         // Coluna E (WBS / Projeto)
+          empresaColeta: linha[5] || '',               // Coluna F (Empresa de Coleta)
+          cepColeta: linha[6] || '',                   // Coluna G (CEP Coleta)
+          logradouroColeta: linha[7] || '',            // Coluna H (Logradouro Coleta)
+          numeroColeta: linha[8] || '',                // Coluna I (Número/Comp Coleta)
+          bairroColeta: linha[9] || '',                // Coluna J (Bairro Coleta)
+          cidadeColeta: linha[10] || '',               // Coluna K (Cidade Coleta)
+          ufColeta: linha[11] || '',                   // Coluna L (UF Coleta)
+          nomeContatoColeta: linha[12] || '',          // Coluna M (Contato Coleta)
+          telefoneColeta: linha[13] || '',             // Coluna N (Telefone Coleta)
+          empresaEntrega: linha[14] || '',             // Coluna O (FILIAL FATURAMENTO -> Funciona como destino da COMAU)
+          pesoTotal: linha[15] || '',                  // Coluna P (Peso kg)
+          quantidadeVolumes: linha[16] || '1',         // Coluna Q (Volumes)
+          obs: linha[17] || '',                        // Coluna R (Medidas do Material -> Usadas como Obs)
+          veiculo: linha[18] || '',                    // Coluna S (Veículo)
+          frete: linha[19] || '',                      // Coluna T (Tipo de frete)
+          nf: linha[20] || ''                          // Coluna U (Nº da Nota Fiscal)
         };
+
+        let erroNoBanco = false; // Detetor de falhas
 
         const reqMock = {
           body: dadosFormulario,
@@ -88,18 +89,26 @@ async function verificarNovasRespostas() {
         };
 
         const resMock = {
-          status: function(code) { return this; },
-          send: function(msg) { console.log('✅ Controller respondeu:', msg); },
-          json: function(msg) { console.log('✅ Controller respondeu:', msg); }
+          status: function(code) { 
+            if (code >= 400) erroNoBanco = true; // Se o status for erro, ativamos o alarme
+            return this; 
+          },
+          send: function(msg) { console.log('   Retorno (send):', msg); },
+          json: function(msg) { console.log('   Retorno (json):', msg); }
         };
 
-        // Grava na Base de Dados usando o teu controller
+        // Grava na Base de Dados PocketBase
         await transporteController.receberWebhookGoogleForms(reqMock, resMock);
 
-        // 🟢 MELHORIA: Usa a nova função para descobrir a letra da coluna com segurança
+        // Se deu erro no banco, abortamos e NÃO escrevemos "Registado"
+        if (erroNoBanco) {
+           console.log(`⚠️ Falha ao salvar a linha ${i + 1} no banco de dados. A planilha NÃO será marcada.`);
+           continue; 
+        }
+
+        // Se não houve erro, descobre a letra da coluna "Status do Sistema" e marca "Registado"
         const letraColunaStatus = obterLetraColuna(indexStatus);
         
-        // Atualiza o Sheets marcando o sucesso
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
           range: `${NOME_DA_ABA}!${letraColunaStatus}${i + 1}`,
