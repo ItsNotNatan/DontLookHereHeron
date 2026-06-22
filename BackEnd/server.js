@@ -1,6 +1,6 @@
 // server.js - Servidor de producao ATMLog (Express + PocketBase + Socket.io)
 // Estrutura self-hosted: este BackEnd serve a API e os builds dos frontends irmaos.
-//   - API (Express + WebSocket)   -> PORT_API     (padrao 3001)
+//   - API (Express + WebSocket)   -> PORT_API      (padrao 3001)
 //   - Client (../TransportViewerClient/dist) -> PORT_CLIENT (padrao 8080)
 //   - Admin  (../TransportViewAdm/dist)       -> PORT_ADMIN  (padrao 8082)
 // O banco e o PocketBase (porta 8090), iniciado pelo auto-deploy.
@@ -107,12 +107,11 @@ function servirSPA(nome, distDir, porta) {
 servirSPA('Client (publico)', path.join(ROOT, 'TransportViewerClient', 'dist'), PORT_CLIENT);
 servirSPA('Admin (gestao)', path.join(ROOT, 'TransportViewAdm', 'dist'), PORT_ADMIN);
 
-// ===================== 3. Sincronizador Google Sheets =====================
-if (process.env.GOOGLE_CLIENT_EMAIL) {
-  const puxarDadosDaPlanilha = require('./src/services/syncPlanilha');
-  puxarDadosDaPlanilha();
-  setInterval(puxarDadosDaPlanilha, 120000);
-  console.log('🔁 Sincronizacao do Google Sheets ATIVA (a cada 2 min).');
-} else {
-  console.log('⏸️  Sincronizacao do Google Sheets DESATIVADA (GOOGLE_CLIENT_EMAIL vazio).');
+// ===================== 3. Sincronizador Google Sheets (Robô Novo) =====================
+const { iniciarMonitoramentoPlanilha } = require('./src/services/planilhaService');
+
+try {
+  iniciarMonitoramentoPlanilha();
+} catch (e) {
+  console.error("Erro ao iniciar o robô da planilha:", e.message);
 }
