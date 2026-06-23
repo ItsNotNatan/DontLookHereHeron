@@ -315,7 +315,6 @@ export default function RequestForm() {
 
     dados.dataSolicitacao = dataHoje; 
     
-    // 🟢 FORMATA APENAS A DATA (A hora já vai separada no formData, não precisamos misturar)
     if (dados.dataColeta) {
       dados.dataColeta = dados.dataColeta.split('-').reverse().join('/');
     }
@@ -409,8 +408,9 @@ export default function RequestForm() {
               <input type="text" value={dataHoje} readOnly className="input-control" />
             </div>
             <div className="input-group">
-              <label>Nº do Pedido *</label>
-              <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} required className="input-control" placeholder="Digite o nº do pedido" />
+              {/* 🟢 REMOVIDO: required e asterisco (*) */}
+              <label>Nº do Pedido</label>
+              <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} className="input-control" placeholder="Digite o nº do pedido (opcional)" />
             </div>
             <div className="input-group">
               <label>Tipo de Operação *</label>
@@ -514,14 +514,12 @@ export default function RequestForm() {
                   <input type="text" name="logradouroColeta" required value={coleta.logradouro} onChange={(e) => setColeta({ ...coleta, logradouro: e.target.value })} className="input-control" />
               </div>
               <div className="input-group">
-                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
                   <label>Número / Compl.</label>
                   <input type="text" name="numeroColeta" value={coleta.numero} onChange={(e) => setColeta({ ...coleta, numero: e.target.value })} className="input-control" />
               </div>
             </div>
             <div className="form-grid-3">
               <div className="input-group">
-                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
                   <label>Bairro</label>
                   <input type="text" name="bairroColeta" value={coleta.bairro} onChange={(e) => setColeta({ ...coleta, bairro: e.target.value })} className="input-control" />
               </div>
@@ -610,14 +608,12 @@ export default function RequestForm() {
                   <input type="text" name="logradouroEntrega" required value={entrega.logradouro} onChange={(e) => setEntrega({ ...entrega, logradouro: e.target.value })} className="input-control" />
               </div>
               <div className="input-group">
-                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
                   <label>Número / Compl.</label>
                   <input type="text" name="numeroEntrega" value={entrega.numero} onChange={(e) => setEntrega({ ...entrega, numero: e.target.value })} className="input-control" />
               </div>
             </div>
             <div className="form-grid-3">
               <div className="input-group">
-                  {/* 🟢 REMOVIDO: required e asterisco (*) */}
                   <label>Bairro</label>
                   <input type="text" name="bairroEntrega" value={entrega.bairro} onChange={(e) => setEntrega({ ...entrega, bairro: e.target.value })} className="input-control" />
               </div>
