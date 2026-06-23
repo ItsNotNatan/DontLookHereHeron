@@ -56,13 +56,17 @@ async function gerarProximoNumeroATM() {
     if (records.items.length > 0 && records.items[0].numero_atm) {
       const ultimoNumero = parseInt(records.items[0].numero_atm, 10);
       if (!isNaN(ultimoNumero)) {
-        return String(ultimoNumero + 1);
+        // 🟢 Se o próximo número calculado for menor que 18635, dá o salto automático.
+        const proximo = ultimoNumero + 1;
+        return proximo < 18640 ? '18640' : String(proximo);
       }
     }
-    return '10005';
+    // 🟢 Se o banco estiver vazio, começa no 18635
+    return '18640';
   } catch (error) {
     console.error('Erro ao buscar a sequencia do ATM:', error);
-    return '10005';
+    // 🟢 Proteção contra falhas: começa no 18635
+    return '18640';
   }
 }
 
@@ -136,7 +140,6 @@ const criarTransporte = async (req, res) => {
       peso: num(dados.pesoTotal) || 0,
       volume: 0,
       
-      // 🟢 ADICIONADO: Salvando as horas diretamente no banco de dados
       data_coleta: dados.dataColeta ? formatarProBanco(dados.dataColeta) : null,
       hora_coleta: str(dados.horaColeta),
       
