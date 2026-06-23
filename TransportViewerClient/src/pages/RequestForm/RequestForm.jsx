@@ -462,7 +462,7 @@ export default function RequestForm() {
             <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
               <div className="input-group">
                 <label>Contato de Coleta *</label>
-                <input type="text" name="nomeContatoColeta" value={nomeContatoColeta} onChange={e => setNomeContatoColeta(e.target.value)} required className="input-control" placeholder="Nome do responsável" />
+                <input type="text" name="nomeContatoColeta" value={nomeContatoColeta} onChange={e => setNomeContatoColeta(e.target.value)} required className="input-control" placeholder="Nome e Sobrenome do responsável" />
               </div>
               <div className="input-group">
                 <label>Telefone da Coleta *</label>
@@ -556,7 +556,7 @@ export default function RequestForm() {
             <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
               <div className="input-group">
                 <label>Contato de Entrega *</label>
-                <input type="text" name="nomeContatoEntrega" value={nomeContatoEntrega} onChange={e => setNomeContatoEntrega(e.target.value)} required className="input-control" placeholder="Nome do destinatário" />
+                <input type="text" name="nomeContatoEntrega" value={nomeContatoEntrega} onChange={e => setNomeContatoEntrega(e.target.value)} required className="input-control" placeholder="Nome e Sobrenome do destinatário" />
               </div>
               <div className="input-group">
                 <label>Telefone da Entrega *</label>
