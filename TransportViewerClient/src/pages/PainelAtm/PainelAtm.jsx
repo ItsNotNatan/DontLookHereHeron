@@ -230,7 +230,7 @@ export default function PainelAtm() {
               <tr>
                 <th className="painel-table__header-cell">ID ATM</th>
                 <th className="painel-table__header-cell">Solicitante</th>
-                <th className="painel-table__header-cell">Pedido</th>
+                <th className="painel-table__header-cell">Nº do Pedido</th>
                 <th className="painel-table__header-cell">Nome do Projeto</th>
                 <th className="painel-table__header-cell">Rota (Remetente ➔ Destinatário)</th>
                 <th className="painel-table__header-cell">Veículo</th>
