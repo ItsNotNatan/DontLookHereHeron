@@ -409,7 +409,7 @@ export default function RequestForm() {
             </div>
             <div className="input-group">
               {/* 🟢 REMOVIDO: required e asterisco (*) */}
-              <label>Nº do Pedido</label>
+              <label>Nº do Pedido ou PS</label>
               <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} className="input-control" placeholder="Digite o nº do pedido (opcional)" />
             </div>
             <div className="input-group">
