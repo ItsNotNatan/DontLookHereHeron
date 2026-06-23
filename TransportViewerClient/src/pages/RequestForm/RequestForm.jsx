@@ -410,7 +410,7 @@ export default function RequestForm() {
             <div className="input-group">
               {/* 🟢 REMOVIDO: required e asterisco (*) */}
               <label>Nº do Pedido ou PS</label>
-              <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} className="input-control" placeholder="Digite o nº do pedido (opcional)" />
+              <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} className="input-control" placeholder="(opcional)" />
             </div>
             <div className="input-group">
               <label>Tipo de Operação *</label>
@@ -768,7 +768,7 @@ export default function RequestForm() {
 
             <div className="input-group">
               <label>Nota Fiscal</label>
-              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} className="input-control" placeholder="Nº da NFe (opcional)" />
+              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} className="input-control" placeholder="opcional" />
             </div>
 
             <div className="input-group">
