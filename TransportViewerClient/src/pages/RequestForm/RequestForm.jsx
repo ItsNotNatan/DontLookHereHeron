@@ -408,14 +408,14 @@ export default function RequestForm() {
               <input type="text" value={dataHoje} readOnly className="input-control" />
             </div>
             <div className="input-group">
-              {/* 🟢 REMOVIDO: required e asterisco (*) */}
               <label>Nº do Pedido ou PS</label>
               <input type="text" name="pedidoCompra" value={pedidoCompra} onChange={e => setPedidoCompra(e.target.value)} className="input-control" placeholder="(opcional)" />
             </div>
             <div className="input-group">
               <label>Tipo de Operação *</label>
-              <select name="tipo_operacao" value={tipoOperacao} onChange={e => setTipoOperacao(e.target.value)} required className="input-control">
-                <option value="" disabled>Selecione...</option>
+              {/* 🟢 Adicionado style para garantir cursor pointer */}
+              <select name="tipo_operacao" value={tipoOperacao} onChange={e => setTipoOperacao(e.target.value)} required className="input-control" style={{ cursor: 'pointer' }}>
+                <option value="" hidden>Selecione...</option>
                 <option value="Nacional">NACIONAL</option>
                 <option value="Nacionalizado">NACIONALIZADO</option>
               </select>
@@ -744,8 +744,9 @@ export default function RequestForm() {
           <div className="form-grid-4">
             <div className="input-group">
               <label>Veículo *</label>
-              <select name="veiculo" value={veiculo} onChange={e => setVeiculo(e.target.value)} required className="input-control">
-                <option value="">Selecione...</option>
+              {/* 🟢 Adicionado style para garantir cursor pointer */}
+              <select name="veiculo" value={veiculo} onChange={e => setVeiculo(e.target.value)} required className="input-control" style={{ cursor: 'pointer' }}>
+                <option value="" hidden>Selecione...</option>
                 {LISTA_VEICULOS.map((veiculoItem, index) => (
                   <option key={index} value={veiculoItem}>
                     {veiculoItem}
@@ -756,8 +757,9 @@ export default function RequestForm() {
 
             <div className="input-group">
               <label>Tipo de Frete *</label>
-              <select name="frete" value={frete} onChange={e => setFrete(e.target.value)} required className="input-control">
-                <option value="">Selecione...</option>
+              {/* 🟢 Adicionado style para garantir cursor pointer */}
+              <select name="frete" value={frete} onChange={e => setFrete(e.target.value)} required className="input-control" style={{ cursor: 'pointer' }}>
+                <option value="" hidden>Selecione...</option>
                 <option value="Dedicado">DEDICADO</option>
                 <option value="Fracionado">FRACIONADO</option>
                 <option value="REDESPACHO/FRACIONADO">REDESPACHO/FRACIONADO</option>
@@ -768,7 +770,7 @@ export default function RequestForm() {
 
             <div className="input-group">
               <label>Nota Fiscal</label>
-              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} className="input-control" placeholder="opcional" />
+              <input type="text" name="nf" value={nf} onChange={e => setNf(e.target.value)} className="input-control" placeholder="Nº da NFe (opcional)" />
             </div>
 
             <div className="input-group">
