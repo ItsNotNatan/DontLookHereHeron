@@ -117,7 +117,9 @@ export default function BtnPdf({ atm }) {
                 [{ text: 'Solicitante:', bold: true, margin: [0, 4] }, { text: atm.solicitacao || 'N/A', margin: [0, 4] }],
                 [{ text: 'Data da Solicitação:', bold: true, margin: [0, 4] }, { text: formatarData(atm.data_solicitacao || atm.created_at), margin: [0, 4] }],
                 [{ text: 'Centro de Custo / WBS:', bold: true, margin: [0, 4] }, { text: atm.wbs || 'N/A', margin: [0, 4] }],
-                [{ text: 'Tipo de Operação:', bold: true, margin: [0, 4] }, { text: atm.tipo_operacao?.toUpperCase() || 'N/A', margin: [0, 4] }]
+                [{ text: 'Tipo de Operação:', bold: true, margin: [0, 4] }, { text: atm.tipo_operacao?.toUpperCase() || 'N/A', margin: [0, 4] }],
+                // 🟢 ADICIONADO: Tipo de Frete
+                [{ text: 'Tipo de Frete:', bold: true, margin: [0, 4] }, { text: atm.tipo_frete?.toUpperCase() || 'N/A', margin: [0, 4] }]
               ]
             },
             margin: [0, 0, 0, 15]
@@ -134,7 +136,7 @@ export default function BtnPdf({ atm }) {
               body: [
                 [
                   { text: [{ text: 'Endereço: ', bold: true }, `${atm.origem?.logradouro || ''}, ${atm.origem?.numero || ''} - ${atm.origem?.municipio || ''}/${atm.origem?.uf || ''} - CEP: ${atm.origem?.cep || 'N/A'}`], margin: [0, 5] },
-                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] } // 🟢 CORREÇÃO: data_coleta ao invés de created_at
+                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] } 
                 ],
                 [
                   { 
@@ -187,7 +189,7 @@ export default function BtnPdf({ atm }) {
             margin: [0, 0, 0, 15]
           },
 
-          // 🟢 NOVA SEÇÃO: DETALHAMENTO DA CARGA (ITENS)
+          // DETALHAMENTO DA CARGA (ITENS)
           {
             table: { widths: ['*'], body: [[{ text: 'DETALHAMENTO DA CARGA', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
             margin: [0, 0, 0, 4]
