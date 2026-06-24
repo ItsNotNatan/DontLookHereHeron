@@ -326,6 +326,13 @@ export default function RequestForm() {
     dados.pesoTotal = cargas.reduce((acc, curr) => acc + (parseFloat(curr.peso || 0) * parseInt(curr.quantidade || 1)), 0);
     dados.quantidadeVolumes = cargas.reduce((acc, curr) => acc + parseInt(curr.quantidade || 1), 0);
 
+    // 🟢 CORREÇÃO: Forçar o envio do valor_nf correto diretamente do estado do React
+    if (valorNfMask) {
+      dados.valor_nf = valorNfMask.replace(/\./g, '').replace(',', '.');
+    } else {
+      dados.valor_nf = '';
+    }
+
     try {
       const resposta = await api.post('/transportes', dados);
       
@@ -413,7 +420,6 @@ export default function RequestForm() {
             </div>
             <div className="input-group">
               <label>Tipo de Operação *</label>
-              {/* 🟢 Adicionado style para garantir cursor pointer */}
               <select name="tipo_operacao" value={tipoOperacao} onChange={e => setTipoOperacao(e.target.value)} required className="input-control" style={{ cursor: 'pointer' }}>
                 <option value="" hidden>Selecione...</option>
                 <option value="Nacional">NACIONAL</option>
@@ -744,7 +750,6 @@ export default function RequestForm() {
           <div className="form-grid-4">
             <div className="input-group">
               <label>Veículo *</label>
-              {/* 🟢 Adicionado style para garantir cursor pointer */}
               <select name="veiculo" value={veiculo} onChange={e => setVeiculo(e.target.value)} required className="input-control" style={{ cursor: 'pointer' }}>
                 <option value="" hidden>Selecione...</option>
                 {LISTA_VEICULOS.map((veiculoItem, index) => (
@@ -757,7 +762,6 @@ export default function RequestForm() {
 
             <div className="input-group">
               <label>Tipo de Frete *</label>
-              {/* 🟢 Adicionado style para garantir cursor pointer */}
               <select name="frete" value={frete} onChange={e => setFrete(e.target.value)} required className="input-control" style={{ cursor: 'pointer' }}>
                 <option value="" hidden>Selecione...</option>
                 <option value="Dedicado">DEDICADO</option>
