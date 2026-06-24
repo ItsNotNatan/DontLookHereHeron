@@ -121,6 +121,10 @@ export default function RequestForm() {
         const nomeExibicao = projeto.descricao || projeto.nome_projeto || projeto.wbs;
         return { value: projeto.wbs, label: nomeExibicao, dadosCompletos: projeto };
       });
+      
+      // 🟢 ORDENAÇÃO ALFABÉTICA ADICIONADA AQUI
+      projetosMapeados.sort((a, b) => a.label.localeCompare(b.label));
+
       setOpcoesWbs(projetosMapeados);
     } catch (erro) {
       console.error("Erro ao carregar projetos:", erro);
@@ -326,7 +330,6 @@ export default function RequestForm() {
     dados.pesoTotal = cargas.reduce((acc, curr) => acc + (parseFloat(curr.peso || 0) * parseInt(curr.quantidade || 1)), 0);
     dados.quantidadeVolumes = cargas.reduce((acc, curr) => acc + parseInt(curr.quantidade || 1), 0);
 
-    // 🟢 CORREÇÃO: Forçar o envio do valor_nf correto diretamente do estado do React
     if (valorNfMask) {
       dados.valor_nf = valorNfMask.replace(/\./g, '').replace(',', '.');
     } else {
@@ -811,4 +814,4 @@ export default function RequestForm() {
       </section>
     </>
   );
-}
+}'
