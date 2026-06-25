@@ -126,7 +126,6 @@ export default function BtnPdf({ atm }) {
                 [{ text: 'Data da Solicitação:', bold: true, margin: [0, 4] }, { text: formatarData(atm.data_solicitacao || atm.created_at), margin: [0, 4] }],
                 [{ text: 'Centro de Custo / WBS:', bold: true, margin: [0, 4] }, { text: atm.wbs || 'N/A', margin: [0, 4] }],
                 [{ text: 'Tipo de Frete:', bold: true, margin: [0, 4] }, { text: atm.tipo_frete?.toUpperCase() || 'N/A', margin: [0, 4] }],
-                // 🟢 ADICIONADO: Valor da NF formatado
                 [{ text: 'Valor da NF:', bold: true, margin: [0, 4] }, { text: formatarMoeda(atm.valor_nf), margin: [0, 4] }]
               ]
             },
@@ -143,8 +142,16 @@ export default function BtnPdf({ atm }) {
               widths: ['*', 140],
               body: [
                 [
-                  { text: [{ text: 'Endereço: ', bold: true }, `${atm.origem?.logradouro || ''}, ${atm.origem?.numero || ''} - ${atm.origem?.municipio || ''}/${atm.origem?.uf || ''} - CEP: ${atm.origem?.cep || 'N/A'}`], margin: [0, 5] },
+                  { text: [{ text: 'Empresa / Local: ', bold: true }, atm.origem?.nome_local || 'N/A'], margin: [0, 5] },
                   { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] } 
+                ],
+                [
+                  { 
+                    text: [{ text: 'Endereço: ', bold: true }, `${atm.origem?.logradouro || ''}, ${atm.origem?.numero || ''} - ${atm.origem?.municipio || ''}/${atm.origem?.uf || ''} - CEP: ${atm.origem?.cep || 'N/A'}`], 
+                    colSpan: 2, 
+                    margin: [0, 5] 
+                  },
+                  {} // Espaço vazio obrigatório devido ao colSpan
                 ],
                 [
                   { 
@@ -175,8 +182,16 @@ export default function BtnPdf({ atm }) {
               widths: ['*', 140],
               body: [
                 [
-                  { text: [{ text: 'Endereço: ', bold: true }, `${atm.destino?.logradouro || ''}, ${atm.destino?.numero || ''} - ${atm.destino?.municipio || ''}/${atm.destino?.uf || ''} - CEP: ${atm.destino?.cep || 'N/A'}`], margin: [0, 5] },
+                  { text: [{ text: 'Empresa / Local: ', bold: true }, atm.destino?.nome_local || 'N/A'], margin: [0, 5] },
                   { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_entrega)], alignment: 'right', margin: [0, 5] }
+                ],
+                [
+                  { 
+                    text: [{ text: 'Endereço: ', bold: true }, `${atm.destino?.logradouro || ''}, ${atm.destino?.numero || ''} - ${atm.destino?.municipio || ''}/${atm.destino?.uf || ''} - CEP: ${atm.destino?.cep || 'N/A'}`], 
+                    colSpan: 2, 
+                    margin: [0, 5] 
+                  },
+                  {} 
                 ],
                 [
                   { 
