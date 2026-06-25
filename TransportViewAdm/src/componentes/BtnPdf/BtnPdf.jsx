@@ -142,7 +142,7 @@ export default function BtnPdf({ atm }) {
               widths: ['*', 140],
               body: [
                 [
-                  { text: [{ text: 'Empresa / Local: ', bold: true }, atm.origem?.nome_local || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Empresa: ', bold: true }, atm.origem?.nome_local || 'N/A'], margin: [0, 5] },
                   { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] } 
                 ],
                 [
@@ -182,7 +182,7 @@ export default function BtnPdf({ atm }) {
               widths: ['*', 140],
               body: [
                 [
-                  { text: [{ text: 'Empresa / Local: ', bold: true }, atm.destino?.nome_local || 'N/A'], margin: [0, 5] },
+                  { text: [{ text: 'Empresa: ', bold: true }, atm.destino?.nome_local || 'N/A'], margin: [0, 5] },
                   { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_entrega)], alignment: 'right', margin: [0, 5] }
                 ],
                 [
