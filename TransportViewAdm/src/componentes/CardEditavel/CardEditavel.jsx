@@ -46,7 +46,12 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   // 🟢 ESTADO PARA CONTROLAR AS ABAS
   const [abaAtiva, setAbaAtiva] = useState('operacao');
 
+  // Mantemos o estado dataMinima caso o código em outro lugar dependa disso, 
+  // mas as travas foram removidas do input e do Submit.
   const [dataMinima, setDataMinima] = useState('');
+
+  // 🟢 SOLUÇÃO DA TELA BRANCA: Garante que o faturamento é lido como Objeto!
+  const fat = Array.isArray(atm.faturamento) ? (atm.faturamento[0] || {}) : (atm.faturamento || {});
 
   const [opcoesTransportadoras, setOpcoesTransportadoras] = useState([]);
   const [transportadoraSelecionada, setTransportadoraSelecionada] = useState(atm.transportadora?.nome || '');
@@ -61,9 +66,9 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(null);
   const [enderecoEntregaSelecionado, setEnderecoEntregaSelecionado] = useState(null);
 
-  // ESTADOS PARA AS MÁSCARAS FINANCEIRAS DE DINHEIRO
+  // ESTADOS PARA AS MÁSCARAS FINANCEIRAS DE DINHEIRO (Usando a constante "fat")
   const [maskValorNf, setMaskValorNf] = useState(formatarValorInicial(atm.valor_nf));
-  const [maskValorPrevisto, setMaskValorPrevisto] = useState(formatarValorInicial(atm.faturamento?.valor_previsto || atm.valor_previsto));
+  const [maskValorPrevisto, setMaskValorPrevisto] = useState(formatarValorInicial(fat.valor_previsto || atm.valor_previsto));
   const [maskValorRealizado, setMaskValorRealizado] = useState(formatarValorInicial(atm.valor_realizado));
 
   const [coleta, setColeta] = useState({
@@ -103,10 +108,10 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const largAtual = medidasAtuais[1]?.trim() || '';
   const altAtual = medidasAtuais[2]?.trim() || '';
 
-  // Datas Extras de Faturamento
-  const dataMapFormatada = formatarParaInputDate(atm.faturamento?.data_mapeamento || atm.data_mapeamento);
-  const dataEmiFormatada = formatarParaInputDate(atm.faturamento?.data_emissao || atm.data_emissao);
-  const dataVencFormatada = formatarParaInputDate(atm.faturamento?.vencimento || atm.vencimento);
+  // Datas Extras de Faturamento (Usando a constante "fat")
+  const dataMapFormatada = formatarParaInputDate(fat.data_mapeamento || atm.data_mapeamento);
+  const dataEmiFormatada = formatarParaInputDate(fat.data_emissao || atm.data_emissao);
+  const dataVencFormatada = formatarParaInputDate(fat.vencimento || atm.vencimento);
 
   useEffect(() => {
     const hoje = new Date();
@@ -243,14 +248,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     const formData = new FormData(e.target);
     const d = Object.fromEntries(formData.entries());
 
-    if (d.data_coleta && d.data_coleta < dataMinima) {
-      alert("A Data de Coleta não pode ser no passado.");
-      setSalvando(false); return;
-    }
-    if (d.data_entrega && d.data_entrega < dataMinima) {
-      alert("A Data de Entrega não pode ser no passado.");
-      setSalvando(false); return;
-    }
+    // 🟢 REMOVIDAS AS TRAVAS DE DATA NO PASSADO AQUI
 
     const medidasCombinadas = (d.medida_c || d.medida_l || d.medida_a) 
       ? `${d.medida_c || 0}x${d.medida_l || 0}x${d.medida_a || 0}m` 
@@ -456,7 +454,8 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
                 <span className="card-editavel__address-title">COLETA (Origem)</span>
-                <input type="date" min={dataMinima} name="data_coleta" defaultValue={dataColetaFormatada} className="card-editavel__input card-editavel__input--date-small" title="Data de Coleta" />
+                {/* 🟢 REMOVIDO: min={dataMinima} */}
+                <input type="date" name="data_coleta" defaultValue={dataColetaFormatada} className="card-editavel__input card-editavel__input--date-small" title="Data de Coleta" />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
@@ -482,7 +481,8 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
                 <span className="card-editavel__address-title" style={{ color: '#059669' }}>ENTREGA (Destino)</span>
-                <input type="date" min={dataMinima} name="data_entrega" defaultValue={dataEntregaFormatada} className="card-editavel__input card-editavel__input--date-small" title="Data de Entrega" />
+                {/* 🟢 REMOVIDO: min={dataMinima} */}
+                <input type="date" name="data_entrega" defaultValue={dataEntregaFormatada} className="card-editavel__input card-editavel__input--date-small" title="Data de Entrega" />
               </div>
 
               <div style={{ marginBottom: '1rem' }}>
@@ -649,7 +649,8 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             {/* LINHA 1 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Tipo Documento</label>
-              <input type="text" name="tipo_documento" defaultValue={atm.faturamento?.tipo_documento || atm.tipo_documento} className="card-editavel__input" placeholder="Ex: NFSe" />
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
+              <input type="text" name="tipo_documento" defaultValue={fat.tipo_documento || atm.tipo_documento} className="card-editavel__input" placeholder="Ex: NFSe" />
             </div>
             <div>
               <label className="card-editavel__label">Data Mapeamento</label>
@@ -657,7 +658,8 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Fatura (CT-e)</label>
-              <input type="text" name="fatura_cte" defaultValue={atm.faturamento?.fatura_cte || atm.fatura_cte} className="card-editavel__input" />
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
+              <input type="text" name="fatura_cte" defaultValue={fat.fatura_cte || atm.fatura_cte} className="card-editavel__input" />
             </div>
             <div>
               <label className="card-editavel__label">Valor Realizado (R$)</label>
@@ -675,17 +677,20 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Elemento PEP / CC</label>
-              <input type="text" name="elemento_pep_cc_wbs" defaultValue={atm.faturamento?.elemento_pep_cc_wbs || atm.elemento_pep_cc_wbs || ''} className="card-editavel__input" placeholder="Ex: P-123456" />
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
+              <input type="text" name="elemento_pep_cc_wbs" defaultValue={fat.elemento_pep_cc_wbs || atm.elemento_pep_cc_wbs || ''} className="card-editavel__input" placeholder="Ex: P-123456" />
             </div>
             <div>
               <label className="card-editavel__label">Validação PEP</label>
-              <input type="text" name="validacao_pep" defaultValue={atm.faturamento?.validacao_pep || atm.validacao_pep} className="card-editavel__input" placeholder="OK/Erro..." />
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
+              <input type="text" name="validacao_pep" defaultValue={fat.validacao_pep || atm.validacao_pep} className="card-editavel__input" placeholder="OK/Erro..." />
             </div>
 
             {/* LINHA 3 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Registrado SAP?</label>
-              <select name="registrado_sap" defaultValue={atm.faturamento?.registrado_sap || atm.registrado_sap || ''} className="card-editavel__select">
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
+              <select name="registrado_sap" defaultValue={fat.registrado_sap || atm.registrado_sap || ''} className="card-editavel__select">
                 <option value="">Não Especificado</option>
                 <option value="SIM">SIM (Concluído)</option>
                 <option value="NÃO">NÃO (Pendente)</option>
