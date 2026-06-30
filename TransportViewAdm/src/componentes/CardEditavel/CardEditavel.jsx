@@ -46,11 +46,9 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   // 🟢 ESTADO PARA CONTROLAR AS ABAS
   const [abaAtiva, setAbaAtiva] = useState('operacao');
 
-  // Mantemos o estado dataMinima caso o código em outro lugar dependa disso, 
-  // mas as travas foram removidas do input e do Submit.
   const [dataMinima, setDataMinima] = useState('');
 
-  // 🟢 SOLUÇÃO DA TELA BRANCA: Garante que o faturamento é lido como Objeto!
+  // 🟢 SOLUÇÃO DA TELA BRANCA
   const fat = Array.isArray(atm.faturamento) ? (atm.faturamento[0] || {}) : (atm.faturamento || {});
 
   const [opcoesTransportadoras, setOpcoesTransportadoras] = useState([]);
@@ -66,19 +64,23 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(null);
   const [enderecoEntregaSelecionado, setEnderecoEntregaSelecionado] = useState(null);
 
-  // ESTADOS PARA AS MÁSCARAS FINANCEIRAS DE DINHEIRO (Usando a constante "fat")
+  // ESTADOS PARA AS MÁSCARAS FINANCEIRAS DE DINHEIRO
   const [maskValorNf, setMaskValorNf] = useState(formatarValorInicial(atm.valor_nf));
   const [maskValorPrevisto, setMaskValorPrevisto] = useState(formatarValorInicial(fat.valor_previsto || atm.valor_previsto));
   const [maskValorRealizado, setMaskValorRealizado] = useState(formatarValorInicial(atm.valor_realizado));
 
+  // 🟢 CORREÇÃO: Incluído o nome_local
   const [coleta, setColeta] = useState({
+    nome_local: atm.origem?.nome_local || '',
     logradouro: atm.origem?.logradouro || '',
     numero: atm.origem?.numero || '',
     municipio: atm.origem?.municipio || '',
     uf: atm.origem?.uf || ''
   });
 
+  // 🟢 CORREÇÃO: Incluído o nome_local
   const [entrega, setEntrega] = useState({
+    nome_local: atm.destino?.nome_local || '',
     logradouro: atm.destino?.logradouro || '',
     numero: atm.destino?.numero || '',
     municipio: atm.destino?.municipio || '',
@@ -108,7 +110,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const largAtual = medidasAtuais[1]?.trim() || '';
   const altAtual = medidasAtuais[2]?.trim() || '';
 
-  // Datas Extras de Faturamento (Usando a constante "fat")
   const dataMapFormatada = formatarParaInputDate(fat.data_mapeamento || atm.data_mapeamento);
   const dataEmiFormatada = formatarParaInputDate(fat.data_emissao || atm.data_emissao);
   const dataVencFormatada = formatarParaInputDate(fat.vencimento || atm.vencimento);
@@ -169,11 +170,16 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     setEnderecoColetaSelecionado(opcao);
     if (opcao && opcao.value !== 'outro') {
       const local = opcao.dadosCompletos;
-      setColeta(prev => ({
-        ...prev, logradouro: local.logradouro || '', numero: local.numero || '', municipio: local.municipio || '', uf: local.uf || ''
-      }));
+      // 🟢 CORREÇÃO: Incluído o nome_local
+      setColeta({
+        nome_local: local.nome_local || '', 
+        logradouro: local.logradouro || '', 
+        numero: local.numero || '', 
+        municipio: local.municipio || '', 
+        uf: local.uf || ''
+      });
     } else {
-      setColeta(prev => ({ ...prev, logradouro: '', numero: '', municipio: '', uf: '' }));
+      setColeta({ nome_local: '', logradouro: '', numero: '', municipio: '', uf: '' });
     }
   };
 
@@ -181,11 +187,16 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     setEnderecoEntregaSelecionado(opcao);
     if (opcao && opcao.value !== 'outro') {
       const local = opcao.dadosCompletos;
-      setEntrega(prev => ({
-        ...prev, logradouro: local.logradouro || '', numero: local.numero || '', municipio: local.municipio || '', uf: local.uf || ''
-      }));
+      // 🟢 CORREÇÃO: Incluído o nome_local
+      setEntrega({
+        nome_local: local.nome_local || '', 
+        logradouro: local.logradouro || '', 
+        numero: local.numero || '', 
+        municipio: local.municipio || '', 
+        uf: local.uf || ''
+      });
     } else {
-      setEntrega(prev => ({ ...prev, logradouro: '', numero: '', municipio: '', uf: '' }));
+      setEntrega({ nome_local: '', logradouro: '', numero: '', municipio: '', uf: '' });
     }
   };
 
@@ -248,8 +259,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     const formData = new FormData(e.target);
     const d = Object.fromEntries(formData.entries());
 
-    // 🟢 REMOVIDAS AS TRAVAS DE DATA NO PASSADO AQUI
-
     const medidasCombinadas = (d.medida_c || d.medida_l || d.medida_a) 
       ? `${d.medida_c || 0}x${d.medida_l || 0}x${d.medida_a || 0}m` 
       : '';
@@ -280,14 +289,26 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
       data_coleta: d.data_coleta,
       contato_coleta: d.contato_coleta,
       telefone_coleta: d.telefone_coleta,
+      
+      // 🟢 CORREÇÃO: Passando o nome_local
       origem: {
-        logradouro: d.origem_rua, numero: d.origem_num, municipio: d.origem_cidade, uf: d.origem_uf
+        nome_local: d.origem_nome_local, 
+        logradouro: d.origem_rua, 
+        numero: d.origem_num, 
+        municipio: d.origem_cidade, 
+        uf: d.origem_uf
       },
       data_entrega: d.data_entrega,
       contato_entrega: d.contato_entrega,
       telefone_entrega: d.telefone_entrega,
+      
+      // 🟢 CORREÇÃO: Passando o nome_local
       destino: {
-        logradouro: d.destino_rua, numero: d.destino_num, municipio: d.destino_cidade, uf: d.destino_uf
+        nome_local: d.destino_nome_local, 
+        logradouro: d.destino_rua, 
+        numero: d.destino_num, 
+        municipio: d.destino_cidade, 
+        uf: d.destino_uf
       },
 
       // DADOS DE FATURAMENTO / SAP
@@ -454,7 +475,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
                 <span className="card-editavel__address-title">COLETA (Origem)</span>
-                {/* 🟢 REMOVIDO: min={dataMinima} */}
                 <input type="date" name="data_coleta" defaultValue={dataColetaFormatada} className="card-editavel__input card-editavel__input--date-small" title="Data de Coleta" />
               </div>
 
@@ -464,6 +484,17 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                   placeholder="Selecione um local cadastrado..." isSearchable isClearable styles={reactSelectStyles}
                 />
               </div>
+
+              {/* 🟢 CORREÇÃO: Adicionado o campo para editar o Nome da Empresa */}
+              <input 
+                type="text" 
+                name="origem_nome_local" 
+                value={coleta.nome_local} 
+                onChange={(e) => setColeta({...coleta, nome_local: e.target.value})} 
+                placeholder="Nome da Empresa (Local de Coleta)" 
+                className="card-editavel__input" 
+                style={{ marginBottom: '8px' }} 
+              />
 
               <div className="card-editavel__address-row" style={{ marginBottom: '10px' }}>
                 <input type="text" name="contato_coleta" defaultValue={atm.contato_coleta} placeholder="Nome do Contato" className="card-editavel__input" />
@@ -481,7 +512,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
                 <span className="card-editavel__address-title" style={{ color: '#059669' }}>ENTREGA (Destino)</span>
-                {/* 🟢 REMOVIDO: min={dataMinima} */}
                 <input type="date" name="data_entrega" defaultValue={dataEntregaFormatada} className="card-editavel__input card-editavel__input--date-small" title="Data de Entrega" />
               </div>
 
@@ -491,6 +521,17 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                   placeholder="Selecione um local cadastrado..." isSearchable isClearable styles={reactSelectStyles}
                 />
               </div>
+
+              {/* 🟢 CORREÇÃO: Adicionado o campo para editar o Nome da Empresa */}
+              <input 
+                type="text" 
+                name="destino_nome_local" 
+                value={entrega.nome_local} 
+                onChange={(e) => setEntrega({...entrega, nome_local: e.target.value})} 
+                placeholder="Nome da Empresa (Local de Entrega)" 
+                className="card-editavel__input" 
+                style={{ marginBottom: '8px' }} 
+              />
 
               <div className="card-editavel__address-row" style={{ marginBottom: '10px' }}>
                 <input type="text" name="contato_entrega" defaultValue={atm.contato_entrega} placeholder="Nome do Contato" className="card-editavel__input" />
@@ -649,7 +690,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             {/* LINHA 1 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Tipo Documento</label>
-              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="tipo_documento" defaultValue={fat.tipo_documento || atm.tipo_documento} className="card-editavel__input" placeholder="Ex: NFSe" />
             </div>
             <div>
@@ -658,7 +698,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Fatura (CT-e)</label>
-              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="fatura_cte" defaultValue={fat.fatura_cte || atm.fatura_cte} className="card-editavel__input" />
             </div>
             <div>
@@ -677,19 +716,16 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Elemento PEP / CC</label>
-              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="elemento_pep_cc_wbs" defaultValue={fat.elemento_pep_cc_wbs || atm.elemento_pep_cc_wbs || ''} className="card-editavel__input" placeholder="Ex: P-123456" />
             </div>
             <div>
               <label className="card-editavel__label">Validação PEP</label>
-              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="validacao_pep" defaultValue={fat.validacao_pep || atm.validacao_pep} className="card-editavel__input" placeholder="OK/Erro..." />
             </div>
 
             {/* LINHA 3 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Registrado SAP?</label>
-              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <select name="registrado_sap" defaultValue={fat.registrado_sap || atm.registrado_sap || ''} className="card-editavel__select">
                 <option value="">Não Especificado</option>
                 <option value="SIM">SIM (Concluído)</option>
