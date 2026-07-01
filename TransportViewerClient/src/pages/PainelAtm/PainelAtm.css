@@ -535,3 +535,13 @@
   background-color: #9ca3af;
   box-shadow: 0 0 6px rgba(156, 163, 175, 0.4);
 }
+
+/* 🟢 Fundo vermelho para fretes recusados */
+.painel-table__row--rejected {
+  background-color: #fee2e2 !important;
+}
+
+/* Deixa um pouco mais escuro quando passa o mouse por cima */
+.painel-table__row--rejected:hover {
+  background-color: #fecaca !important;
+}
