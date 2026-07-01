@@ -247,73 +247,82 @@ export default function PainelAtm() {
                 <tr><td colSpan="11" className="painel-table__cell--empty">Carregando seus pedidos...</td></tr>
               ) : atmsExibidos.length === 0 ? (
                 <tr><td colSpan="11" className="painel-table__cell--empty">Nenhum pedido encontrado com estes filtros.</td></tr>
-              ) : atmsExibidos.map((atm) => (
-                <tr key={atm.id} className="painel-table__row">
-                  <td className="painel-table__cell painel-table__cell--bold" title={atm.id}>#{atm.numero_atm || shortId(atm.id)}</td>
-                  <td className="painel-table__cell">{atm.solicitacao || '-'}</td>
-                  <td className="painel-table__cell">{atm.pedido_compra || '-'}</td>
-                  <td className="painel-table__cell">{atm.wbs || '-'}</td>
-                  
-                  <td className="painel-table__cell painel-table__route">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: '140px' }}>
-                        <strong style={{ fontSize: '0.8rem', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.origem?.nome_local}>
-                          {atm.origem?.nome_local || 'Origem N/A'}
-                        </strong>
-                        <span style={{ fontSize: '0.7rem', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.origem?.municipio}>
-                          {atm.origem?.municipio || '-'}
-                        </span>
-                      </div>
-                      <ArrowRight size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: '140px' }}>
-                        <strong style={{ fontSize: '0.8rem', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.destino?.nome_local}>
-                          {atm.destino?.nome_local || 'Destino N/A'}
-                        </strong>
-                        <span style={{ fontSize: '0.7rem', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.destino?.municipio}>
-                          {atm.destino?.municipio || '-'}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-    
-                  <td className="painel-table__cell">{atm.veiculo}</td>
-                  <td className="painel-table__cell painel-table__cell--medium">
-                    {atm.transportadora?.nome || <span className="painel-table__cell--muted">A Definir</span>}
-                  </td>
-                  
-                  <td className="painel-table__cell painel-table__cell--center">
-                    {renderDesvioCusto(atm)}
-                  </td>
-                  
-                  <td className="painel-table__cell">
-                    <span className={`painel-badge ${getStatusClass(atm.status)}`}>{atm.status}</span>
-                  </td>
+              ) : atmsExibidos.map((atm) => {
+                
+                // 🟢 IDENTIFICA SE O FRETE ESTÁ RECUSADO E APLICA A CLASSE NO TR
+                const isRecusado = atm.status?.toLowerCase() === 'recusado';
 
-                  <td className="painel-table__cell painel-table__cell--center">
-                    {atm.link_rastreio ? (
-                      <a 
-                        href={atm.link_rastreio} target="_blank" rel="noopener noreferrer" className="painel-btn"
-                        style={{ color: '#2563eb', display: 'inline-flex', padding: '4px', borderRadius: '4px', transition: 'transform 0.2s' }}
-                        title="Link de rastreio disponível! Clique para abrir."
-                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                      >
-                        <ExternalLink size={18} />
-                      </a>
-                    ) : (
-                      <span style={{ color: '#cbd5e1', display: 'inline-flex', padding: '4px', cursor: 'not-allowed' }} title="Nenhum link de rastreio anexado pela operação.">
-                        <ExternalLink size={18} />
-                      </span>
-                    )}
-                  </td>
+                return (
+                  <tr 
+                    key={atm.id} 
+                    className={`painel-table__row ${isRecusado ? 'painel-table__row--rejected' : ''}`}
+                  >
+                    <td className="painel-table__cell painel-table__cell--bold" title={atm.id}>#{atm.numero_atm || shortId(atm.id)}</td>
+                    <td className="painel-table__cell">{atm.solicitacao || '-'}</td>
+                    <td className="painel-table__cell">{atm.pedido_compra || '-'}</td>
+                    <td className="painel-table__cell">{atm.wbs || '-'}</td>
+                    
+                    <td className="painel-table__cell painel-table__route">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: '140px' }}>
+                          <strong style={{ fontSize: '0.8rem', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.origem?.nome_local}>
+                            {atm.origem?.nome_local || 'Origem N/A'}
+                          </strong>
+                          <span style={{ fontSize: '0.7rem', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.origem?.municipio}>
+                            {atm.origem?.municipio || '-'}
+                          </span>
+                        </div>
+                        <ArrowRight size={14} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, maxWidth: '140px' }}>
+                          <strong style={{ fontSize: '0.8rem', color: '#1f2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.destino?.nome_local}>
+                            {atm.destino?.nome_local || 'Destino N/A'}
+                          </strong>
+                          <span style={{ fontSize: '0.7rem', color: '#6b7280', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={atm.destino?.municipio}>
+                            {atm.destino?.municipio || '-'}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+      
+                    <td className="painel-table__cell">{atm.veiculo}</td>
+                    <td className="painel-table__cell painel-table__cell--medium">
+                      {atm.transportadora?.nome || <span className="painel-table__cell--muted">A Definir</span>}
+                    </td>
+                    
+                    <td className="painel-table__cell painel-table__cell--center">
+                      {renderDesvioCusto(atm)}
+                    </td>
+                    
+                    <td className="painel-table__cell">
+                      <span className={`painel-badge ${getStatusClass(atm.status)}`}>{atm.status}</span>
+                    </td>
 
-                  <td className="painel-table__cell painel-table__cell--center">
-                    <button className="painel-btn painel-btn--action" onClick={() => setSelectedAtm(atm)}>
-                      <FolderOpen size={16} /> Detalhes
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    <td className="painel-table__cell painel-table__cell--center">
+                      {atm.link_rastreio ? (
+                        <a 
+                          href={atm.link_rastreio} target="_blank" rel="noopener noreferrer" className="painel-btn"
+                          style={{ color: '#2563eb', display: 'inline-flex', padding: '4px', borderRadius: '4px', transition: 'transform 0.2s' }}
+                          title="Link de rastreio disponível! Clique para abrir."
+                          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.15)'}
+                          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                          <ExternalLink size={18} />
+                        </a>
+                      ) : (
+                        <span style={{ color: '#cbd5e1', display: 'inline-flex', padding: '4px', cursor: 'not-allowed' }} title="Nenhum link de rastreio anexado pela operação.">
+                          <ExternalLink size={18} />
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="painel-table__cell painel-table__cell--center">
+                      <button className="painel-btn painel-btn--action" onClick={() => setSelectedAtm(atm)}>
+                        <FolderOpen size={16} /> Detalhes
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
