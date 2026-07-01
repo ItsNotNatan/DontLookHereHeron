@@ -156,7 +156,9 @@ export default function PainelAtm() {
   };
 
   const renderDesvioCusto = (atm) => {
-    const previstoRaw = atm.faturamento?.valor_previsto;
+    // 🟢 GARANTE QUE LÊ O FATURAMENTO CERTO
+    const fat = Array.isArray(atm.faturamento) ? (atm.faturamento[0] || {}) : (atm.faturamento || {});
+    const previstoRaw = fat.valor_previsto || atm.valor_previsto;
     const realizadoRaw = atm.valor_realizado;
 
     if (!previstoRaw && !realizadoRaw && previstoRaw !== 0 && realizadoRaw !== 0) {
@@ -250,7 +252,7 @@ export default function PainelAtm() {
               ) : atmsExibidos.map((atm) => {
                 
                 // 🟢 IDENTIFICA SE O FRETE ESTÁ RECUSADO E APLICA A CLASSE NO TR
-                const isRecusado = atm.status?.toLowerCase() === 'recusado';
+                const isRecusado = atm.status?.toLowerCase() === 'recusado' || atm.status?.toLowerCase() === 'frete morto';
 
                 return (
                   <tr 
@@ -380,7 +382,13 @@ export default function PainelAtm() {
                   <ul className="painel-modal__list">
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Transportadora:</span> <span className="painel-modal__value">{selectedAtm.transportadora?.nome || 'A Definir'}</span></li>
                     
-                    <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Previsto:</span> <span className="painel-modal__value painel-modal__value--success">{formatarMoeda(selectedAtm.faturamento?.valor_previsto)}</span></li>
+                    {/* 🟢 CORREÇÃO DO FATURAMENTO: Garante leitura segura na modal também! */}
+                    <li className="painel-modal__list-item">
+                      <span className="painel-modal__label">Valor Previsto:</span> 
+                      <span className="painel-modal__value painel-modal__value--success">
+                        {formatarMoeda((Array.isArray(selectedAtm.faturamento) ? selectedAtm.faturamento[0]?.valor_previsto : selectedAtm.faturamento?.valor_previsto) || selectedAtm.valor_previsto)}
+                      </span>
+                    </li>
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Valor Realizado:</span> <span className="painel-modal__value">{formatarMoeda(selectedAtm.valor_realizado)}</span></li>
                     
                     <li className="painel-modal__list-item"><span className="painel-modal__label">Tipo de Veículo:</span> <span className="painel-modal__value">{selectedAtm.veiculo || 'Não informado'}</span></li>
