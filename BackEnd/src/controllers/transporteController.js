@@ -290,7 +290,6 @@ const atualizarTransporteAdmin = async (req, res) => {
     if (d.contato_entrega !== undefined) updateAtm.contato_entrega = str(d.contato_entrega);
     if (d.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(d.telefone_entrega);
 
-    // 🟢 ADICIONADO: Verifica explicitamente e salva a data e HORA
     if (d.data_coleta !== undefined) {
       updateAtm.data_coleta = d.data_coleta ? formatarProBanco(d.data_coleta) : "";
     }
@@ -320,15 +319,19 @@ const atualizarTransporteAdmin = async (req, res) => {
 
     const pedido = await withAuth(() => pb.collection('pedidos_atm').update(id, updateAtm));
 
+    // 🟢 CORREÇÃO: Agora salva o nome_local
     if (pedido.id_origem && d.origem) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_origem, {
+        nome_local: str(d.origem.nome_local),
         logradouro: str(d.origem.logradouro), numero: str(d.origem.numero),
         municipio: str(d.origem.municipio), uf: str(d.origem.uf)
       }));
     }
 
+    // 🟢 CORREÇÃO: Agora salva o nome_local
     if (pedido.id_destino && d.destino) {
       await withAuth(() => pb.collection('enderecos_pedido').update(pedido.id_destino, {
+        nome_local: str(d.destino.nome_local),
         logradouro: str(d.destino.logradouro), numero: str(d.destino.numero),
         municipio: str(d.destino.municipio), uf: str(d.destino.uf)
       }));
@@ -404,7 +407,6 @@ const atualizarLoteAdmin = async (req, res) => {
     if (dados.contato_entrega !== undefined) updateAtm.contato_entrega = str(dados.contato_entrega);
     if (dados.telefone_entrega !== undefined) updateAtm.telefone_entrega = str(dados.telefone_entrega);
 
-    // 🟢 ADICIONADO PARA LOTE: Capturar a hora também na edição em massa
     if (dados.data_coleta !== undefined) {
       updateAtm.data_coleta = dados.data_coleta ? formatarProBanco(dados.data_coleta) : "";
     }
