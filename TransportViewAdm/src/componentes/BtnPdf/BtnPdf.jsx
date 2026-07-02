@@ -48,7 +48,7 @@ export default function BtnPdf({ atm }) {
     return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataStr;
   };
 
-  // 🟢 Tratamento para formatação de moeda no PDF
+  // Tratamento para formatação de moeda no PDF
   const formatarMoeda = (valor) => {
     if (valor === null || valor === undefined || valor === '') return 'R$ 0,00';
     const numero = parseFloat(valor);
@@ -113,7 +113,7 @@ export default function BtnPdf({ atm }) {
             ]
           },
 
-          // IDENTIFICAÇÃO
+          // IDENTIFICAÇÃO (🟢 CORRIGIDO: Inclusão do Veículo e Tratamento Seguro do Frete)
           {
             table: { widths: ['*'], body: [[{ text: 'IDENTIFICAÇÃO', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
             margin: [0, 0, 0, 4]
@@ -125,7 +125,8 @@ export default function BtnPdf({ atm }) {
                 [{ text: 'Solicitante:', bold: true, margin: [0, 4] }, { text: atm.solicitacao || 'N/A', margin: [0, 4] }],
                 [{ text: 'Data da Solicitação:', bold: true, margin: [0, 4] }, { text: formatarData(atm.data_solicitacao || atm.created_at), margin: [0, 4] }],
                 [{ text: 'Centro de Custo / WBS:', bold: true, margin: [0, 4] }, { text: atm.wbs || 'N/A', margin: [0, 4] }],
-                [{ text: 'Tipo de Frete:', bold: true, margin: [0, 4] }, { text: atm.tipo_frete?.toUpperCase() || 'N/A', margin: [0, 4] }],
+                [{ text: 'Tipo de Frete:', bold: true, margin: [0, 4] }, { text: atm.tipo_frete ? String(atm.tipo_frete).toUpperCase() : 'N/A', margin: [0, 4] }],
+                [{ text: 'Veículo Sugerido:', bold: true, margin: [0, 4] }, { text: atm.veiculo ? String(atm.veiculo).toUpperCase() : 'N/A', margin: [0, 4] }],
                 [{ text: 'Valor da NF:', bold: true, margin: [0, 4] }, { text: formatarMoeda(atm.valor_nf), margin: [0, 4] }]
               ]
             },
