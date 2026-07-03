@@ -48,7 +48,7 @@ export default function BtnPdf({ atm }) {
     return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : dataStr;
   };
 
-  // Tratamento para formatação de moeda no PDF
+  // 🟢 Tratamento para formatação de moeda no PDF
   const formatarMoeda = (valor) => {
     if (valor === null || valor === undefined || valor === '') return 'R$ 0,00';
     const numero = parseFloat(valor);
@@ -113,7 +113,7 @@ export default function BtnPdf({ atm }) {
             ]
           },
 
-          // IDENTIFICAÇÃO (🟢 CORRIGIDO: Inclusão do Veículo e Tratamento Seguro do Frete)
+          // IDENTIFICAÇÃO 
           {
             table: { widths: ['*'], body: [[{ text: 'IDENTIFICAÇÃO', style: 'sectionTitle', fillColor: '#EEEEEE' }]] },
             margin: [0, 0, 0, 4]
@@ -144,7 +144,8 @@ export default function BtnPdf({ atm }) {
               body: [
                 [
                   { text: [{ text: 'Empresa: ', bold: true }, atm.origem?.nome_local || 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta)], alignment: 'right', margin: [0, 5] } 
+                  // 🟢 CORRIGIDO AQUI: Adicionado a formatação de hora para Coleta
+                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_coleta) + (atm.hora_coleta ? ` às ${atm.hora_coleta}` : '')], alignment: 'right', margin: [0, 5] } 
                 ],
                 [
                   { 
@@ -184,7 +185,8 @@ export default function BtnPdf({ atm }) {
               body: [
                 [
                   { text: [{ text: 'Empresa: ', bold: true }, atm.destino?.nome_local || 'N/A'], margin: [0, 5] },
-                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_entrega)], alignment: 'right', margin: [0, 5] }
+                  // 🟢 CORRIGIDO AQUI: Adicionado a formatação de hora para Entrega
+                  { text: [{ text: 'Previsão: ', bold: true }, formatarData(atm.data_entrega) + (atm.hora_entrega ? ` às ${atm.hora_entrega}` : '')], alignment: 'right', margin: [0, 5] }
                 ],
                 [
                   { 
