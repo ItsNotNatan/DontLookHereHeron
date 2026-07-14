@@ -64,12 +64,10 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const [enderecoColetaSelecionado, setEnderecoColetaSelecionado] = useState(null);
   const [enderecoEntregaSelecionado, setEnderecoEntregaSelecionado] = useState(null);
 
-  // ESTADOS PARA AS MÁSCARAS FINANCEIRAS DE DINHEIRO
   const [maskValorNf, setMaskValorNf] = useState(formatarValorInicial(atm.valor_nf));
   const [maskValorPrevisto, setMaskValorPrevisto] = useState(formatarValorInicial(fat.valor_previsto || atm.valor_previsto));
   const [maskValorRealizado, setMaskValorRealizado] = useState(formatarValorInicial(atm.valor_realizado));
 
-  // 🟢 CORREÇÃO: Incluído o nome_local
   const [coleta, setColeta] = useState({
     nome_local: atm.origem?.nome_local || '',
     logradouro: atm.origem?.logradouro || '',
@@ -78,7 +76,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     uf: atm.origem?.uf || ''
   });
 
-  // 🟢 CORREÇÃO: Incluído o nome_local
   const [entrega, setEntrega] = useState({
     nome_local: atm.destino?.nome_local || '',
     logradouro: atm.destino?.logradouro || '',
@@ -101,7 +98,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     nome: '', quantidade: 1, peso: '', comprimento: '', largura: '', altura: '', cor: '#3b82f6'
   });
 
-  // 1️⃣ FORMATAMOS AS DATAS
+  // 1️⃣ PRIMEIRO: FORMATAMOS AS DATAS INICIAIS
   const dataEntregaFormatada = formatarParaInputDate(atm.data_entrega);
   const dataColetaFormatada = formatarParaInputDate(atm.data_coleta);
   const dataSolFormatada = formatarParaInputDate(atm.data_solicitacao || atm.created_at);
@@ -115,41 +112,39 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const dataEmiFormatada = formatarParaInputDate(fat.data_emissao || atm.data_emissao);
   const dataVencFormatada = formatarParaInputDate(fat.vencimento || atm.vencimento);
 
-  // 2️⃣ ESTADOS PARA CÁLCULO DE VENCIMENTO AUTOMÁTICO
+  // 2️⃣ SEGUNDO: ESTADOS QUE CONTROLAM O CÁLCULO
   const [tipoDocumento, setTipoDocumento] = useState(fat.tipo_documento || atm.tipo_documento || '');
   const [dataEmissao, setDataEmissao] = useState(dataEmiFormatada || '');
   const [vencimento, setVencimento] = useState(dataVencFormatada || '');
 
-  // ⭐ NOVO: FUNÇÃO PARA CALCULAR A DATA BASEADA EM "HOJE"
-  // Esta função roda quando o usuário escolhe uma opção na caixinha "Tipo Documento"
-  const handleMudancaTipoDocumento = (e) => {
-    const novoTipo = e.target.value;
-    setTipoDocumento(novoTipo); // Atualiza qual foi o documento escolhido na tela
+  // ⭐ NOVO: O OBSERVADOR DE DATAS (EFEITO)
+  useEffect(() => {
+    // Regra de ouro: Só faz alguma coisa se houver Tipo de Documento E Data de Emissão.
+    // Se "dataEmissao" estiver vazio, a condição abaixo dá false e ele não faz o cálculo.
+    if (tipoDocumento && dataEmissao) {
+      let diasParaAdicionar = 0;
 
-    let diasParaAdicionar = 0;
+      if (tipoDocumento === 'CTE') {
+        diasParaAdicionar = 50;
+      } else if (tipoDocumento === 'NFs' || tipoDocumento === 'FAT') {
+        diasParaAdicionar = 30;
+      }
 
-    // Aplica a sua regra de negócio
-    if (novoTipo === 'CTE') {
-      diasParaAdicionar = 50;
-    } else if (novoTipo === 'NFs' || novoTipo === 'FAT') {
-      diasParaAdicionar = 30;
+      if (diasParaAdicionar > 0) {
+        // Criamos a data baseando-se EXCLUSIVAMENTE na Data de Emissão (dataEmissao)
+        // O "T12:00:00Z" evita que o fuso horário mude o dia acidentalmente
+        const dataBase = new Date(`${dataEmissao}T12:00:00Z`);
+        
+        // Somamos os dias na Data de Emissão
+        dataBase.setDate(dataBase.getDate() + diasParaAdicionar);
+
+        // Atualizamos o estado do Vencimento Fatura
+        const novoVencimento = dataBase.toISOString().split('T')[0];
+        setVencimento(novoVencimento);
+      }
     }
+  }, [tipoDocumento, dataEmissao]); // Fica vigiando essas duas variáveis
 
-    // Se tiver que adicionar dias, faremos a conta a partir de "Hoje"
-    if (diasParaAdicionar > 0) {
-      const dataHoje = new Date(); // Pega a data e hora atual do computador
-      
-      // Soma os dias na data de hoje
-      dataHoje.setDate(dataHoje.getDate() + diasParaAdicionar);
-
-      // Esse truque do "timezoneOffset" garante que a data não sofra problemas com o fuso horário brasileiro
-      const timezoneOffset = dataHoje.getTimezoneOffset() * 60000;
-      const novoVencimento = (new Date(dataHoje.getTime() - timezoneOffset)).toISOString().split('T')[0];
-
-      // Atualiza o campo de Vencimento Fatura
-      setVencimento(novoVencimento);
-    }
-  };
 
   useEffect(() => {
     const hoje = new Date();
@@ -707,11 +702,10 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             
             <div>
               <label className="card-editavel__label">Tipo Documento</label>
-              {/* ⭐ NOVO: A chamada para a nossa função acontece no "onChange" */}
               <select 
                 name="tipo_documento" 
                 value={tipoDocumento} 
-                onChange={handleMudancaTipoDocumento} 
+                onChange={(e) => setTipoDocumento(e.target.value)} 
                 className="card-editavel__select"
               >
                 <option value="">Selecione...</option>
@@ -735,6 +729,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
 
             <div>
               <label className="card-editavel__label">Data Emissão Fatura</label>
+              {/* O valor base do nosso cálculo está aqui */}
               <input 
                 type="date" 
                 name="data_emissao" 
@@ -745,6 +740,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Vencimento Fatura</label>
+              {/* O resultado calculado é empurrado pra cá */}
               <input 
                 type="date" 
                 name="vencimento" 
