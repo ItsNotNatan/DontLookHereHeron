@@ -40,6 +40,21 @@ const formatarParaInputDate = (dataStr) => {
   return '';
 };
 
+// 🟢 NOVA FUNÇÃO: Calcula a data de vencimento baseada no tipo de documento
+const calcularVencimentoLocal = (dataStr, tipoDoc) => {
+  if (!dataStr || !tipoDoc) return '';
+  const [ano, mes, dia] = dataStr.split('-');
+  const d = new Date(ano, mes - 1, dia); // Usa a data local para não ter fuso horário bagunçando
+  
+  const diasAAcrescentar = tipoDoc === 'CTE' ? 50 : 30;
+  d.setDate(d.getDate() + diasAAcrescentar);
+  
+  const rAno = d.getFullYear();
+  const rMes = String(d.getMonth() + 1).padStart(2, '0');
+  const rDia = String(d.getDate()).padStart(2, '0');
+  return `${rAno}-${rMes}-${rDia}`;
+};
+
 export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const [salvando, setSalvando] = useState(false);
   
@@ -68,6 +83,11 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const [maskValorNf, setMaskValorNf] = useState(formatarValorInicial(atm.valor_nf));
   const [maskValorPrevisto, setMaskValorPrevisto] = useState(formatarValorInicial(fat.valor_previsto || atm.valor_previsto));
   const [maskValorRealizado, setMaskValorRealizado] = useState(formatarValorInicial(atm.valor_realizado));
+
+  // 🟢 ESTADOS PARA CÁLCULO DE DATA AUTOMÁTICA
+  const [tipoDocumento, setTipoDocumento] = useState(fat.tipo_documento || atm.tipo_documento || '');
+  const [dataEmissao, setDataEmissao] = useState(formatarParaInputDate(fat.data_emissao || atm.data_emissao));
+  const [vencimento, setVencimento] = useState(formatarParaInputDate(fat.vencimento || atm.vencimento));
 
   // 🟢 CORREÇÃO: Incluído o nome_local
   const [coleta, setColeta] = useState({
@@ -111,8 +131,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const altAtual = medidasAtuais[2]?.trim() || '';
 
   const dataMapFormatada = formatarParaInputDate(fat.data_mapeamento || atm.data_mapeamento);
-  const dataEmiFormatada = formatarParaInputDate(fat.data_emissao || atm.data_emissao);
-  const dataVencFormatada = formatarParaInputDate(fat.vencimento || atm.vencimento);
 
   useEffect(() => {
     const hoje = new Date();
@@ -485,7 +503,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                 />
               </div>
 
-              {/* 🟢 CORREÇÃO: Adicionado o campo para editar o Nome da Empresa */}
               <input 
                 type="text" 
                 name="origem_nome_local" 
@@ -522,7 +539,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
                 />
               </div>
 
-              {/* 🟢 CORREÇÃO: Adicionado o campo para editar o Nome da Empresa */}
               <input 
                 type="text" 
                 name="destino_nome_local" 
@@ -690,6 +706,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             {/* LINHA 1 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Tipo Documento</label>
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="tipo_documento" defaultValue={fat.tipo_documento || atm.tipo_documento} className="card-editavel__input" placeholder="Ex: NFSe" />
             </div>
             <div>
@@ -698,6 +715,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Fatura (CT-e)</label>
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="fatura_cte" defaultValue={fat.fatura_cte || atm.fatura_cte} className="card-editavel__input" />
             </div>
             <div>
@@ -716,16 +734,19 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Elemento PEP / CC</label>
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="elemento_pep_cc_wbs" defaultValue={fat.elemento_pep_cc_wbs || atm.elemento_pep_cc_wbs || ''} className="card-editavel__input" placeholder="Ex: P-123456" />
             </div>
             <div>
               <label className="card-editavel__label">Validação PEP</label>
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <input type="text" name="validacao_pep" defaultValue={fat.validacao_pep || atm.validacao_pep} className="card-editavel__input" placeholder="OK/Erro..." />
             </div>
 
             {/* LINHA 3 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Registrado SAP?</label>
+              {/* 🟢 Substituído "atm.faturamento?" por "fat." */}
               <select name="registrado_sap" defaultValue={fat.registrado_sap || atm.registrado_sap || ''} className="card-editavel__select">
                 <option value="">Não Especificado</option>
                 <option value="SIM">SIM (Concluído)</option>
@@ -759,3 +780,4 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     </form>
   );
 }
+'
