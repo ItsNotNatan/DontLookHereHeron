@@ -101,6 +101,8 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     nome: '', quantidade: 1, peso: '', comprimento: '', largura: '', altura: '', cor: '#3b82f6'
   });
 
+  // 1️⃣ PRIMEIRO: FORMATAMOS AS DATAS
+  // Precisamos criar as variáveis de data primeiro para que o useState possa usá-las depois.
   const dataEntregaFormatada = formatarParaInputDate(atm.data_entrega);
   const dataColetaFormatada = formatarParaInputDate(atm.data_coleta);
   const dataSolFormatada = formatarParaInputDate(atm.data_solicitacao || atm.created_at);
@@ -114,19 +116,18 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const dataEmiFormatada = formatarParaInputDate(fat.data_emissao || atm.data_emissao);
   const dataVencFormatada = formatarParaInputDate(fat.vencimento || atm.vencimento);
 
-  // ⭐ NOVO: ESTADOS PARA CÁLCULO DE VENCIMENTO AUTOMÁTICO
-  // Precisamos monitorar essas variáveis para que o programa saiba a hora de calcular
+  // 2️⃣ SEGUNDO: ESTADOS PARA CÁLCULO DE VENCIMENTO AUTOMÁTICO
+  // Agora sim, com as variáveis criadas, o React não vai dar erro.
   const [tipoDocumento, setTipoDocumento] = useState(fat.tipo_documento || atm.tipo_documento || '');
   const [dataEmissao, setDataEmissao] = useState(dataEmiFormatada || '');
   const [vencimento, setVencimento] = useState(dataVencFormatada || '');
 
-  // ⭐ NOVO: EFEITO DE CÁLCULO DE DATAS
+  // ⭐ EFEITO DE CÁLCULO DE DATAS
+  // Esta função observa o Tipo de Documento e a Data de Emissão e calcula o Vencimento.
   useEffect(() => {
-    // Só calcula se o usuário tiver escolhido um documento E preenchido a emissão
     if (tipoDocumento && dataEmissao) {
       let diasParaAdicionar = 0;
       
-      // Regra de negócio: CTE = 50 dias, NFs/FAT = 30 dias
       if (tipoDocumento === 'CTE') {
         diasParaAdicionar = 50;
       } else if (tipoDocumento === 'NFs' || tipoDocumento === 'FAT') {
@@ -137,16 +138,15 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
         // Pega a data escolhida e adiciona meio-dia para evitar bugs de fuso horário
         const dataParaCalculo = new Date(`${dataEmissao}T12:00:00Z`);
         
-        // Adiciona os dias corretos
+        // Adiciona os dias correspondentes
         dataParaCalculo.setDate(dataParaCalculo.getDate() + diasParaAdicionar);
         
-        // Converte de volta para o formato de input (YYYY-MM-DD) e salva no vencimento
+        // Converte para o formato de input e atualiza a caixinha na tela
         const novoVencimento = dataParaCalculo.toISOString().split('T')[0];
         setVencimento(novoVencimento);
       }
     }
-  }, [tipoDocumento, dataEmissao]); // O React "roda" o código acima sempre que essas duas variáveis mudarem
-
+  }, [tipoDocumento, dataEmissao]);
 
   useEffect(() => {
     const hoje = new Date();
@@ -718,7 +718,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             {/* LINHA 1 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Tipo Documento</label>
-              {/* ⭐ NOVO: Transformado em Select e com "value" ligado ao state */}
               <select 
                 name="tipo_documento" 
                 value={tipoDocumento} 
@@ -747,7 +746,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             {/* LINHA 2 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Data Emissão Fatura</label>
-              {/* ⭐ NOVO: Controlado pelo state "dataEmissao" */}
               <input 
                 type="date" 
                 name="data_emissao" 
@@ -758,7 +756,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
             </div>
             <div>
               <label className="card-editavel__label">Vencimento Fatura</label>
-              {/* ⭐ NOVO: Controlado pelo state "vencimento" para atualizar automático */}
               <input 
                 type="date" 
                 name="vencimento" 
