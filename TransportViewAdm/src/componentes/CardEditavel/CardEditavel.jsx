@@ -101,8 +101,7 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     nome: '', quantidade: 1, peso: '', comprimento: '', largura: '', altura: '', cor: '#3b82f6'
   });
 
-  // 1️⃣ PRIMEIRO: FORMATAMOS AS DATAS
-  // Precisamos criar as variáveis de data primeiro para que o useState possa usá-las depois.
+  // 1️⃣ FORMATAMOS AS DATAS
   const dataEntregaFormatada = formatarParaInputDate(atm.data_entrega);
   const dataColetaFormatada = formatarParaInputDate(atm.data_coleta);
   const dataSolFormatada = formatarParaInputDate(atm.data_solicitacao || atm.created_at);
@@ -116,37 +115,41 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
   const dataEmiFormatada = formatarParaInputDate(fat.data_emissao || atm.data_emissao);
   const dataVencFormatada = formatarParaInputDate(fat.vencimento || atm.vencimento);
 
-  // 2️⃣ SEGUNDO: ESTADOS PARA CÁLCULO DE VENCIMENTO AUTOMÁTICO
-  // Agora sim, com as variáveis criadas, o React não vai dar erro.
+  // 2️⃣ ESTADOS PARA CÁLCULO DE VENCIMENTO AUTOMÁTICO
   const [tipoDocumento, setTipoDocumento] = useState(fat.tipo_documento || atm.tipo_documento || '');
   const [dataEmissao, setDataEmissao] = useState(dataEmiFormatada || '');
   const [vencimento, setVencimento] = useState(dataVencFormatada || '');
 
-  // ⭐ EFEITO DE CÁLCULO DE DATAS
-  // Esta função observa o Tipo de Documento e a Data de Emissão e calcula o Vencimento.
-  useEffect(() => {
-    if (tipoDocumento && dataEmissao) {
-      let diasParaAdicionar = 0;
-      
-      if (tipoDocumento === 'CTE') {
-        diasParaAdicionar = 50;
-      } else if (tipoDocumento === 'NFs' || tipoDocumento === 'FAT') {
-        diasParaAdicionar = 30;
-      }
+  // ⭐ NOVO: FUNÇÃO PARA CALCULAR A DATA BASEADA EM "HOJE"
+  // Esta função roda quando o usuário escolhe uma opção na caixinha "Tipo Documento"
+  const handleMudancaTipoDocumento = (e) => {
+    const novoTipo = e.target.value;
+    setTipoDocumento(novoTipo); // Atualiza qual foi o documento escolhido na tela
 
-      if (diasParaAdicionar > 0) {
-        // Pega a data escolhida e adiciona meio-dia para evitar bugs de fuso horário
-        const dataParaCalculo = new Date(`${dataEmissao}T12:00:00Z`);
-        
-        // Adiciona os dias correspondentes
-        dataParaCalculo.setDate(dataParaCalculo.getDate() + diasParaAdicionar);
-        
-        // Converte para o formato de input e atualiza a caixinha na tela
-        const novoVencimento = dataParaCalculo.toISOString().split('T')[0];
-        setVencimento(novoVencimento);
-      }
+    let diasParaAdicionar = 0;
+
+    // Aplica a sua regra de negócio
+    if (novoTipo === 'CTE') {
+      diasParaAdicionar = 50;
+    } else if (novoTipo === 'NFs' || novoTipo === 'FAT') {
+      diasParaAdicionar = 30;
     }
-  }, [tipoDocumento, dataEmissao]);
+
+    // Se tiver que adicionar dias, faremos a conta a partir de "Hoje"
+    if (diasParaAdicionar > 0) {
+      const dataHoje = new Date(); // Pega a data e hora atual do computador
+      
+      // Soma os dias na data de hoje
+      dataHoje.setDate(dataHoje.getDate() + diasParaAdicionar);
+
+      // Esse truque do "timezoneOffset" garante que a data não sofra problemas com o fuso horário brasileiro
+      const timezoneOffset = dataHoje.getTimezoneOffset() * 60000;
+      const novoVencimento = (new Date(dataHoje.getTime() - timezoneOffset)).toISOString().split('T')[0];
+
+      // Atualiza o campo de Vencimento Fatura
+      setVencimento(novoVencimento);
+    }
+  };
 
   useEffect(() => {
     const hoje = new Date();
@@ -296,7 +299,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
       : '';
 
     const dadosParaEnviar = {
-      // DADOS DA OPERAÇÃO ESPELHADOS DA TABELA
       status: d.status,
       tipo_operacao: d.tipo_operacao,
       wbs: d.wbs,
@@ -309,7 +311,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
       tipo_frete: d.tipo_frete,
       veiculo: d.veiculo,
       
-      // RESTANTE DA OPERAÇÃO
       data_solicitacao: d.data_solicitacao,
       peso: d.peso,
       volume: d.volume,
@@ -341,7 +342,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
         uf: d.destino_uf
       },
 
-      // DADOS DE FATURAMENTO / SAP
       tipo_documento: d.tipo_documento,
       data_mapeamento: d.data_mapeamento,
       fatura_cte: d.fatura_cte,
@@ -371,7 +371,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
     <form className="card-editavel" onSubmit={handleSubmit}>
       <div className="card-editavel__content">
         
-        {/* 🟢 ABAS DE NAVEGAÇÃO */}
         <div style={{ display: 'flex', gap: '20px', borderBottom: '2px solid #e2e8f0', marginBottom: '20px' }}>
           <button 
             type="button" 
@@ -399,15 +398,12 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
           </button>
         </div>
 
-        {/* ==================================================== */}
         {/* ABA: DADOS DE OPERAÇÃO */}
-        {/* ==================================================== */}
         <div style={{ display: abaAtiva === 'operacao' ? 'block' : 'none' }}>
           
           <h4 className="card-editavel__section-title" style={{ marginTop: 0 }}>Espelho da Tabela</h4>
           <div className="card-editavel__grid card-editavel__grid--cols-4">
             
-            {/* LINHA 1 DA TABELA */}
             <div>
               <label className="card-editavel__label">Tipo Operação</label>
               <select name="tipo_operacao" defaultValue={atm.tipo_operacao} className="card-editavel__select">
@@ -439,7 +435,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               </select>
             </div>
 
-            {/* LINHA 2 DA TABELA */}
             <div>
               <label className="card-editavel__label">Pedido Compra</label>
               <input type="text" name="pedido_compra" defaultValue={atm.pedido_compra} className="card-editavel__input" />
@@ -469,7 +464,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               </select>
             </div>
 
-            {/* LINHA 3 DA TABELA */}
             <div>
               <label className="card-editavel__label">Valor Previsto (R$)</label>
               <input type="text" name="valor_previsto_mask" className="card-editavel__input" placeholder="0,00" value={maskValorPrevisto} onChange={(e) => setMaskValorPrevisto(aplicarMascaraMoeda(e.target.value))} />
@@ -501,7 +495,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
 
           <h4 className="card-editavel__section-title">Rota (Origem e Destino)</h4>
           <div className="card-editavel__grid card-editavel__grid--cols-2">
-            {/* Origem */}
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
                 <span className="card-editavel__address-title">COLETA (Origem)</span>
@@ -537,7 +530,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               </div>
             </div>
             
-            {/* Destino */}
             <div className="card-editavel__address-box">
               <div className="card-editavel__address-header">
                 <span className="card-editavel__address-title" style={{ color: '#059669' }}>ENTREGA (Destino)</span>
@@ -706,22 +698,20 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
           </div>
         </div>
 
-        {/* ==================================================== */}
         {/* ABA: FATURAMENTO E SAP */}
-        {/* ==================================================== */}
         <div style={{ display: abaAtiva === 'faturamento' ? 'block' : 'none' }}>
           
           <h4 className="card-editavel__section-title" style={{ marginTop: 0, color: '#059669', borderColor: '#d1fae5' }}>Integração Fiscal e SAP</h4>
           
           <div className="card-editavel__grid card-editavel__grid--cols-4">
             
-            {/* LINHA 1 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Tipo Documento</label>
+              {/* ⭐ NOVO: A chamada para a nossa função acontece no "onChange" */}
               <select 
                 name="tipo_documento" 
                 value={tipoDocumento} 
-                onChange={(e) => setTipoDocumento(e.target.value)} 
+                onChange={handleMudancaTipoDocumento} 
                 className="card-editavel__select"
               >
                 <option value="">Selecione...</option>
@@ -743,7 +733,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               <input type="text" name="valor_realizado_mask" className="card-editavel__input" placeholder="0,00" value={maskValorRealizado} onChange={(e) => setMaskValorRealizado(aplicarMascaraMoeda(e.target.value))} />
             </div>
 
-            {/* LINHA 2 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Data Emissão Fatura</label>
               <input 
@@ -773,7 +762,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
               <input type="text" name="validacao_pep" defaultValue={fat.validacao_pep || atm.validacao_pep} className="card-editavel__input" placeholder="OK/Erro..." />
             </div>
 
-            {/* LINHA 3 FATURAMENTO */}
             <div>
               <label className="card-editavel__label">Registrado SAP?</label>
               <select name="registrado_sap" defaultValue={fat.registrado_sap || atm.registrado_sap || ''} className="card-editavel__select">
@@ -793,7 +781,6 @@ export default function CardEditavel({ atm, onCancelar, onSalvar }) {
 
           </div>
         </div>
-        {/* FIM DA ABA FATURAMENTO */}
         
       </div>
 
