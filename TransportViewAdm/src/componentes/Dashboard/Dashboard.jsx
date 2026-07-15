@@ -21,6 +21,26 @@ const ChevronRight = ({ size = 18 }) => <svg aria-hidden="true" xmlns="http://ww
 const FilterIcon = ({ size = 16 }) => <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>;
 const EditBatchIcon = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
 
+// ⭐ NOVO: FUNÇÃO PARA DEFINIR A COR DA DATA (VERDE OU VERMELHO)
+const calcularCorVencimento = (dataStr) => {
+  if (!dataStr) return undefined; // Se não tem data, não pinta nada
+  
+  // Pega a data de hoje, "zerando" as horas para comparar de forma justa
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  // Quebra a string do banco (ex: "2026-07-15T00...") para evitar fusos malucos
+  const parteData = dataStr.split('T')[0].split('-'); 
+  if (parteData.length !== 3) return undefined;
+
+  // Cria a data no fuso local: ano, mês (lembrando que no JS Janeiro é 0), dia
+  const vencimento = new Date(parteData[0], parteData[1] - 1, parteData[2]);
+  vencimento.setHours(0, 0, 0, 0);
+
+  // Se a data do vencimento for MENOR que hoje -> Vermelho. Senão -> Verde.
+  return vencimento < hoje ? '#ef4444' : '#059669'; 
+};
+
 export default function Dashboard({ atms, carregando, onOpenAtm }) {
   const valoresIniciaisFiltro = {
     id: '', solicitante: '', pedido: '', nf: '', data_inicio: '', data_fim: '', data_especifica: '', status: '', transportadora: '',
@@ -115,13 +135,13 @@ export default function Dashboard({ atms, carregando, onOpenAtm }) {
       const dataVenc = atm.faturamento?.vencimento || atm.vencimento;
 
       const fatOk = matchFiltro(fatura, filtros.fatura) &&
-                    matchMultiSelect(pep, filtros.elemento_pep) &&
-                    matchMultiSelect(tipoDoc, filtros.tipo_documento) &&
-                    matchMultiSelect(valPep, filtros.validacao_pep) &&
-                    (filtros.registrado_sap === '' || regSap === filtros.registrado_sap) &&
-                    matchData(dataMap, filtros.data_map_especifica, filtros.data_map_inicio, filtros.data_map_fim) &&
-                    matchData(dataEmi, filtros.data_emi_especifica, filtros.data_emissao_inicio, filtros.data_emissao_fim) &&
-                    matchData(dataVenc, filtros.data_venc_especifica, filtros.data_venc_inicio, filtros.data_venc_fim);
+                     matchMultiSelect(pep, filtros.elemento_pep) &&
+                     matchMultiSelect(tipoDoc, filtros.tipo_documento) &&
+                     matchMultiSelect(valPep, filtros.validacao_pep) &&
+                     (filtros.registrado_sap === '' || regSap === filtros.registrado_sap) &&
+                     matchData(dataMap, filtros.data_map_especifica, filtros.data_map_inicio, filtros.data_map_fim) &&
+                     matchData(dataEmi, filtros.data_emi_especifica, filtros.data_emissao_inicio, filtros.data_emissao_fim) &&
+                     matchData(dataVenc, filtros.data_venc_especifica, filtros.data_venc_inicio, filtros.data_venc_fim);
 
       return opOk && fatOk;
     });
@@ -269,6 +289,9 @@ export default function Dashboard({ atms, carregando, onOpenAtm }) {
                 
                 const isRecusado = atm.status?.toLowerCase() === 'recusado';
                 const isSelected = selecionados.includes(atm.id);
+                
+                // ⭐ NOVO: Chamando a função para pegar a cor da data deste ATM
+                const corDoVencimento = calcularCorVencimento(atm.faturamento?.vencimento || atm.vencimento);
 
                 return (
                   <tr 
@@ -327,7 +350,17 @@ export default function Dashboard({ atms, carregando, onOpenAtm }) {
                     </td>
                     
                     <td className="data-table__cell">{formatarDataCurta(atm.faturamento?.data_emissao)}</td>
-                    <td className="data-table__cell"><strong className="data-table__cell--vencimento">{formatarDataCurta(atm.faturamento?.vencimento)}</strong></td>
+                    
+                    {/* ⭐ NOVO: Aplicando a cor no texto baseada na matemática que fizemos */}
+                    <td className="data-table__cell">
+                      <strong 
+                        className="data-table__cell--vencimento" 
+                        style={{ color: corDoVencimento || 'inherit' }}
+                      >
+                        {formatarDataCurta(atm.faturamento?.vencimento || atm.vencimento)}
+                      </strong>
+                    </td>
+                    
                     <td className="data-table__cell"><small>{atm.faturamento?.elemento_pep_cc_wbs || '-'}</small></td>
                     <td className="data-table__cell">{atm.faturamento?.validacao_pep || '-'}</td>
                     <td className="data-table__cell data-table__cell--center">{atm.faturamento?.registrado_sap || 'NÃO'}</td>
