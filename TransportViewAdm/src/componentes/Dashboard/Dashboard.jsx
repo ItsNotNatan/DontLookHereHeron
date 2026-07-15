@@ -115,7 +115,7 @@ const valoresIniciaisFiltro = {
     }
   };
 
-  const atmsFiltrados = useMemo(() => {
+const atmsFiltrados = useMemo(() => {
     return atms.filter(atm => {
       const opOk = matchFiltro(atm.numero_atm || shortId(atm.id), filtros.id) &&
                    matchFiltro(atm.pedido_compra, filtros.pedido) &&
@@ -123,6 +123,7 @@ const valoresIniciaisFiltro = {
                    matchMultiSelect(atm.solicitacao, filtros.solicitante) &&
                    matchMultiSelect(atm.status, filtros.status) &&
                    matchMultiSelect(atm.transportadora?.nome, filtros.transportadora) &&
+                   matchMultiSelect(atm.wbs, filtros.wbs) && // 👈 AQUI A MÁGICA ACONTECE!
                    matchData(atm.data_solicitacao, filtros.data_especifica, filtros.data_inicio, filtros.data_fim);
 
       const fatura = atm.faturamento?.fatura_cte || atm.fatura_cte;
