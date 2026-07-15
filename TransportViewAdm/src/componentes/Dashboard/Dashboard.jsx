@@ -42,8 +42,9 @@ const calcularCorVencimento = (dataStr) => {
 };
 
 export default function Dashboard({ atms, carregando, onOpenAtm }) {
-  const valoresIniciaisFiltro = {
+const valoresIniciaisFiltro = {
     id: '', solicitante: '', pedido: '', nf: '', data_inicio: '', data_fim: '', data_especifica: '', status: '', transportadora: '',
+    wbs: '', // 👈 AQUI!
     fatura: '', elemento_pep: '', registrado_sap: '', tipo_documento: '', validacao_pep: '',
     data_map_inicio: '', data_map_fim: '', data_map_especifica: '',
     data_emissao_inicio: '', data_emissao_fim: '', data_emi_especifica: '',
