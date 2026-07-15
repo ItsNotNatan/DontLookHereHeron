@@ -31,6 +31,8 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
   const [modoPedido, setModoPedido] = useState('especifico');
   const [modoNf, setModoNf] = useState('especifico');
   const [modoData, setModoData] = useState('lote');
+  // 🟢 1. Novo Estado para o controle visual do filtro WBS
+  const [modoWbs, setModoWbs] = useState('especifico');
 
   const shortId = (id) => id ? id.substring(0, 8).toUpperCase() : 'N/A';
 
@@ -42,6 +44,7 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
     const statusList = new Set();
     const transportadoras = new Set();
     const datas = new Set();
+    const wbsList = new Set(); // 🟢 2. Criamos o conjunto para salvar as opções de WBS únicas
 
     atms.forEach(atm => {
       if (atm.numero_atm) ids.add(String(atm.numero_atm));
@@ -53,6 +56,7 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
       if (atm.status) statusList.add(atm.status);
       if (atm.transportadora?.nome) transportadoras.add(atm.transportadora.nome);
       if (atm.data_solicitacao) datas.add(atm.data_solicitacao.split('T')[0]);
+      if (atm.wbs) wbsList.add(atm.wbs); // 🟢 3. Coletamos os projetos/WBS da tabela
     });
 
     const formatarOpcoes = (set) => Array.from(set).filter(Boolean).sort().map(item => ({ value: item, label: item }));
@@ -68,7 +72,8 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
       nfs: formatarOpcoes(nfs),
       status: formatarOpcoes(statusList),
       transportadoras: formatarOpcoes(transportadoras),
-      datas: formatarOpcoesData
+      datas: formatarOpcoesData,
+      wbs: formatarOpcoes(wbsList) // 🟢 4. Devolvemos a lista formatada para o Select
     };
   }, [atms]);
 
@@ -76,6 +81,9 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
     if (campo === 'id') { setModoId(modo); onFiltroChange({ target: { name: 'id', value: '' } }); }
     if (campo === 'pedido') { setModoPedido(modo); onFiltroChange({ target: { name: 'pedido', value: '' } }); }
     if (campo === 'nf') { setModoNf(modo); onFiltroChange({ target: { name: 'nf', value: '' } }); }
+    // 🟢 5. Inserimos a regra de troca de modo (especifico/intervalo) para o WBS
+    if (campo === 'wbs') { setModoWbs(modo); onFiltroChange({ target: { name: 'wbs', value: '' } }); }
+    
     if (campo === 'data') {
       setModoData(modo);
       onFiltroChange({ target: { name: 'data_inicio', value: '' } });
@@ -125,6 +133,7 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
   const rangeId = getRangeValues('id', modoId);
   const rangePedido = getRangeValues('pedido', modoPedido);
   const rangeNf = getRangeValues('nf', modoNf);
+  const rangeWbs = getRangeValues('wbs', modoWbs); // 🟢 6. Busca os valores do Range de WBS
 
   const selectStyles = {
     control: (base) => ({ ...base, borderColor: '#d1d5db', boxShadow: 'none', '&:hover': { borderColor: '#9ca3af' }, borderRadius: '0.375rem', padding: '0.1rem' }),
@@ -178,6 +187,26 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
               )}
             </div>
 
+            {/* 🟢 7. NOVO BLOCO: PROJETO / WBS */}
+            <div className="filtro-card">
+              <div className="filtro-header">
+                <label className="filtro-label">Projeto / WBS</label>
+                <div className="btn-group">
+                  <button type="button" onClick={() => alternarModo('wbs', 'especifico')} className={`btn-modo ${modoWbs === 'especifico' ? 'ativo' : 'inativo'}`}>Específicos</button>
+                  <button type="button" onClick={() => alternarModo('wbs', 'lote')} className={`btn-modo ${modoWbs === 'lote' ? 'ativo' : 'inativo'}`}>Intervalo</button>
+                </div>
+              </div>
+              {modoWbs === 'especifico' ? (
+                <Select isMulti options={opcoesFiltro.wbs} value={getMultiValue(filtros.wbs)} onChange={(opts) => handleMultiSelectChange('wbs', opts)} placeholder="Selecionar WBS..." styles={selectStyles} />
+              ) : (
+                <div className="range-container">
+                  <div className="range-item"><Select options={opcoesFiltro.wbs} value={rangeWbs.currentDe} onChange={(opt) => handleRangeChange('wbs', 'de', opt)} placeholder="De" styles={selectStyles} isClearable /></div>
+                  <span className="range-divisor">até</span>
+                  <div className="range-item"><Select options={opcoesFiltro.wbs} value={rangeWbs.currentAte} onChange={(opt) => handleRangeChange('wbs', 'ate', opt)} placeholder="Até" styles={selectStyles} isClearable /></div>
+                </div>
+              )}
+            </div>
+
             {/* BLOCO: PEDIDOS (PC) */}
             <div className="filtro-card">
               <div className="filtro-header">
@@ -218,7 +247,7 @@ export default function FiltroOP({ atms, filtros, onFiltroChange, onLimpar, aber
               )}
             </div>
 
-            {/* 👇 BLOCO: DATAS (AGORA COM DROPDOWN INTELIGENTE) 👇 */}
+            {/* BLOCO: DATAS */}
             <div className="filtro-card">
               <div className="filtro-header">
                 <label className="filtro-label">Período da Solicitação</label>
