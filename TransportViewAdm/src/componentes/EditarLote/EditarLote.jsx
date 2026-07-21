@@ -76,6 +76,7 @@ export default function EditarLote({ aberto, onClose, idsSelecionados, onSalvar 
   const [maskValorPrevisto, setMaskValorPrevisto] = useState('');
   const [maskValorRealizado, setMaskValorRealizado] = useState('');
 
+  // 🟢 ADICIONADO: elemento_pep_cc_wbs no estado inicial
   const estadoInicial = {
     solicitacao: '', data_solicitacao: '', pedido_compra: '', numero_reserva: '', wbs: '', nf: '',
     peso: '', volume: '', medidas: '', veiculo: '', tipo_frete: '', transportadora: '', cotacao_bid: '',
@@ -83,7 +84,7 @@ export default function EditarLote({ aberto, onClose, idsSelecionados, onSalvar 
     origem: '', data_coleta: '', contato_coleta: '', telefone_coleta: '',
     destino: '', data_entrega: '', contato_entrega: '', telefone_entrega: '',
     tipo_documento: '', data_mapeamento: '', fatura_cte: '', data_emissao: '', vencimento: '', 
-    validacao_pep: '', registrado_sap: ''
+    elemento_pep_cc_wbs: '', validacao_pep: '', registrado_sap: ''
   };
 
   const [valores, setValores] = useState(estadoInicial);
@@ -494,6 +495,11 @@ export default function EditarLote({ aberto, onClose, idsSelecionados, onSalvar 
               />
             </div>
             
+            {/* 🟢 ADICIONADO: Campo Elemento PEP / CC */}
+            <div className="batch-modal__field-card"><label className="batch-modal__label">Elemento PEP / CC</label>
+              <input type="text" name="elemento_pep_cc_wbs" value={valores.elemento_pep_cc_wbs} onChange={handleChange} className="batch-modal__input" placeholder="Deixar original" />
+            </div>
+
             <div className="batch-modal__field-card"><label className="batch-modal__label">Validação PEP</label>
               <input type="text" name="validacao_pep" value={valores.validacao_pep} onChange={handleChange} className="batch-modal__input" placeholder="Deixar original" />
             </div>
