@@ -20,31 +20,24 @@ const ChevronLeft = ({ size = 18 }) => <svg aria-hidden="true" xmlns="http://www
 const ChevronRight = ({ size = 18 }) => <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
 const FilterIcon = ({ size = 16 }) => <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>;
 const EditBatchIcon = ({ size = 16 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const SearchIcon = ({ size = 18 }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>;
 
-// ⭐ NOVO: FUNÇÃO PARA DEFINIR A COR DA DATA (VERDE OU VERMELHO)
+// Função para definir a cor da data (verde ou vermelho)
 const calcularCorVencimento = (dataStr) => {
-  if (!dataStr) return undefined; // Se não tem data, não pinta nada
-  
-  // Pega a data de hoje, "zerando" as horas para comparar de forma justa
+  if (!dataStr) return undefined; 
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-
-  // Quebra a string do banco (ex: "2026-07-15T00...") para evitar fusos malucos
   const parteData = dataStr.split('T')[0].split('-'); 
   if (parteData.length !== 3) return undefined;
-
-  // Cria a data no fuso local: ano, mês (lembrando que no JS Janeiro é 0), dia
   const vencimento = new Date(parteData[0], parteData[1] - 1, parteData[2]);
   vencimento.setHours(0, 0, 0, 0);
-
-  // Se a data do vencimento for MENOR que hoje -> Vermelho. Senão -> Verde.
   return vencimento < hoje ? '#ef4444' : '#059669'; 
 };
 
 export default function Dashboard({ atms, carregando, onOpenAtm }) {
-const valoresIniciaisFiltro = {
+  const valoresIniciaisFiltro = {
     id: '', solicitante: '', pedido: '', nf: '', data_inicio: '', data_fim: '', data_especifica: '', status: '', transportadora: '',
-    wbs: '', // 👈 AQUI!
+    wbs: '',
     fatura: '', elemento_pep: '', registrado_sap: '', tipo_documento: '', validacao_pep: '',
     data_map_inicio: '', data_map_fim: '', data_map_especifica: '',
     data_emissao_inicio: '', data_emissao_fim: '', data_emi_especifica: '',
@@ -52,6 +45,10 @@ const valoresIniciaisFiltro = {
   };
 
   const [filtros, setFiltros] = useState(valoresIniciaisFiltro);
+  
+  // ⭐ NOVO: ESTADO PARA A BUSCA GERAL
+  const [buscaGeral, setBuscaGeral] = useState('');
+
   const [abertoFiltroOp, setAbertoFiltroOp] = useState(false);
   const [abertoFiltroFat, setAbertoFiltroFat] = useState(false);
   const [abertoEdicaoLote, setAbertoEdicaoLote] = useState(false);
@@ -62,10 +59,11 @@ const valoresIniciaisFiltro = {
   const itensPorPagina = 20;
   const tableContentRef = useRef(null);
 
+  // ⭐ NOVO: Adicionado 'buscaGeral' nas dependências para resetar a página ao pesquisar
   useEffect(() => { 
     setPaginaAtual(1); 
     setSelecionados([]); 
-  }, [filtros]);
+  }, [filtros, buscaGeral]);
 
   const handleFiltroChange = (e) => {
     const { name, value } = e.target;
@@ -74,6 +72,7 @@ const valoresIniciaisFiltro = {
 
   const limparFiltros = () => {
     setFiltros(valoresIniciaisFiltro);
+    setBuscaGeral(''); // ⭐ NOVO: Limpa também a busca geral
   };
 
   const handleSalvarLote = async (ids, dadosAlterados) => {
@@ -115,15 +114,16 @@ const valoresIniciaisFiltro = {
     }
   };
 
-const atmsFiltrados = useMemo(() => {
+  const atmsFiltrados = useMemo(() => {
     return atms.filter(atm => {
+      // Filtros avançados já existentes
       const opOk = matchFiltro(atm.numero_atm || shortId(atm.id), filtros.id) &&
                    matchFiltro(atm.pedido_compra, filtros.pedido) &&
                    matchFiltro(atm.nf, filtros.nf) &&
                    matchMultiSelect(atm.solicitacao, filtros.solicitante) &&
                    matchMultiSelect(atm.status, filtros.status) &&
                    matchMultiSelect(atm.transportadora?.nome, filtros.transportadora) &&
-                   matchMultiSelect(atm.wbs, filtros.wbs) && // 👈 AQUI A MÁGICA ACONTECE!
+                   matchMultiSelect(atm.wbs, filtros.wbs) &&
                    matchData(atm.data_solicitacao, filtros.data_especifica, filtros.data_inicio, filtros.data_fim);
 
       const fatura = atm.faturamento?.fatura_cte || atm.fatura_cte;
@@ -145,9 +145,37 @@ const atmsFiltrados = useMemo(() => {
                      matchData(dataEmi, filtros.data_emi_especifica, filtros.data_emissao_inicio, filtros.data_emissao_fim) &&
                      matchData(dataVenc, filtros.data_venc_especifica, filtros.data_venc_inicio, filtros.data_venc_fim);
 
-      return opOk && fatOk;
+      // ⭐ NOVO: LÓGICA DA BUSCA GERAL
+      let buscaOk = true;
+      if (buscaGeral.trim() !== '') {
+        const termo = buscaGeral.toLowerCase();
+        
+        // Junta todos os campos pesquisáveis numa string única
+        const textoCompleto = `
+          ${atm.numero_atm || shortId(atm.id)}
+          ${atm.tipo_operacao || ''}
+          ${atm.wbs || ''}
+          ${atm.solicitacao || ''}
+          ${atm.pedido_compra || ''}
+          ${atm.nf || ''}
+          ${atm.transportadora?.nome || ''}
+          ${atm.origem?.municipio || ''}
+          ${atm.destino?.municipio || ''}
+          ${atm.tipo_frete || ''}
+          ${atm.veiculo || ''}
+          ${atm.status || ''}
+          ${fatura || ''}
+          ${pep || ''}
+        `.toLowerCase();
+        
+        // Verifica se o termo digitado está dentro desse texto gigante
+        buscaOk = textoCompleto.includes(termo);
+      }
+
+      // O item só aparece se passar nos filtros avançados (opOk e fatOk) E na busca geral (buscaOk)
+      return opOk && fatOk && buscaOk;
     });
-  }, [atms, filtros]);
+  }, [atms, filtros, buscaGeral]); // ⭐ NOVO: Adicionei buscaGeral nas dependências
 
   const totalPaginas = Math.ceil(atmsFiltrados.length / itensPorPagina);
 
@@ -197,6 +225,35 @@ const atmsFiltrados = useMemo(() => {
         idsSelecionados={selecionados} 
         onSalvar={handleSalvarLote} 
       />
+
+      {/* ⭐ NOVO: BARRA DE PESQUISA GERAL */}
+      <div style={{ display: 'flex', padding: '10px 15px', backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', alignItems: 'center' }}>
+        <div style={{ position: 'relative', width: '350px' }}>
+          <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
+             <SearchIcon />
+          </div>
+          <input 
+            type="text" 
+            placeholder="Pesquisa rápida (ATM, NF, Origem, etc)..." 
+            value={buscaGeral}
+            onChange={(e) => setBuscaGeral(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 10px 10px 35px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              fontSize: '14px',
+              outline: 'none',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
+          />
+        </div>
+        {buscaGeral && (
+          <span style={{ marginLeft: '15px', fontSize: '13px', color: '#6b7280' }}>
+            A filtrar por: <strong>"{buscaGeral}"</strong>
+          </span>
+        )}
+      </div>
 
       {selecionados.length > 0 && (
         <div className="batch-actions">
@@ -292,7 +349,6 @@ const atmsFiltrados = useMemo(() => {
                 const isRecusado = atm.status?.toLowerCase() === 'recusado';
                 const isSelected = selecionados.includes(atm.id);
                 
-                // ⭐ NOVO: Chamando a função para pegar a cor da data deste ATM
                 const corDoVencimento = calcularCorVencimento(atm.faturamento?.vencimento || atm.vencimento);
 
                 return (
@@ -353,7 +409,6 @@ const atmsFiltrados = useMemo(() => {
                     
                     <td className="data-table__cell">{formatarDataCurta(atm.faturamento?.data_emissao)}</td>
                     
-                    {/* ⭐ NOVO: Aplicando a cor no texto baseada na matemática que fizemos */}
                     <td className="data-table__cell">
                       <strong 
                         className="data-table__cell--vencimento" 
