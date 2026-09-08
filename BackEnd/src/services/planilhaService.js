@@ -13,6 +13,37 @@ const auth = new google.auth.GoogleAuth({
 const SPREADSHEET_ID = '1cZCQW3W-DQE0JkX0wXUYmsmNLAex6aPz3Vy3kDC9Muc'; 
 const NOME_DA_ABA = 'Respostas ao formulário 1';
 
+/**
+ * ============================================================================
+ * NOVA FUNÇÃO: extrairDataDoCarimbo
+ * OBJETIVO: Pegar a coluna automática do Google Forms e converter em data válida.
+ * ============================================================================
+ * @param {string} carimbo - O texto original do Sheets (Ex: "04/09/2026 14:30:00")
+ * @returns {string|null} - A data no formato (AAAA-MM-DD) ou null se houver erro.
+ */
+function extrairDataDoCarimbo(carimbo) {
+  if (!carimbo) {
+    return null; // Retorna nulo se a célula estiver vazia
+  }
+  
+  // Divide o texto onde há um espaço para separar a data da hora
+  const apenasData = carimbo.split(' ')[0]; // Ex: "04/09/2026"
+  
+  // Divide a data em Dia, Mês e Ano
+  const partes = apenasData.split('/'); // Ex: ["04", "09", "2026"]
+  
+  // Verifica se existem as 3 partes para montar a data no padrão do banco
+  if (partes.length === 3) {
+    const dia = partes[0];
+    const mes = partes[1];
+    const ano = partes[2];
+    
+    return `${ano}-${mes}-${dia}`; // Resultado: "2026-09-04"
+  }
+  
+  return null;
+}
+
 // 3. Função extra: Converte o número da coluna na letra correspondente
 function obterLetraColuna(indice) {
   let letra = '';
@@ -57,9 +88,9 @@ async function verificarNovasRespostas() {
       if (statusDaLinha !== 'Registado') {
         console.log(`Nova solicitação encontrada na linha ${i + 1}. A processar...`);
 
-        // 🟢 MAPEAMENTO EXATO COM AS TUAS COLUNAS DO GOOGLE FORMS
+        // 🟢 MAPEAMENTO ATUALIZADO: Usando a nova função na Coluna A (linha[0])
         const dadosFormulario = {
-          dataSolicitacao: linha[2] || linha[0] || '', // Coluna C (Data Solicitação) - Se falhar, usa o Carimbo (A)
+          dataSolicitacao: extrairDataDoCarimbo(linha[0]) || '', // Pega apenas o Carimbo (A) de forma segura
           solicitante: linha[1] || '',                 // Coluna B (Nome Completo)
           pedidoCompra: linha[3] || '',                // Coluna D (PO de Compras)
           wbs: linha[4] || '',                         // Coluna E (WBS / Projeto)
