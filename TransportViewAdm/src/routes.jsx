@@ -14,6 +14,9 @@ import EditorVeiculos from './pages/EditorVeiculos/EditorVeiculos';
 // Nova aba Controle de SLA
 import ControleSLA from './pages/ControleSLA/ControleSLA'; 
 
+// 👇 NOVA ABA: Auditoria de Seguros
+import AuditoriaSeguros from './pages/AuditoriaSeguros/AuditoriaSeguros';
+
 import Layout from './componentes/layout/layout';
 
 // Componentes de proteção
@@ -43,6 +46,16 @@ export const router = createBrowserRouter([
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
           <ControleSLA />
+        </RotaProtegida>
+      </RotaPrivada>
+    )
+  },
+  {
+    path: "/auditoriaseguros", // 👇 NOVA ROTA ADICIONADA AQUI
+    element: (
+      <RotaPrivada>
+        <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
+          <AuditoriaSeguros />
         </RotaProtegida>
       </RotaPrivada>
     )
