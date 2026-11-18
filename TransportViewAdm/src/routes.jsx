@@ -11,10 +11,8 @@ import EditorMotivos from './pages/EditorMotivos/EditorMotivos';
 import EditorUsuarios from './pages/EditorUsuarios/EditorUsuarios';
 import EditorVeiculos from './pages/EditorVeiculos/EditorVeiculos';
 
-// Nova aba Controle de SLA
+// Novas abas
 import ControleSLA from './pages/ControleSLA/ControleSLA'; 
-
-// 👇 NOVA ABA: Auditoria de Seguros
 import AuditoriaSeguros from './pages/AuditoriaSeguros/AuditoriaSeguros';
 
 import Layout from './componentes/layout/layout';
@@ -30,7 +28,7 @@ const RotaProtegida = ({ children, perfisPermitidos }) => {
   return perfisPermitidos.includes(perfil) ? children : <Navigate to="/" />;
 };
 
-// Configuração do Router (exportado com o nome exato que o App.jsx espera)
+// Configuração do Router
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -51,7 +49,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/auditoriaseguros", // 👇 NOVA ROTA ADICIONADA AQUI
+    path: "/auditoriaseguros",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -61,7 +59,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/projetos",
+    path: "/editor-projetos", // ← Corrigido para bater com a navbar
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -71,7 +69,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/transportadoras",
+    path: "/editor-transportadoras", // ← Corrigido para bater com a navbar
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -81,7 +79,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/enderecos",
+    path: "/editor-enderecos", // ← Corrigido para bater com a navbar
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -91,7 +89,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/motivos",
+    path: "/editor-motivos", // ← Corrigido para bater com a navbar
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -101,7 +99,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/usuarios",
+    path: "/gestao-usuarios", // ← Corrigido para bater com a navbar
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin']}>
@@ -111,7 +109,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/veiculos",
+    path: "/veiculos", // Fallback (caso adicione veículos depois)
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin']}>
