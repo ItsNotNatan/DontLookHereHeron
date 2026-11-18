@@ -1,6 +1,6 @@
 // src/componentes/layout/layout.jsx
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom'; // 1. Removido o Outlet
+import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import './layout.css';
 
@@ -13,7 +13,6 @@ const FolderKanban = ({ size = 24, className = "" }) => <svg xmlns="http://www.w
 const MapPin = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
 const Building = ({ size = 24, className = "" }) => <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>;
 
-// 2. ADICIONADO o { children } AQUI:
 export default function Layout({ children }) {
   const navigate = useNavigate();
   const userName = localStorage.getItem('userName') || 'Usuário';
@@ -46,7 +45,6 @@ export default function Layout({ children }) {
             <Truck size={20} /><span>Tabela Principal</span>
           </NavLink>
 
-          {/* NOVA ABA CONTROLE DE SLA E AUDITORIA AQUI 👇 */}
           {(userPerfil === 'Admin' || userPerfil === 'Operador') && (
             <>
               <NavLink to="/controlesla" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
@@ -102,7 +100,6 @@ export default function Layout({ children }) {
         </header>
 
         <div className="content-area">
-          {/* 3. TROCADO DE <Outlet /> PARA {children} AQUI: */}
           {children}
         </div>
       </main>
