@@ -1,0 +1,40 @@
+.controle-sla-container {
+  --comau-blue: #0753b8;
+  --comau-blue-dark: #063b84;
+  --comau-blue-light: #eaf3ff;
+  --ink: #1f2d3d;
+  --muted: #65758a;
+  --bg: #f4f7fb;
+  --card: #ffffff;
+  --border: #dbe4ef;
+  --success: #dff2e1;
+  --success-text: #216b2d;
+  --warning: #fff3cd;
+  --warning-text: #735800;
+  --danger: #fde2e0;
+  --danger-text: #9b2521;
+  --shadow: 0 8px 24px rgba(6, 59, 132, .08);
+  
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* O restante do seu CSS vai aqui, prefixado ou encapsulado para evitar vazamento */
+.topbar { background: linear-gradient(135deg, var(--comau-blue-dark), var(--comau-blue)); color: white; min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 10px 4vw; box-shadow: 0 3px 12px rgba(6, 59, 132, .20); }
+.brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.brand-title h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+.brand-title p { margin: 3px 0 0; font-size: 12px; opacity: .90; }
+.topbar-note { font-size: 12px; text-align: right; opacity: .92; }
+
+.app-content { width: min(1220px, 94%); margin: 22px auto 44px; }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.tab-button { border: 1px solid var(--border); background: white; color: var(--comau-blue-dark); border-radius: 8px; padding: 10px 16px; font-weight: 700; cursor: pointer; }
+.tab-button.active { color: white; background: var(--comau-blue); border-color: var(--comau-blue); box-shadow: 0 4px 10px rgba(7, 83, 184, .22); }
+
+.notice { padding: 13px 15px; border: 1px solid #e5c75b; background: var(--warning); color: var(--warning-text); border-radius: 8px; margin-bottom: 15px; line-height: 1.45; font-size: 13px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 19px; box-shadow: var(--shadow); margin-bottom: 16px; }
+.card h2 { color: var(--comau-blue-dark); font-size: 18px; margin: 0 0 14px; }
+.card h3 { color: var(--comau-blue-dark); font-size: 15px; margin: 0 0 11px; }
+
+/* Adicione o restante do CSS do seu arquivo HTML original aqui (ajustando conforme necessário) */
