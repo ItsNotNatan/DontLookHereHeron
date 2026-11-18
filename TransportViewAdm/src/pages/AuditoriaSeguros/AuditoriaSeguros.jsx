@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../services/api';
 import './AuditoriaSeguros.css';
 
-const KEY = 'comau_auditorias_seguros_v1';
 const getDataAtual = () => new Date().toISOString().slice(0, 10);
 const fmt = (v) => v ? new Date(v + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
 const money = (v) => v ? Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '-';
@@ -10,23 +10,25 @@ export default function AuditoriaSeguros() {
   const [activeTab, setActiveTab] = useState('registro');
   const [registros, setRegistros] = useState([]);
   
-  // Estados do formulário
   const [msg, setMsg] = useState({ show: false, texto: '', tipo: '' });
   const [resultado, setResultado] = useState('Conforme');
 
-  // Estados dos filtros
   const [fTransportadora, setFTransportadora] = useState('');
   const [fResultado, setFResultado] = useState('');
   const [fPeriodo, setFPeriodo] = useState('');
 
-  useEffect(() => {
-    const salvos = JSON.parse(localStorage.getItem(KEY) || '[]');
-    setRegistros(salvos);
-  }, []);
+  const carregarRegistros = async () => {
+    try {
+      const response = await api.get('/admin/auditoria-seguros');
+      setRegistros(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar auditorias:', error);
+    }
+  };
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(registros));
-  }, [registros]);
+    carregarRegistros();
+  }, []);
 
   const transportadorasUnicas = [...new Set(registros.map(x => x.transportadora).filter(Boolean))].sort();
   
@@ -42,7 +44,7 @@ export default function AuditoriaSeguros() {
   const nao = registrosFiltrados.filter(x => x.resultado === 'Não conforme').length;
   const rate = total ? Math.round((ok / total) * 100) : 0;
 
-  const handleSubmeterAuditoria = (e) => {
+  const handleSubmeterAuditoria = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const dados = Object.fromEntries(formData.entries());
@@ -53,65 +55,81 @@ export default function AuditoriaSeguros() {
       return;
     }
 
-    const salvarRegistro = (anexoInfo) => {
-      const novoRegistro = {
-        id: crypto.randomUUID(),
-        periodo: dados.periodo,
-        transportadora: dados.transportadora.trim(),
-        atm: dados.atm.trim(),
-        dataFrete: dados.dataFrete,
-        valorCarga: dados.valorCarga,
-        valorSeguro: dados.valorSeguro,
-        dataSolicitacao: dados.dataSolicitacao,
-        dataRecebimento: dados.dataRecebimento,
-        resultado: resultado,
-        tipoDocumento: dados.tipoDocumento,
-        referencia: dados.referencia.trim(),
-        documentoLink: dados.documentoLink.trim(),
-        anexoData: anexoInfo?.data || '',
-        anexoNome: anexoInfo?.name || '',
-        anexoTipo: anexoInfo?.type || '',
-        responsavel: dados.responsavel.trim(),
-        observacoes: dados.observacoes.trim()
-      };
-      
-      setRegistros(prev => [...prev, novoRegistro]);
-      e.target.reset();
-      e.target.periodo.value = getDataAtual();
-      setResultado('Conforme');
-      setMsg({ show: true, texto: 'Auditoria salva com sucesso, com o anexo vinculado.', tipo: 'ok' });
-      setTimeout(() => setMsg({ show: false, texto: '', tipo: '' }), 3500);
+    const enviarParaApi = async (anexoInfo) => {
+      try {
+        const payload = {
+          periodo: dados.periodo,
+          transportadora: dados.transportadora.trim(),
+          atm: dados.atm.trim(),
+          data_frete: dados.dataFrete,
+          valor_carga: dados.valorCarga ? Number(dados.valorCarga) : 0,
+          valor_seguro: dados.valorSeguro ? Number(dados.valorSeguro) : 0,
+          data_solicitacao: dados.dataSolicitacao,
+          data_recebimento: dados.dataRecebimento,
+          resultado: resultado,
+          tipo_documento: dados.tipoDocumento,
+          referencia: dados.referencia.trim(),
+          documento_link: dados.documentoLink.trim(),
+          anexo_data: anexoInfo?.data || '',
+          anexo_nome: anexoInfo?.name || '',
+          anexo_tipo: anexoInfo?.type || '',
+          responsavel: dados.responsavel.trim(),
+          observacoes: dados.observacoes.trim()
+        };
+        
+        await api.post('/admin/auditoria-seguros', payload);
+        await carregarRegistros();
+        
+        e.target.reset();
+        e.target.periodo.value = getDataAtual();
+        setResultado('Conforme');
+        setMsg({ show: true, texto: 'Auditoria salva com sucesso.', tipo: 'ok' });
+      } catch (error) {
+        setMsg({ show: true, texto: 'Erro ao salvar auditoria no servidor.', tipo: 'err' });
+      } finally {
+        setTimeout(() => setMsg({ show: false, texto: '', tipo: '' }), 3500);
+      }
     };
 
     if (!file) {
-      salvarRegistro(null);
+      enviarParaApi(null);
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = () => salvarRegistro({ data: reader.result, name: file.name, type: file.type });
+    reader.onload = () => enviarParaApi({ data: reader.result, name: file.name, type: file.type });
     reader.onerror = () => setMsg({ show: true, texto: 'Não foi possível ler o anexo.', tipo: 'err' });
     reader.readAsDataURL(file);
   };
 
-  const apagarTudo = () => {
+  const apagarTudo = async () => {
     if (registros.length && window.confirm('Apagar todo o histórico? Esta ação não pode ser desfeita.')) {
-      setRegistros([]);
+      try {
+        await api.delete('/admin/auditoria-seguros');
+        await carregarRegistros();
+      } catch (error) {
+        alert('Erro ao excluir histórico.');
+      }
     }
   };
 
-  const removeOne = (id) => {
+  const removeOne = async (id) => {
     if (window.confirm('Excluir esta auditoria?')) {
-      setRegistros(prev => prev.filter(x => x.id !== id));
+      try {
+        await api.delete(`/admin/auditoria-seguros/${id}`);
+        await carregarRegistros();
+      } catch (error) {
+        alert('Erro ao excluir a auditoria.');
+      }
     }
   };
 
   const abrirAnexo = (id) => {
     const x = registros.find(a => a.id === id);
-    if (!x?.anexoData) return;
+    if (!x?.anexo_data) return;
     const w = window.open();
     if (w) {
-      w.document.write(`<title>${x.anexoNome || 'Anexo'}</title><p style="font-family:Arial;padding:20px">Anexo: ${x.anexoNome}</p><iframe src="${x.anexoData}" style="width:100%;height:90vh;border:0"></iframe>`);
+      w.document.write(`<title>${x.anexo_nome || 'Anexo'}</title><p style="font-family:Arial;padding:20px">Anexo: ${x.anexo_nome}</p><iframe src="${x.anexo_data}" style="width:100%;height:90vh;border:0"></iframe>`);
       w.document.close();
     } else {
       alert('O navegador bloqueou a nova aba. Permita pop-ups para abrir o anexo.');
@@ -125,7 +143,7 @@ export default function AuditoriaSeguros() {
 
   const exportarCSV = (lista) => {
     const cols = ['Período','Transportadora','ATM','Data do frete','Valor da carga','Valor do seguro','Resultado','Tipo de documento','Referência','Solicitação','Recebimento','Responsável','Link/arquivo','Observações'];
-    const rows = lista.map(x => [x.periodo, x.transportadora, x.atm, x.dataFrete, x.valorCarga, x.valorSeguro, x.resultado, x.tipoDocumento, x.referencia, x.dataSolicitacao, x.dataRecebimento, x.responsavel, x.documentoLink, x.observacoes]);
+    const rows = lista.map(x => [x.periodo, x.transportadora, x.atm, x.data_frete, x.valor_carga, x.valor_seguro, x.resultado, x.tipo_documento, x.referencia, x.data_solicitacao, x.data_recebimento, x.responsavel, x.documento_link, x.observacoes]);
     const text = [cols, ...rows].map(row => row.map(v => '"' + String(v ?? '').replaceAll('"', '""') + '"').join(';')).join('\n');
     const blob = new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
@@ -139,7 +157,6 @@ export default function AuditoriaSeguros() {
     <div className="auditoria-container">
       <header className="topbar">
         <div className="brand">
-          <img className="brand-logo" src="/comauazul.jfif" alt="Logotipo Comau" onError={(e) => e.target.style.display='none'} />
           <div>
             <h1>Auditoria Quinzenal de Seguros</h1>
             <p>Fretes dedicados — controle de documentos de seguro e averbação</p>
@@ -218,7 +235,7 @@ export default function AuditoriaSeguros() {
                 </div>
 
                 <div className="actions">
-                  <span className="muted">Os registros são salvos localmente neste navegador.</span>
+                  <span className="muted">Os registros serão salvos no banco de dados.</span>
                   <div className="actions-right">
                     <button type="reset" className="btn secondary">Limpar</button>
                     <button type="submit" className="btn primary">Salvar auditoria</button>
@@ -315,8 +332,8 @@ export default function AuditoriaSeguros() {
                   <tbody>
                     {registrosFiltrados.length ? registrosFiltrados.map(x => (
                       <tr key={x.id}>
-                        <td>{fmt(x.periodo)}</td><td>{x.transportadora}</td><td>{x.atm}</td><td>{x.tipoDocumento}</td><td>{renderTag(x.resultado)}</td><td>{fmt(x.dataSolicitacao)}</td><td>{fmt(x.dataRecebimento)}</td><td>{x.referencia || x.documentoLink || '-'}</td>
-                        <td>{x.anexoData ? <button className="btn secondary" onClick={() => abrirAnexo(x.id)}>Abrir anexo</button> : '-'}</td>
+                        <td>{fmt(x.periodo)}</td><td>{x.transportadora}</td><td>{x.atm}</td><td>{x.tipo_documento}</td><td>{renderTag(x.resultado)}</td><td>{fmt(x.data_solicitacao)}</td><td>{fmt(x.data_recebimento)}</td><td>{x.referencia || x.documento_link || '-'}</td>
+                        <td>{x.anexo_data ? <button className="btn secondary" onClick={() => abrirAnexo(x.id)}>Abrir anexo</button> : '-'}</td>
                       </tr>
                     )) : <tr><td colSpan="9" className="empty">Nenhuma auditoria encontrada.</td></tr>}
                   </tbody>
@@ -343,14 +360,14 @@ export default function AuditoriaSeguros() {
                     <tr><th>Período</th><th>Transportadora</th><th>ATM</th><th>Valor carga</th><th>Seguro</th><th>Resultado</th><th>Observação</th><th>Anexo</th><th>Ações</th></tr>
                   </thead>
                   <tbody>
-                    {registros.length ? [...registros].sort((a,b) => b.periodo.localeCompare(a.periodo)).map(x => (
+                    {registros.length ? [...registros].map(x => (
                       <tr key={x.id}>
-                        <td>{fmt(x.periodo)}</td><td>{x.transportadora}</td><td>{x.atm}</td><td>{money(x.valorCarga)}</td><td>{money(x.valorSeguro)}</td><td>{renderTag(x.resultado)}</td>
+                        <td>{fmt(x.periodo)}</td><td>{x.transportadora}</td><td>{x.atm}</td><td>{money(x.valor_carga)}</td><td>{money(x.valor_seguro)}</td><td>{renderTag(x.resultado)}</td>
                         <td title={x.observacoes}>{(x.observacoes || '-').slice(0, 55)}</td>
-                        <td>{x.anexoData ? <button className="btn secondary" onClick={() => abrirAnexo(x.id)}>Abrir</button> : '-'}</td>
+                        <td>{x.anexo_data ? <button className="btn secondary" onClick={() => abrirAnexo(x.id)}>Abrir</button> : '-'}</td>
                         <td><button className="btn danger" onClick={() => removeOne(x.id)}>Excluir</button></td>
                       </tr>
-                    )) : <tr><td colSpan="9" className="empty">Nenhum registro salvo.</td></tr>}
+                    )) : <tr><td colSpan="9" className="empty">Nenhum registro salvo no banco.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -373,7 +390,6 @@ export default function AuditoriaSeguros() {
               <div className="formula">Taxa de conformidade = Auditorias conformes ÷ Total de auditorias realizadas × 100</div>
               <div className="formula" style={{ marginTop: '10px' }}>Pendência = documento ainda não recebido ou registro aguardando tratativa</div>
               <div className="formula" style={{ marginTop: '10px' }}>Não conformidade = documento recebido com divergência, ausência de evidência ou cobrança incompatível</div>
-              <p className="footer">Este controle utiliza LocalStorage. Para uso multiusuário, anexos reais e trilha de auditoria corporativa, a próxima evolução recomendada é conectar a uma base de dados e armazenamento de documentos.</p>
             </section>
           </section>
         )}
