@@ -46,11 +46,16 @@ export default function Layout({ children }) {
             <Truck size={20} /><span>Tabela Principal</span>
           </NavLink>
 
-          {/* NOVA ABA CONTROLE DE SLA AQUI */}
+          {/* NOVA ABA CONTROLE DE SLA E AUDITORIA AQUI 👇 */}
           {(userPerfil === 'Admin' || userPerfil === 'Operador') && (
-            <NavLink to="/controlesla" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <ChartLine size={20} /><span>Controle de SLA</span>
-            </NavLink>
+            <>
+              <NavLink to="/controlesla" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <ChartLine size={20} /><span>Controle de SLA</span>
+              </NavLink>
+              <NavLink to="/auditoriaseguros" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <FolderKanban size={20} /><span>Auditoria Seguros</span>
+              </NavLink>
+            </>
           )}
 
           {userPerfil === 'Admin' && (
