@@ -59,7 +59,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/editor-projetos", // ← Corrigido para bater com a navbar
+    path: "/editor-projetos",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -69,7 +69,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/editor-transportadoras", // ← Corrigido para bater com a navbar
+    path: "/editor-transportadoras",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -79,7 +79,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/editor-enderecos", // ← Corrigido para bater com a navbar
+    path: "/editor-enderecos",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -89,7 +89,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/editor-motivos", // ← Corrigido para bater com a navbar
+    path: "/editor-motivos",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin', 'Operador']}>
@@ -99,7 +99,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/gestao-usuarios", // ← Corrigido para bater com a navbar
+    path: "/gestao-usuarios",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin']}>
@@ -109,7 +109,7 @@ export const router = createBrowserRouter([
     )
   },
   {
-    path: "/veiculos", // Fallback (caso adicione veículos depois)
+    path: "/veiculos",
     element: (
       <RotaPrivada>
         <RotaProtegida perfisPermitidos={['Admin']}>
