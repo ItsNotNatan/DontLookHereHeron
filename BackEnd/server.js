@@ -72,6 +72,7 @@ app.use('/api/admin/usuarios', require('./src/routes/usuarioRoutes'));
 app.use('/api/admin/motivos', require('./src/routes/motivoRoutes'));
 app.use('/api/admin/locais', require('./src/routes/localRoutes'));
 app.use('/api/admin/transportadoras', require('./src/routes/transportadoraRoutes'));
+app.use('/api/admin/controle-sla', require('./src/routes/controleSLARoutes'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, servico: 'ATMLog API', hora: new Date().toISOString() }));
 
