@@ -126,7 +126,10 @@ async function salvarRegistro(dados) {
 
 const listarRegistros = async (req, res) => {
   try {
-    const dados = await withAuth(() => pb.collection(COLECAO_REGISTROS).getFullList({ sort: '-data,-created' }));
+    const dados = await withAuth(() =>
+      pb.collection(COLECAO_REGISTROS).getFullList()
+    );
+
     res.json(dados.map(paraCliente));
   } catch (erro) {
     console.error('[Controle SLA] Erro ao listar registros:', erro);
