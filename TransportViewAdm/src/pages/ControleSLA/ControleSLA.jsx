@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import api from '../../services/api';
 import './ControleSLA.css';
 
 const KEY_REGISTROS = 'comau_sla_registros_v2';
 const KEY_TRANSPORTADORAS = 'comau_sla_transportadoras_v2';
+const KEY_MIGRACAO_BANCO = 'comau_sla_migracao_banco_v1';
 const PERCENTUAL_PENALIDADE = 0.08;
 const TARGET_ACEITAVEL = 0.90;
 const DIAS_UTEIS_FRACIONADO = 7;
@@ -29,6 +31,67 @@ function lerListaLocalStorage(chave) {
     console.error(`Não foi possível ler ${chave} do armazenamento local:`, erro);
     return [];
   }
+}
+
+function gerarIdCliente() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `sla-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function normalizarRegistroDaApi(registro) {
+  const indicadores = registro.indicadoresOcorrencia || registro.indicadores_ocorrencia ||
+    registro.indicadoresNaoConformes || registro.indicadores_nao_conformes || [];
+  const indicadoresOk = registro.indicadoresOk || registro.indicadores_ok || [];
+  return {
+    ...registro,
+    modalidade: registro.modalidade || 'Dedicado',
+    data: registro.data || registro.dataRegistro || registro.data_registro || '',
+    processo: registro.processo || registro.viagem || '',
+    viagem: registro.viagem || registro.processo || '',
+    frete: Number(registro.frete || 0),
+    indicadoresOcorrencia: Array.isArray(indicadores) ? indicadores : [],
+    indicadoresNaoConformes: Array.isArray(indicadores) ? indicadores : [],
+    indicadoresOk: Array.isArray(indicadoresOk) ? indicadoresOk : [],
+    tipoOcorrencia: registro.tipoOcorrencia || registro.tipo_ocorrencia || '',
+    pontuacao: Number(registro.pontuacao ?? 1),
+    desconto: Number(registro.desconto || 0),
+    freteLiquido: Number(registro.freteLiquido ?? registro.frete_liquido ?? registro.frete ?? 0),
+    criadoEm: registro.criadoEm || registro.criado_em || registro.created || '',
+  };
+}
+
+function mensagemErroApi(erro, padrao) {
+  return erro?.response?.data?.erro || erro?.response?.data?.message || erro?.message || padrao;
+}
+
+async function migrarDadosLocaisParaBanco() {
+  if (window.localStorage.getItem(KEY_MIGRACAO_BANCO) === 'concluida') return false;
+
+  const transportadorasLocais = lerListaLocalStorage(KEY_TRANSPORTADORAS)
+    .filter((nome) => typeof nome === 'string' && nome.trim());
+  const registrosOriginais = lerListaLocalStorage(KEY_REGISTROS);
+  const registrosLocais = registrosOriginais.map((registro) => ({
+    ...registro,
+    client_id: registro.client_id || registro.clientId || gerarIdCliente(),
+  }));
+
+  // Preserva os identificadores no navegador para permitir repetir a migração sem duplicar dados.
+  if (registrosLocais.length) {
+    window.localStorage.setItem(KEY_REGISTROS, JSON.stringify(registrosLocais));
+  }
+
+  for (const nome of transportadorasLocais) {
+    await api.post('/admin/controle-sla/transportadoras', { nome: nome.trim() });
+  }
+
+  if (registrosLocais.length) {
+    await api.post('/admin/controle-sla/registros/importacao-local', { registros: registrosLocais });
+  }
+
+  window.localStorage.setItem(KEY_MIGRACAO_BANCO, 'concluida');
+  return registrosLocais.length > 0 || transportadorasLocais.length > 0;
 }
 
 function dataHojeLocal() {
@@ -268,9 +331,13 @@ const FORMULARIO_INICIAL = () => ({
 
 export default function ControleSLA() {
   const [activeTab, setActiveTab] = useState('registro');
-  // A leitura é feita no inicializador do estado para não gravar [] antes de carregar os dados existentes.
-  const [transportadoras, setTransportadoras] = useState(() => lerListaLocalStorage(KEY_TRANSPORTADORAS).filter((item) => typeof item === 'string'));
-  const [registros, setRegistros] = useState(() => lerListaLocalStorage(KEY_REGISTROS));
+  const [transportadoras, setTransportadoras] = useState([]);
+  const [transportadoraIds, setTransportadoraIds] = useState({});
+  const [registros, setRegistros] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [apiDisponivel, setApiDisponivel] = useState(false);
+  const [avisoApi, setAvisoApi] = useState('');
+  const [salvando, setSalvando] = useState(false);
   const [formData, setFormData] = useState(FORMULARIO_INICIAL);
   const [indicadoresSelecionados, setIndicadoresSelecionados] = useState([]);
   const [novaTransportadora, setNovaTransportadora] = useState('');
@@ -285,26 +352,46 @@ export default function ControleSLA() {
   });
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(KEY_TRANSPORTADORAS, JSON.stringify(transportadoras));
-      window.localStorage.setItem(KEY_REGISTROS, JSON.stringify(registros));
-    } catch (erro) {
-      console.error('Não foi possível salvar os dados do Controle SLA:', erro);
-    }
-  }, [transportadoras, registros]);
+    let ativo = true;
 
-  // Sincroniza outras abas abertas no mesmo navegador. Não transforma LocalStorage em banco compartilhado.
-  useEffect(() => {
-    const sincronizarOutraAba = (evento) => {
-      if (evento.key === KEY_TRANSPORTADORAS) {
-        setTransportadoras(lerListaLocalStorage(KEY_TRANSPORTADORAS));
-      }
-      if (evento.key === KEY_REGISTROS) {
-        setRegistros(lerListaLocalStorage(KEY_REGISTROS));
+    const carregarDados = async () => {
+      setCarregando(true);
+      setAvisoApi('');
+      try {
+        let avisoMigracao = '';
+        try {
+          const migrou = await migrarDadosLocaisParaBanco();
+          if (migrou) avisoMigracao = 'Os dados antigos deste navegador foram enviados ao banco central.';
+        } catch (erroMigracao) {
+          console.error('Falha ao migrar dados locais do Controle SLA:', erroMigracao);
+          avisoMigracao = `Não foi possível concluir a migração dos dados antigos: ${mensagemErroApi(erroMigracao, 'erro desconhecido')}. A migração será tentada novamente na próxima abertura.`;
+        }
+
+        const [respostaRegistros, respostaTransportadoras] = await Promise.all([
+          api.get('/admin/controle-sla/registros'),
+          api.get('/admin/controle-sla/transportadoras'),
+        ]);
+
+        if (!ativo) return;
+        const listaRegistros = Array.isArray(respostaRegistros.data) ? respostaRegistros.data : [];
+        const listaTransportadoras = Array.isArray(respostaTransportadoras.data) ? respostaTransportadoras.data : [];
+        setRegistros(listaRegistros.map(normalizarRegistroDaApi));
+        setTransportadoras(listaTransportadoras.map((item) => item.nome).filter(Boolean));
+        setTransportadoraIds(Object.fromEntries(listaTransportadoras.map((item) => [item.nome, item.id])));
+        setApiDisponivel(true);
+        setAvisoApi(avisoMigracao);
+      } catch (erro) {
+        console.error('Erro ao carregar dados do Controle SLA:', erro);
+        if (!ativo) return;
+        setApiDisponivel(false);
+        setAvisoApi(`Não foi possível conectar ao banco de dados do SLA. ${mensagemErroApi(erro, 'Verifique se o backend está ativo e se a rota foi registrada no server.js.')}`);
+      } finally {
+        if (ativo) setCarregando(false);
       }
     };
-    window.addEventListener('storage', sincronizarOutraAba);
-    return () => window.removeEventListener('storage', sincronizarOutraAba);
+
+    carregarDados();
+    return () => { ativo = false; };
   }, []);
 
   const pesoSelecionado = useMemo(
@@ -375,33 +462,30 @@ export default function ControleSLA() {
     ));
   };
 
-  const handleRegistrar = (evento) => {
+  const handleRegistrar = async (evento) => {
     evento.preventDefault();
 
+    if (!apiDisponivel) {
+      setMensagemRegistro({ texto: 'O banco de dados não está conectado. Não é possível registrar agora.', tipo: 'error' });
+      return;
+    }
     if (!transportadoras.length) {
-      setMensagemRegistro({
-        texto: 'Cadastre uma transportadora antes de registrar a ocorrência.',
-        tipo: 'error',
-      });
+      setMensagemRegistro({ texto: 'Cadastre uma transportadora antes de registrar a ocorrência.', tipo: 'error' });
       setActiveTab('transportadoras');
       return;
     }
-
     if (!formData.transportadora.trim()) {
       setMensagemRegistro({ texto: 'Selecione uma transportadora.', tipo: 'error' });
       return;
     }
-
     if (!formData.processo.trim()) {
       setMensagemRegistro({ texto: 'Informe o processo, NF ou número da viagem.', tipo: 'error' });
       return;
     }
-
     if (!indicadoresSelecionados.length) {
       setMensagemRegistro({ texto: 'Marque pelo menos um indicador que teve ocorrência.', tipo: 'error' });
       return;
     }
-
     if (!formData.observacao.trim()) {
       setMensagemRegistro({ texto: 'Informe o motivo ou a observação da não conformidade.', tipo: 'error' });
       return;
@@ -416,6 +500,7 @@ export default function ControleSLA() {
     const indicadores = [...indicadoresSelecionados];
     const desconto = formData.penalidade !== 'Não' ? valorFrete * PERCENTUAL_PENALIDADE : 0;
     const novoRegistro = {
+      client_id: gerarIdCliente(),
       ...formData,
       transportadora: formData.transportadora.trim(),
       processo: formData.processo.trim(),
@@ -431,17 +516,33 @@ export default function ControleSLA() {
       criadoEm: new Date().toISOString(),
     };
 
-    setRegistros((anterior) => [...anterior, novoRegistro]);
-    setFormData(FORMULARIO_INICIAL());
-    setIndicadoresSelecionados([]);
-    setMensagemRegistro({
-      texto: 'Ocorrência registrada. A pontuação e o eventual desconto foram calculados automaticamente.',
-      tipo: 'success',
-    });
+    setSalvando(true);
+    try {
+      const resposta = await api.post('/admin/controle-sla/registros', novoRegistro);
+      setRegistros((anterior) => [...anterior, normalizarRegistroDaApi(resposta.data)]);
+      setFormData(FORMULARIO_INICIAL());
+      setIndicadoresSelecionados([]);
+      setMensagemRegistro({
+        texto: 'Ocorrência registrada e salva no banco de dados central.',
+        tipo: 'success',
+      });
+    } catch (erro) {
+      console.error('Erro ao salvar ocorrência do SLA:', erro);
+      setMensagemRegistro({
+        texto: `Não foi possível salvar no banco: ${mensagemErroApi(erro, 'erro desconhecido')}`,
+        tipo: 'error',
+      });
+    } finally {
+      setSalvando(false);
+    }
   };
 
-  const handleAdicionarTransportadora = () => {
+  const handleAdicionarTransportadora = async () => {
     const nome = novaTransportadora.trim();
+    if (!apiDisponivel) {
+      setMensagemTransportadora({ texto: 'O banco de dados não está conectado. Não é possível cadastrar agora.', tipo: 'error' });
+      return;
+    }
     if (!nome) {
       setMensagemTransportadora({ texto: 'Informe o nome da transportadora.', tipo: 'error' });
       return;
@@ -451,12 +552,29 @@ export default function ControleSLA() {
       return;
     }
 
-    setTransportadoras((anterior) => [...anterior, nome].sort((a, b) => a.localeCompare(b, 'pt-BR')));
-    setNovaTransportadora('');
-    setMensagemTransportadora({ texto: 'Transportadora cadastrada com sucesso.', tipo: 'success' });
+    setSalvando(true);
+    try {
+      const resposta = await api.post('/admin/controle-sla/transportadoras', { nome });
+      const salva = resposta.data;
+      setTransportadoras((anterior) => [...anterior, salva.nome].sort((a, b) => a.localeCompare(b, 'pt-BR')));
+      setTransportadoraIds((anterior) => ({ ...anterior, [salva.nome]: salva.id }));
+      setNovaTransportadora('');
+      setMensagemTransportadora({ texto: 'Transportadora cadastrada no banco de dados.', tipo: 'success' });
+    } catch (erro) {
+      setMensagemTransportadora({
+        texto: `Não foi possível cadastrar a transportadora: ${mensagemErroApi(erro, 'erro desconhecido')}`,
+        tipo: 'error',
+      });
+    } finally {
+      setSalvando(false);
+    }
   };
 
-  const handleRemoverTransportadora = (nome) => {
+  const handleRemoverTransportadora = async (nome) => {
+    if (!apiDisponivel) {
+      setMensagemTransportadora({ texto: 'O banco de dados não está conectado.', tipo: 'error' });
+      return;
+    }
     if (registros.some((registro) => registro.transportadora === nome)) {
       setMensagemTransportadora({
         texto: 'Não remova uma transportadora que já possui histórico de viagens.',
@@ -464,9 +582,31 @@ export default function ControleSLA() {
       });
       return;
     }
+    const id = transportadoraIds[nome];
+    if (!id) {
+      setMensagemTransportadora({ texto: 'Não foi possível localizar o identificador dessa transportadora no banco.', tipo: 'error' });
+      return;
+    }
     if (!window.confirm(`Remover ${nome} do cadastro?`)) return;
-    setTransportadoras((anterior) => anterior.filter((item) => item !== nome));
-    setMensagemTransportadora({ texto: 'Transportadora removida.', tipo: 'success' });
+
+    setSalvando(true);
+    try {
+      await api.delete(`/admin/controle-sla/transportadoras/${id}`);
+      setTransportadoras((anterior) => anterior.filter((item) => item !== nome));
+      setTransportadoraIds((anterior) => {
+        const proximo = { ...anterior };
+        delete proximo[nome];
+        return proximo;
+      });
+      setMensagemTransportadora({ texto: 'Transportadora removida do banco de dados.', tipo: 'success' });
+    } catch (erro) {
+      setMensagemTransportadora({
+        texto: `Não foi possível remover: ${mensagemErroApi(erro, 'verifique se há registros vinculados')}`,
+        tipo: 'error',
+      });
+    } finally {
+      setSalvando(false);
+    }
   };
 
   const montarLinhasDetalhamento = () => {
@@ -601,6 +741,15 @@ export default function ControleSLA() {
           </button>
         </nav>
 
+        {carregando && (
+          <div className="sla-notice" role="status">Conectando ao banco de dados e carregando os registros do Controle SLA...</div>
+        )}
+        {!carregando && avisoApi && (
+          <div className="sla-notice" role="status">
+            <strong>{apiDisponivel ? 'Atenção:' : 'Banco de dados indisponível:'}</strong> {avisoApi}
+          </div>
+        )}
+
         {activeTab === 'registro' && (
           <section className="sla-tab-content">
             <div className="sla-notice">
@@ -702,7 +851,7 @@ export default function ControleSLA() {
                   </button>
                   <div className="sla-actions-right">
                     <button type="button" className="sla-btn sla-btn-secondary" onClick={handleExportarCSV}>Exportar CSV</button>
-                    <button type="submit" className="sla-btn sla-btn-primary">Registrar ocorrência</button>
+                    <button type="submit" className="sla-btn sla-btn-primary" disabled={salvando || carregando || !apiDisponivel}>{salvando ? 'Salvando...' : 'Registrar ocorrência'}</button>
                   </div>
                 </div>
                 {mensagemRegistro.texto && (
@@ -923,7 +1072,7 @@ export default function ControleSLA() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdicionarTransportadora(); } }}
                   />
                 </div>
-                <button type="button" className="sla-btn sla-btn-primary" onClick={handleAdicionarTransportadora}>Adicionar</button>
+                <button type="button" className="sla-btn sla-btn-primary" onClick={handleAdicionarTransportadora} disabled={salvando || carregando || !apiDisponivel}>{salvando ? 'Salvando...' : 'Adicionar'}</button>
               </div>
               {mensagemTransportadora.texto && (
                 <div className={`sla-message ${mensagemTransportadora.tipo}`} role="status">{mensagemTransportadora.texto}</div>
@@ -941,7 +1090,7 @@ export default function ControleSLA() {
                 {transportadoras.length ? transportadoras.map((nome) => (
                   <li key={nome}>
                     <span>{nome}</span>
-                    <button type="button" className="sla-btn sla-btn-danger" onClick={() => handleRemoverTransportadora(nome)}>Remover</button>
+                    <button type="button" className="sla-btn sla-btn-danger" onClick={() => handleRemoverTransportadora(nome)} disabled={salvando || !apiDisponivel}>Remover</button>
                   </li>
                 )) : <li className="sla-empty">Nenhuma transportadora cadastrada.</li>}
               </ul>
